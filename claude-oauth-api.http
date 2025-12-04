@@ -1,0 +1,538 @@
+# Claude Code OAuth API Reference
+# Compatible with: VS Code REST Client, JetBrains HTTP Client
+#
+# Search patterns for cli.js validation:
+#   Constants:  rg "BASE_API_URL|TOKEN_URL|CLIENT_ID" cli.js
+#   Scopes:     rg "user:inference|user:profile|user:sessions" cli.js
+#   Headers:    rg "anthropic-beta|anthropic-version|X-Stainless" cli.js
+#   Endpoints:  rg "/oauth/|/v1/messages|/api/hello" cli.js
+
+### ============================================================================
+### VARIABLES
+### ============================================================================
+
+@baseApiUrl = https://api.anthropic.com
+@consoleUrl = https://console.anthropic.com
+@claudeAiUrl = https://claude.ai
+@clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
+
+# PKCE: base64url(crypto.randomBytes(32)) - no padding, URL-safe
+@codeVerifier = {{$randomInt 1000000000 9999999999}}abc
+@codeChallenge = {{$randomInt 1000000000 9999999999}}xyz
+@state = {{$randomInt 1000000000 9999999999}}state
+
+# From callback after authorization
+@authCode = YOUR_AUTH_CODE_HERE
+@accessToken = YOUR_ACCESS_TOKEN_HERE
+@refreshToken = YOUR_REFRESH_TOKEN_HERE
+
+# Optional
+@port = 8765
+@orgUUID =
+
+### ============================================================================
+### SCOPES
+### ============================================================================
+# Search: rg '"user:inference"|"user:profile"|"user:sessions"|"org:create_api_key"' cli.js
+#
+# Inference only (setup-token mode):
+#   user:inference
+#
+# Session scopes (used in token refresh):
+#   user:profile
+#   user:inference
+#   user:sessions:claude_code
+#
+# Full scopes (login mode):
+#   org:create_api_key
+#   user:profile
+#   user:inference
+#   user:sessions:claude_code
+
+### ============================================================================
+### 1. AUTHORIZATION URL (Browser Redirect)
+### ============================================================================
+# Search: rg "oauth/authorize|code_challenge|response_type" cli.js
+#
+# User opens this URL in browser to authorize.
+# Two hosts available:
+#   - claude.ai/oauth/authorize (loginWithClaudeAi=true, uses Claude.ai session)
+#   - console.anthropic.com/oauth/authorize (loginWithClaudeAi=false)
+#
+# Two redirect modes:
+#   - Manual: https://console.anthropic.com/oauth/code/callback (copy/paste code)
+#   - Automatic: http://localhost:{port}/callback (local server catches it)
+
+# @name auth_claude_ai_manual_inference_only
+# setup-token mode: inference only, manual callback, claude.ai
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &scope=user:inference
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+
+###
+
+# @name auth_claude_ai_manual_full_scopes
+# login mode: full scopes, manual callback, claude.ai
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+
+###
+
+# @name auth_claude_ai_automatic
+# login mode: full scopes, automatic callback via local server
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=http://localhost:{{port}}/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+
+###
+
+# @name auth_console_with_org
+# Console authorize with organization UUID (for org-specific auth)
+GET {{consoleUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+    &orgUUID={{orgUUID}}
+
+### ============================================================================
+### 2. TOKEN EXCHANGE (Authorization Code -> Access Token)
+### ============================================================================
+# Search: rg "grant_type.*authorization_code|code_verifier|TOKEN_URL" cli.js
+#
+# Exchange authorization code for access token.
+# Called after user authorizes and callback receives the code.
+#
+# expires_in: Optional. Only sent when expiresIn option provided.
+#   - setup-token mode typically requests 31536000 (1 year)
+#   - login mode omits this (server decides, issues refresh token)
+
+# @name token_exchange_with_expiry
+# setup-token mode: request 1-year token
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "https://console.anthropic.com/oauth/code/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}",
+    "expires_in": 31536000
+}
+
+###
+
+# @name token_exchange_default_expiry
+# login mode: server-default expiry (gets refresh token)
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "https://console.anthropic.com/oauth/code/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}"
+}
+
+###
+
+# @name token_exchange_automatic_callback
+# Automatic callback mode (localhost redirect)
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "http://localhost:{{port}}/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}"
+}
+
+### ============================================================================
+### 3. TOKEN REFRESH
+### ============================================================================
+# Search: rg "grant_type.*refresh_token" cli.js
+#
+# Refresh access token using refresh token.
+# Returns new access_token, optionally new refresh_token, expires_in.
+#
+# IMPORTANT: CLI sends scope parameter with session scopes
+
+# @name token_refresh
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "refresh_token",
+    "refresh_token": "{{refreshToken}}",
+    "client_id": "{{clientId}}",
+    "scope": "user:profile user:inference user:sessions:claude_code"
+}
+
+### ============================================================================
+### 4. PROFILE API
+### ============================================================================
+# Search: rg "/api/oauth/profile" cli.js
+#
+# Fetch user profile and organization info.
+# Used to determine subscription type and rate limits.
+
+# @name get_profile
+GET {{baseApiUrl}}/api/oauth/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 5. ADDITIONAL OAUTH ENDPOINTS
+### ============================================================================
+# Search: rg "API_KEY_URL|ROLES_URL|/claude_cli/" cli.js
+
+# @name create_api_key
+# Create API key via OAuth (requires org:create_api_key scope)
+POST {{baseApiUrl}}/api/oauth/claude_cli/create_api_key
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+    "name": "claude-code-api-key"
+}
+
+###
+
+# @name get_roles
+# Get available roles (requires authentication)
+GET {{baseApiUrl}}/api/oauth/claude_cli/roles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### ============================================================================
+### 6. HEALTH CHECK (No Auth Required)
+### ============================================================================
+# Search: rg "/api/hello" cli.js
+#
+# Simple connectivity check - used by CLI to verify API reachability.
+# No authentication required.
+
+# @name health_check
+GET {{baseApiUrl}}/api/hello
+Cache-Control: no-cache
+
+### ============================================================================
+### 7. USAGE API
+### ============================================================================
+# Search: rg "/api/oauth/usage" cli.js
+#
+# Get current usage/quota information for the authenticated user.
+# Requires: user:profile scope (via OAuth) or x-api-key
+
+# @name get_usage_oauth
+GET {{baseApiUrl}}/api/oauth/usage
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/2.0.55
+anthropic-beta: oauth-2025-04-20
+
+###
+
+# @name get_usage_apikey
+GET {{baseApiUrl}}/api/oauth/usage
+x-api-key: {{apiKey}}
+Content-Type: application/json
+User-Agent: claude-code/2.0.55
+
+### ============================================================================
+### 8. ACCOUNT SETTINGS
+### ============================================================================
+# Search: rg "/api/oauth/account/settings" cli.js
+#
+# Get account settings for the authenticated user.
+# Requires: user:profile scope
+
+# @name get_account_settings
+GET {{baseApiUrl}}/api/oauth/account/settings
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/2.0.55
+anthropic-beta: oauth-2025-04-20
+
+### ============================================================================
+### 9. CLIENT DATA (Status)
+### ============================================================================
+# Search: rg "/claude_cli/client_data" cli.js
+
+# @name get_client_data
+GET {{baseApiUrl}}/api/oauth/claude_cli/client_data
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: axios/1.8.4
+
+### ============================================================================
+### 10. MESSAGES API (Chat/Inference)
+### ============================================================================
+# Search: rg "/v1/messages|anthropic-version|X-Stainless" cli.js
+#
+# Main inference endpoint for Claude models.
+# Uses Anthropic SDK (Stainless) with specific headers.
+
+@model = claude-haiku-4-5-20251001
+@maxTokens = 32000
+
+# @name messages_api_oauth
+POST {{baseApiUrl}}/v1/messages?beta=true
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14
+anthropic-dangerous-direct-browser-access: true
+anthropic-version: 2023-06-01
+User-Agent: claude-cli/2.0.55 (external, cli)
+X-Stainless-Lang: js
+X-Stainless-Package-Version: 0.70.0
+X-Stainless-OS: MacOS
+X-Stainless-Arch: arm64
+X-Stainless-Runtime: node
+X-Stainless-Runtime-Version: v22.20.0
+X-Stainless-Retry-Count: 0
+X-Stainless-Timeout: 600
+X-Stainless-Helper-Method: stream
+
+{
+    "model": "{{model}}",
+    "max_tokens": {{maxTokens}},
+    "stream": true,
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Hello, Claude!"
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "user_id": "user_<hash>_account_<uuid>_session_<uuid>"
+    },
+    "system": [
+        {
+            "type": "text",
+            "text": "You are Claude Code, Anthropic's official CLI for Claude."
+        }
+    ],
+    "tools": []
+}
+
+###
+
+# @name messages_api_apikey
+POST {{baseApiUrl}}/v1/messages?beta=true
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: 2023-06-01
+User-Agent: claude-cli/2.0.55 (external, cli)
+X-Stainless-Lang: js
+X-Stainless-Package-Version: 0.70.0
+X-Stainless-OS: MacOS
+X-Stainless-Arch: arm64
+X-Stainless-Runtime: node
+X-Stainless-Runtime-Version: v22.20.0
+X-Stainless-Retry-Count: 0
+X-Stainless-Timeout: 600
+
+{
+    "model": "{{model}}",
+    "max_tokens": {{maxTokens}},
+    "stream": false,
+    "messages": [
+        {
+            "role": "user",
+            "content": "Hello, Claude!"
+        }
+    ]
+}
+
+### ============================================================================
+### RESPONSE SCHEMAS
+### ============================================================================
+#
+# Token Exchange Response (success):
+# {
+#     "access_token": "string",
+#     "refresh_token": "string | null",
+#     "expires_in": 31536000,
+#     "scope": "user:inference",
+#     "token_type": "Bearer",
+#     "account": {
+#         "uuid": "string",
+#         "email_address": "string"
+#     },
+#     "organization": {
+#         "uuid": "string"
+#     }
+# }
+#
+# Profile Response:
+# Search: rg "organization_type|rate_limit_tier|has_extra_usage" cli.js
+# {
+#     "account": {
+#         "uuid": "string",
+#         "email": "string",
+#         "display_name": "string | null"
+#     },
+#     "organization": {
+#         "uuid": "string",
+#         "organization_type": "claude_max | claude_pro | claude_enterprise | claude_team",
+#         "rate_limit_tier": "string | null",
+#         "has_extra_usage_enabled": true | false | null
+#     }
+# }
+#
+# Token Refresh Response:
+# {
+#     "access_token": "string",
+#     "refresh_token": "string (may be same or new)",
+#     "expires_in": 3600,
+#     "scope": "user:profile user:inference user:sessions:claude_code"
+# }
+#
+# Usage Response:
+# {
+#     "five_hour": {
+#         "utilization": 45,
+#         "resets_at": "2025-01-15T14:30:00Z"
+#     },
+#     "seven_day": {
+#         "utilization": 23,
+#         "resets_at": "2025-01-20T00:00:00Z"
+#     },
+#     "seven_day_sonnet": {
+#         "utilization": 12
+#     },
+#     "seven_day_opus": {
+#         "utilization": 5
+#     }
+# }
+
+### ============================================================================
+### PKCE GENERATION
+### ============================================================================
+# Search: rg "randomBytes|createHash.*sha256|base64.*replace" cli.js
+#
+# Code Verifier:
+#   1. Generate 32 random bytes: crypto.randomBytes(32)
+#   2. Base64url encode: replace('+','-').replace('/','_').replace('=','')
+#   Result: 43-character URL-safe string
+#
+# Code Challenge:
+#   1. SHA-256 hash the verifier: crypto.createHash('sha256').update(verifier).digest()
+#   2. Base64url encode the hash: same transforms as verifier
+#   Result: 43-character URL-safe string
+#
+# State:
+#   Same as verifier: base64url(crypto.randomBytes(32))
+#
+# Python equivalent:
+#   import secrets, hashlib, base64
+#   verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip('=')
+#   challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
+#   state = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip('=')
+
+### ============================================================================
+### STAINLESS HEADERS
+### ============================================================================
+# Search: rg "X-Stainless|stainless" cli.js
+#
+# The Anthropic SDK (built with Stainless) adds platform-specific headers:
+#
+# X-Stainless-Lang: js
+# X-Stainless-Package-Version: <sdk_version>  # search: rg 'var Op.*"[0-9]' cli.js
+# X-Stainless-OS: MacOS | Linux | Windows | FreeBSD | OpenBSD | Unknown
+# X-Stainless-Arch: x64 | arm64 | arm | x32 | other:<arch> | unknown
+# X-Stainless-Runtime: node | deno | edge | browser:<name> | unknown
+# X-Stainless-Runtime-Version: <node_version>
+# X-Stainless-Retry-Count: 0 (incremented on retries)
+# X-Stainless-Timeout: 600 (timeout in seconds)
+# X-Stainless-Helper-Method: stream (when using streaming)
+#
+# OS mapping:
+#   darwin -> MacOS, win32 -> Windows, linux -> Linux
+#   freebsd -> FreeBSD, openbsd -> OpenBSD
+#
+# Arch mapping:
+#   x86_64, x64 -> x64
+#   aarch64, arm64 -> arm64
+
+### ============================================================================
+### USER-AGENT FORMATS
+### ============================================================================
+# Search: rg "claude-cli/|claude-code/|\(external" cli.js
+#
+# External CLI:
+#   claude-cli/<version> (external, cli)
+#   claude-cli/<version> (external, cli, agent-sdk/<sdk_version>)
+#
+# Internal use:
+#   claude-code/<version>
+
+### ============================================================================
+### ANTHROPIC-BETA HEADER VALUES
+### ============================================================================
+# Search: rg "anthropic-beta|oauth-202|thinking-202|context-|structured-|web-search|tool-examples" cli.js
+#
+# OAuth:
+#   oauth-2025-04-20
+#
+# Inference betas:
+#   interleaved-thinking-2025-05-14
+#   context-1m-2025-08-07
+#   context-management-2025-06-27
+#   structured-outputs-2025-09-17
+#   web-search-2025-03-05
+#   tool-examples-2025-10-29
+#
+# Files API:
+#   files-api-2025-04-14
+#
+# Batches:
+#   message-batches-2024-09-24
+#
+# Token counting:
+#   token-counting-2024-11-01
+
+### ============================================================================
+### SUCCESS/ERROR REDIRECT URLS
+### ============================================================================
+# Search: rg "SUCCESS_URL|REDIRECT_URL|/oauth/code/" cli.js
+#
+# CONSOLE_SUCCESS_URL: https://console.anthropic.com/oauth/code/success?app=claude-code
+# MANUAL_REDIRECT_URL: https://console.anthropic.com/oauth/code/callback

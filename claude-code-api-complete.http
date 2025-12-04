@@ -1,0 +1,1563 @@
+# Claude Code CLI - Complete API Reference
+# Extracted from @anthropic-ai/claude-code v2.0.55
+#
+# Validation: Search for URL path strings (stable across builds)
+#   rg '"/api/oauth/profile"' cli.js
+#   rg '"/v1/messages"' cli.js
+#   rg 'api\.anthropic\.com' cli.js
+#
+# See: references/API-EXTRACTION-PIPELINE.md for full methodology
+
+### ============================================================================
+### VARIABLES
+### ============================================================================
+
+@baseUrl = https://api.anthropic.com
+@consoleUrl = https://console.anthropic.com
+@claudeAiUrl = https://claude.ai
+@version = 2023-06-01
+@oauthBeta = oauth-2025-04-20
+@clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
+@stainlessVersion = 0.70.0
+@cliVersion = 2.0.55
+
+# Auth tokens (set these)
+@accessToken = YOUR_ACCESS_TOKEN
+@apiKey = YOUR_API_KEY
+@orgUuid = YOUR_ORG_UUID
+
+
+### ============================================================================
+### SECTION 1: OAUTH FLOW
+### ============================================================================
+# Pattern: rg "oauth/authorize|oauth/token" cli.js
+
+### ----------------------------------------------------------------------------
+### 1.1 Authorization URL (Browser redirect - not a direct request)
+### ----------------------------------------------------------------------------
+# Pattern: rg "CONSOLE_AUTHORIZE_URL|CLAUDE_AI_AUTHORIZE_URL" cli.js
+#
+# Console OAuth:
+#   https://console.anthropic.com/oauth/authorize
+#     ?code=true
+#     &client_id=9d1c250a-e61b-44d9-88ed-5944d1962f5e
+#     &response_type=code
+#     &redirect_uri=http://localhost:{port}/callback
+#     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+#     &code_challenge={base64url(sha256(code_verifier))}
+#     &code_challenge_method=S256
+#     &state={random_state}
+#     [&orgUUID={org_uuid}]
+#
+# Claude.ai OAuth:
+#   https://claude.ai/oauth/authorize
+#     (same params as above)
+#
+# Scopes (pattern: rg '"user:inference"|"user:profile"|"user:sessions"' cli.js):
+#   - user:inference         (required for API access)
+#   - user:profile           (required for profile info)
+#   - user:sessions:claude_code  (required for web sessions)
+#   - org:create_api_key     (required for API key creation)
+
+### ----------------------------------------------------------------------------
+### 1.2 Token Exchange
+### ----------------------------------------------------------------------------
+# Pattern: rg "grant_type.*authorization_code" cli.js
+
+# @name tokenExchange
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "http://localhost:{{port}}/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}"
+}
+
+### Response:
+# {
+#   "access_token": "...",
+#   "refresh_token": "...",
+#   "expires_in": 3600,
+#   "token_type": "Bearer",
+#   "scope": "user:profile user:inference user:sessions:claude_code org:create_api_key"
+# }
+
+### ----------------------------------------------------------------------------
+### 1.3 Token Refresh
+### ----------------------------------------------------------------------------
+# Pattern: rg "grant_type.*refresh_token" cli.js
+
+# @name tokenRefresh
+POST {{consoleUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "refresh_token",
+    "refresh_token": "{{refreshToken}}",
+    "client_id": "{{clientId}}",
+    "scope": "user:profile user:inference user:sessions:claude_code"
+}
+
+
+### ============================================================================
+### SECTION 2: PROFILE & ACCOUNT
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 2.1 OAuth Profile (with Bearer token)
+### ----------------------------------------------------------------------------
+# Pattern: rg '"/api/oauth/profile"' cli.js
+
+# @name oauthProfile
+GET {{baseUrl}}/api/oauth/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### Response:
+# {
+#   "account_uuid": "...",
+#   "display_name": "...",
+#   "email_address": "...",
+#   "has_extra_usage_enabled": true,
+#   "organization": {
+#     "uuid": "...",
+#     "name": "...",
+#     "organization_type": "claude_max|claude_pro|claude_enterprise|free"
+#   }
+# }
+
+### ----------------------------------------------------------------------------
+### 2.2 CLI Profile (with API key)
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/claude_cli_profile" cli.js
+
+# @name cliProfile
+GET {{baseUrl}}/api/claude_cli_profile?account_uuid={{accountUuid}}
+x-api-key: {{apiKey}}
+anthropic-beta: {{oauthBeta}}
+
+### ----------------------------------------------------------------------------
+### 2.3 Get User Roles
+### ----------------------------------------------------------------------------
+# Pattern: rg "ROLES_URL" cli.js
+
+# @name getUserRoles
+GET {{baseUrl}}/api/oauth/claude_cli/roles
+Authorization: Bearer {{accessToken}}
+
+### Response:
+# {
+#   "organization_role": "admin|member|...",
+#   "workspace_role": "...",
+#   "organization_name": "..."
+# }
+
+### ----------------------------------------------------------------------------
+### 2.4 Create API Key
+### ----------------------------------------------------------------------------
+# Pattern: rg "API_KEY_URL|create_api_key" cli.js
+
+# @name createApiKey
+POST {{baseUrl}}/api/oauth/claude_cli/create_api_key
+Authorization: Bearer {{accessToken}}
+
+### Response:
+# {
+#   "raw_key": "sk-ant-..."
+# }
+
+### ----------------------------------------------------------------------------
+### 2.5 Get Client Data
+### ----------------------------------------------------------------------------
+# Pattern: rg "client_data" cli.js
+
+# @name getClientData
+GET {{baseUrl}}/api/oauth/claude_cli/client_data
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+
+### ============================================================================
+### SECTION 3: ACCOUNT SETTINGS
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 3.1 Get Account Settings
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/oauth/account/settings" cli.js
+
+# @name getAccountSettings
+GET {{baseUrl}}/api/oauth/account/settings
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 3.2 Update Account Settings (Grove)
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/oauth/account/settings" cli.js -A 5
+
+# @name updateAccountSettings
+PATCH {{baseUrl}}/api/oauth/account/settings
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+Content-Type: application/json
+
+{
+    "grove_enabled": true
+}
+
+### ----------------------------------------------------------------------------
+### 3.3 Mark Grove Notice Viewed
+### ----------------------------------------------------------------------------
+# Pattern: rg "grove_notice_viewed" cli.js
+
+# @name markGroveNoticeViewed
+POST {{baseUrl}}/api/oauth/account/grove_notice_viewed
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+Content-Type: application/json
+
+{}
+
+### ----------------------------------------------------------------------------
+### 3.4 Get Grove Settings
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/claude_code_grove" cli.js
+
+# @name getGroveSettings
+GET {{baseUrl}}/api/claude_code_grove
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### Response:
+# {
+#   "grove_enabled": true,
+#   "domain_excluded": false,
+#   "notice_is_grace_period": true,
+#   "notice_reminder_frequency": ...
+# }
+
+
+### ============================================================================
+### SECTION 4: USAGE & BILLING
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 4.1 Get Usage Stats
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/oauth/usage" cli.js
+
+# @name getUsage
+GET {{baseUrl}}/api/oauth/usage
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# {
+#   "five_hour": {
+#     "utilization": 0.5,
+#     "resets_at": "2025-01-01T00:00:00Z"
+#   }
+# }
+
+### ----------------------------------------------------------------------------
+### 4.2 Get First Token Date
+### ----------------------------------------------------------------------------
+# Pattern: rg "first_token_date" cli.js
+
+# @name getFirstTokenDate
+GET {{baseUrl}}/api/organization/claude_code_first_token_date
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# {
+#   "first_token_date": "2025-01-01T00:00:00Z"
+# }
+
+### ----------------------------------------------------------------------------
+### 4.3 Check Sonnet 1M Access
+### ----------------------------------------------------------------------------
+# Pattern: rg "claude_code_sonnet_1m_access" cli.js
+
+# @name checkSonnet1MAccess
+GET {{baseUrl}}/api/organization/{{orgUuid}}/claude_code_sonnet_1m_access
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# {
+#   "has_access": true,
+#   "has_access_not_as_default": false
+# }
+
+
+### ============================================================================
+### SECTION 5: REFERRAL SYSTEM
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 5.1 Check Referral Eligibility
+### ----------------------------------------------------------------------------
+# Pattern: rg "referral/eligibility" cli.js
+
+# @name checkReferralEligibility
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/referral/eligibility?campaign=claude_code_guest_pass
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### ----------------------------------------------------------------------------
+### 5.2 Get Referral Redemptions
+### ----------------------------------------------------------------------------
+# Pattern: rg "referral/redemptions" cli.js
+
+# @name getReferralRedemptions
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/referral/redemptions?campaign=claude_code_guest_pass
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+
+### ============================================================================
+### SECTION 6: HEALTH & CONNECTIVITY
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 6.1 API Health Check
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/hello" cli.js
+
+# @name healthCheck
+GET {{baseUrl}}/api/hello
+Cache-Control: no-cache
+
+### ----------------------------------------------------------------------------
+### 6.2 OAuth Health Check
+### ----------------------------------------------------------------------------
+# Pattern: rg "oauth/hello" cli.js
+
+# @name oauthHealthCheck
+GET {{consoleUrl}}/v1/oauth/hello
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### ----------------------------------------------------------------------------
+### 6.3 Preflight Health Check (HEAD)
+### ----------------------------------------------------------------------------
+# Pattern: rg '\.head\(' cli.js
+
+# @name healthCheckHead
+HEAD {{baseUrl}}/api/hello
+
+
+### ============================================================================
+### SECTION 7: MESSAGES API (SDK)
+### ============================================================================
+# Pattern: rg '"/v1/messages"' cli.js
+
+### ----------------------------------------------------------------------------
+### 7.1 Create Message
+### ----------------------------------------------------------------------------
+# Pattern: rg "post.*v1/messages" cli.js
+
+# @name createMessage
+POST {{baseUrl}}/v1/messages?beta=true
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: interleaved-thinking-2025-05-14,context-1m-2025-08-07
+X-Stainless-Lang: js
+X-Stainless-Package-Version: {{stainlessVersion}}
+X-Stainless-OS: Linux
+X-Stainless-Arch: x64
+X-Stainless-Runtime: node
+X-Stainless-Runtime-Version: v22.0.0
+
+{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 8192,
+    "messages": [
+        {
+            "role": "user",
+            "content": "Hello, Claude!"
+        }
+    ],
+    "stream": false
+}
+
+### ----------------------------------------------------------------------------
+### 7.2 Create Message (Streaming)
+### ----------------------------------------------------------------------------
+# Pattern: rg "stream.*true" cli.js
+
+# @name createMessageStream
+POST {{baseUrl}}/v1/messages?beta=true
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: interleaved-thinking-2025-05-14
+X-Stainless-Helper-Method: stream
+
+{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 8192,
+    "messages": [
+        {
+            "role": "user",
+            "content": "Hello!"
+        }
+    ],
+    "stream": true
+}
+
+### ----------------------------------------------------------------------------
+### 7.3 Count Tokens
+### ----------------------------------------------------------------------------
+# Pattern: rg "count_tokens" cli.js
+
+# @name countTokens
+POST {{baseUrl}}/v1/messages/count_tokens?beta=true
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: token-counting-2024-11-01
+
+{
+    "model": "claude-sonnet-4-20250514",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Count these tokens"
+        }
+    ]
+}
+
+### ----------------------------------------------------------------------------
+### 7.4 Legacy Complete API
+### ----------------------------------------------------------------------------
+# Pattern: rg "/v1/complete" cli.js
+
+# @name legacyComplete
+POST {{baseUrl}}/v1/complete
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+{
+    "model": "claude-2.1",
+    "prompt": "\n\nHuman: Hello\n\nAssistant:",
+    "max_tokens_to_sample": 256
+}
+
+
+### ============================================================================
+### SECTION 8: MESSAGE BATCHES API
+### ============================================================================
+# Pattern: rg "messages/batches" cli.js
+
+### ----------------------------------------------------------------------------
+### 8.1 Create Batch
+### ----------------------------------------------------------------------------
+
+# @name createBatch
+POST {{baseUrl}}/v1/messages/batches?beta=true
+Content-Type: application/json
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: message-batches-2024-09-24
+
+{
+    "requests": [
+        {
+            "custom_id": "req-1",
+            "params": {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": "Hello"}]
+            }
+        }
+    ]
+}
+
+### ----------------------------------------------------------------------------
+### 8.2 Get Batch
+### ----------------------------------------------------------------------------
+
+# @name getBatch
+GET {{baseUrl}}/v1/messages/batches/{{batchId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: message-batches-2024-09-24
+
+### ----------------------------------------------------------------------------
+### 8.3 List Batches
+### ----------------------------------------------------------------------------
+
+# @name listBatches
+GET {{baseUrl}}/v1/messages/batches?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: message-batches-2024-09-24
+
+### ----------------------------------------------------------------------------
+### 8.4 Cancel Batch
+### ----------------------------------------------------------------------------
+
+# @name cancelBatch
+POST {{baseUrl}}/v1/messages/batches/{{batchId}}/cancel?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: message-batches-2024-09-24
+
+### ----------------------------------------------------------------------------
+### 8.5 Delete Batch
+### ----------------------------------------------------------------------------
+
+# @name deleteBatch
+DELETE {{baseUrl}}/v1/messages/batches/{{batchId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: message-batches-2024-09-24
+
+
+### ============================================================================
+### SECTION 9: FILES API (Beta)
+### ============================================================================
+# Pattern: rg "/v1/files" cli.js
+
+### ----------------------------------------------------------------------------
+### 9.1 List Files
+### ----------------------------------------------------------------------------
+
+# @name listFiles
+GET {{baseUrl}}/v1/files
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### ----------------------------------------------------------------------------
+### 9.2 Upload File
+### ----------------------------------------------------------------------------
+
+# @name uploadFile
+POST {{baseUrl}}/v1/files
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="document.txt"
+Content-Type: text/plain
+
+File contents here
+------FormBoundary--
+
+### ----------------------------------------------------------------------------
+### 9.3 Get File Metadata
+### ----------------------------------------------------------------------------
+
+# @name getFileMetadata
+GET {{baseUrl}}/v1/files/{{fileId}}
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### ----------------------------------------------------------------------------
+### 9.4 Download File Content
+### ----------------------------------------------------------------------------
+
+# @name downloadFile
+GET {{baseUrl}}/v1/files/{{fileId}}/content
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+Accept: application/binary
+
+### ----------------------------------------------------------------------------
+### 9.5 Delete File
+### ----------------------------------------------------------------------------
+
+# @name deleteFile
+DELETE {{baseUrl}}/v1/files/{{fileId}}
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+
+### ============================================================================
+### SECTION 10: MODELS API (Beta)
+### ============================================================================
+# Pattern: rg "/v1/models" cli.js
+
+### ----------------------------------------------------------------------------
+### 10.1 List Models
+### ----------------------------------------------------------------------------
+
+# @name listModels
+GET {{baseUrl}}/v1/models?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### ----------------------------------------------------------------------------
+### 10.2 Get Model
+### ----------------------------------------------------------------------------
+
+# @name getModel
+GET {{baseUrl}}/v1/models/claude-sonnet-4-20250514?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+
+### ============================================================================
+### SECTION 11: SKILLS API (Beta)
+### ============================================================================
+# Pattern: rg "/v1/skills" cli.js
+
+### ----------------------------------------------------------------------------
+### 11.1 List Skills
+### ----------------------------------------------------------------------------
+
+# @name listSkills
+GET {{baseUrl}}/v1/skills?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+### ----------------------------------------------------------------------------
+### 11.2 Create Skill
+### ----------------------------------------------------------------------------
+
+# @name createSkill
+POST {{baseUrl}}/v1/skills?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+Content-Type: multipart/form-data
+
+### ----------------------------------------------------------------------------
+### 11.3 Get Skill
+### ----------------------------------------------------------------------------
+
+# @name getSkill
+GET {{baseUrl}}/v1/skills/{{skillId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+### ----------------------------------------------------------------------------
+### 11.4 Delete Skill
+### ----------------------------------------------------------------------------
+
+# @name deleteSkill
+DELETE {{baseUrl}}/v1/skills/{{skillId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+### ----------------------------------------------------------------------------
+### 11.5 Create Skill Version
+### ----------------------------------------------------------------------------
+
+# @name createSkillVersion
+POST {{baseUrl}}/v1/skills/{{skillId}}/versions?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+Content-Type: multipart/form-data
+
+### ----------------------------------------------------------------------------
+### 11.6 Get Skill Version
+### ----------------------------------------------------------------------------
+
+# @name getSkillVersion
+GET {{baseUrl}}/v1/skills/{{skillId}}/versions/{{versionId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+### ----------------------------------------------------------------------------
+### 11.7 List Skill Versions
+### ----------------------------------------------------------------------------
+
+# @name listSkillVersions
+GET {{baseUrl}}/v1/skills/{{skillId}}/versions?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+### ----------------------------------------------------------------------------
+### 11.8 Delete Skill Version
+### ----------------------------------------------------------------------------
+
+# @name deleteSkillVersion
+DELETE {{baseUrl}}/v1/skills/{{skillId}}/versions/{{versionId}}?beta=true
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+
+
+### ============================================================================
+### SECTION 12: WEB SESSIONS API
+### ============================================================================
+# Pattern: rg "/v1/sessions" cli.js
+
+### ----------------------------------------------------------------------------
+### 12.1 List Sessions
+### ----------------------------------------------------------------------------
+
+# @name listSessions
+GET {{baseUrl}}/v1/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:
+# {
+#   "data": [
+#     {
+#       "id": "...",
+#       "title": "...",
+#       "session_context": {
+#         "sources": [{"type": "git_repository", "url": "..."}],
+#         "outcomes": [...]
+#       }
+#     }
+#   ]
+# }
+
+### ----------------------------------------------------------------------------
+### 12.2 Create Session
+### ----------------------------------------------------------------------------
+# Pattern: rg 'XQ\.post.*v1/sessions[^/]' cli.js (indirect - see line with E = `${o9().BASE_API_URL}/v1/sessions`)
+# Verified at: rg 'BASE_API_URL\}/v1/sessions"' cli.js
+
+# @name createSession
+POST {{baseUrl}}/v1/sessions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+{
+    "title": "Session title",
+    "events": [
+        {
+            "type": "event",
+            "data": {
+                "uuid": "{{eventUuid}}",
+                "session_id": "",
+                "type": "user",
+                "parent_tool_use_id": null,
+                "message": {
+                    "role": "user",
+                    "content": "Initial message"
+                }
+            }
+        }
+    ],
+    "session_context": {
+        "sources": [
+            {
+                "type": "git_repository",
+                "url": "https://github.com/owner/repo",
+                "revision": "main"
+            }
+        ],
+        "outcomes": [
+            {
+                "type": "git_repository",
+                "git_info": {
+                    "type": "github",
+                    "repo": "owner/repo",
+                    "branches": ["claude/branch-name"]
+                }
+            }
+        ],
+        "model": "claude-sonnet-4-20250514"
+    },
+    "environment_id": "{{environmentId}}"
+}
+
+### Response:
+# {
+#   "id": "session_...",
+#   "title": "Session title"
+# }
+
+### ----------------------------------------------------------------------------
+### 12.3 Get Session
+### ----------------------------------------------------------------------------
+
+# @name getSession
+GET {{baseUrl}}/v1/sessions/{{sessionId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### ----------------------------------------------------------------------------
+### 12.4 Get Session Events
+### ----------------------------------------------------------------------------
+# Pattern: rg "sessions.*events" cli.js
+
+# @name getSessionEvents
+GET {{baseUrl}}/v1/sessions/{{sessionId}}/events
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### ----------------------------------------------------------------------------
+### 12.5 Post Session Event
+### ----------------------------------------------------------------------------
+
+# @name postSessionEvent
+POST {{baseUrl}}/v1/sessions/{{sessionId}}/events
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+{
+    "events": [
+        {
+            "uuid": "{{eventUuid}}",
+            "session_id": "{{sessionId}}",
+            "type": "user",
+            "parent_tool_use_id": null,
+            "message": {
+                "role": "user",
+                "content": "Follow-up message"
+            }
+        }
+    ]
+}
+
+### ----------------------------------------------------------------------------
+### 12.6 Session Ingress (with session token)
+### ----------------------------------------------------------------------------
+# Pattern: rg "session_ingress" cli.js
+
+# @name sessionIngress
+POST {{baseUrl}}/v1/session_ingress/session/{{sessionId}}
+Authorization: Bearer {{sessionToken}}
+Content-Type: application/json
+
+
+### ============================================================================
+### SECTION 13: ENVIRONMENT PROVIDERS
+### ============================================================================
+# Pattern: rg "environment_providers" cli.js
+
+### ----------------------------------------------------------------------------
+### 13.1 List Environment Providers
+### ----------------------------------------------------------------------------
+
+# @name listEnvironmentProviders
+GET {{baseUrl}}/v1/environment_providers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:
+# {
+#   "environments": [
+#     {
+#       "environment_id": "...",
+#       "name": "..."
+#     }
+#   ]
+# }
+
+
+### ============================================================================
+### SECTION 14: GITHUB INTEGRATION
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 14.1 Check GitHub App Installation
+### ----------------------------------------------------------------------------
+# Pattern: rg "code/repos" cli.js
+
+# @name checkGitHubAppInstalled
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/code/repos/{{owner}}/{{repo}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:
+# {
+#   "status": {
+#     "app_installed": true
+#   }
+# }
+
+### ----------------------------------------------------------------------------
+### 14.2 Link VCS Account
+### ----------------------------------------------------------------------------
+# Pattern: rg "link_vcs_account" cli.js
+
+# @name linkVcsAccount
+POST {{baseUrl}}/api/claude_code/link_vcs_account
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+    "vcs_type": "github",
+    "vcs_host": "github.com",
+    "vcs_username": "{{githubUsername}}",
+    "git_user_email": "{{email}}"
+}
+
+
+### ============================================================================
+### SECTION 15: METRICS & TELEMETRY
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 15.1 Check Metrics Enabled
+### ----------------------------------------------------------------------------
+# Pattern: rg "metrics_enabled" cli.js
+
+# @name checkMetricsEnabled
+GET {{baseUrl}}/api/claude_code/organizations/metrics_enabled
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# {
+#   "metrics_logging_enabled": true,
+#   "vcs_account_linking_enabled": true
+# }
+
+### ----------------------------------------------------------------------------
+### 15.2 Submit Metrics
+### ----------------------------------------------------------------------------
+# Pattern: rg "api/claude_code/metrics" cli.js
+
+# @name submitMetrics
+POST {{baseUrl}}/api/claude_code/metrics
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+    "metrics": []
+}
+
+### ----------------------------------------------------------------------------
+### 15.3 Event Logging Batch
+### ----------------------------------------------------------------------------
+# Pattern: rg "event_logging/batch" cli.js
+
+# @name eventLoggingBatch
+POST {{baseUrl}}/api/event_logging/batch
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+x-service-name: claude-code
+
+{
+    "events": []
+}
+
+
+### ============================================================================
+### SECTION 16: FEEDBACK
+### ============================================================================
+# Pattern: rg "claude_cli_feedback" cli.js
+
+### ----------------------------------------------------------------------------
+### 16.1 Submit Feedback
+### ----------------------------------------------------------------------------
+
+# @name submitFeedback
+POST {{baseUrl}}/api/claude_cli_feedback
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+{
+    "content": "{\"feedback\":\"Great tool!\"}"
+}
+
+### Response:
+# {
+#   "feedback_id": "..."
+# }
+
+
+### ============================================================================
+### SECTION 17: DOMAIN INFO (Claude.ai)
+### ============================================================================
+# Pattern: rg "domain_info" cli.js
+
+### ----------------------------------------------------------------------------
+### 17.1 Check Domain Fetch Permission
+### ----------------------------------------------------------------------------
+
+# @name checkDomainInfo
+GET {{claudeAiUrl}}/api/web/domain_info?domain={{domain}}
+
+### Response:
+# {
+#   "can_fetch": true
+# }
+
+
+### ============================================================================
+### SECTION 18: FEATURE FLAGS (GrowthBook)
+### ============================================================================
+# Pattern: rg "api/features|api/eval" cli.js
+
+### ----------------------------------------------------------------------------
+### 18.1 Fetch Features
+### ----------------------------------------------------------------------------
+
+# @name fetchFeatures
+GET {{baseUrl}}/api/features/{{clientKey}}
+
+### ----------------------------------------------------------------------------
+### 18.2 Remote Eval
+### ----------------------------------------------------------------------------
+
+# @name remoteEval
+POST {{baseUrl}}/api/eval/{{clientKey}}
+Content-Type: application/json
+
+{
+    "attributes": {}
+}
+
+
+### ============================================================================
+### SECTION 19: TOKEN REVOCATION (OAuth 2.0 RFC 7009)
+### ============================================================================
+# Pattern: rg "revocation_endpoint|token_type_hint" cli.js
+# Discovered via OAuth metadata at /.well-known/oauth-authorization-server
+
+### ----------------------------------------------------------------------------
+### 19.1 Revoke Access Token
+### ----------------------------------------------------------------------------
+
+# @name revokeAccessToken
+POST {{consoleUrl}}/v1/oauth/revoke
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer {{accessToken}}
+
+token={{accessToken}}&token_type_hint=access_token&client_id={{clientId}}
+
+### ----------------------------------------------------------------------------
+### 19.2 Revoke Refresh Token
+### ----------------------------------------------------------------------------
+
+# @name revokeRefreshToken
+POST {{consoleUrl}}/v1/oauth/revoke
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer {{accessToken}}
+
+token={{refreshToken}}&token_type_hint=refresh_token&client_id={{clientId}}
+
+
+### ============================================================================
+### SECTION 20: OAUTH METADATA DISCOVERY
+### ============================================================================
+# Pattern: rg "well-known/oauth-authorization-server" cli.js
+
+### ----------------------------------------------------------------------------
+### 20.1 OAuth Authorization Server Metadata
+### ----------------------------------------------------------------------------
+
+# @name oauthMetadata
+GET {{consoleUrl}}/.well-known/oauth-authorization-server
+
+### Response includes:
+# {
+#   "issuer": "...",
+#   "authorization_endpoint": "...",
+#   "token_endpoint": "...",
+#   "revocation_endpoint": "...",
+#   "scopes_supported": [...],
+#   ...
+# }
+
+
+### ============================================================================
+### SECTION 21: BINARY DISTRIBUTION (CDN)
+### ============================================================================
+# Pattern: rg "downloads\.claude\.ai|storage\.googleapis\.com.*claude-code" cli.js
+
+### ----------------------------------------------------------------------------
+### 21.1 Fetch Version (Stable/Latest)
+### ----------------------------------------------------------------------------
+# Primary CDN
+# GET https://downloads.claude.ai/claude-code-releases/stable
+# GET https://downloads.claude.ai/claude-code-releases/latest
+#
+# Fallback GCS
+# GET https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/stable
+
+# @name fetchVersion
+GET https://downloads.claude.ai/claude-code-releases/stable
+
+### ----------------------------------------------------------------------------
+### 21.2 Fetch Manifest
+### ----------------------------------------------------------------------------
+
+# @name fetchManifest
+GET https://downloads.claude.ai/claude-code-releases/{{version}}/manifest.json
+
+### Response:
+# {
+#   "platforms": {
+#     "darwin-arm64": { "checksum": "..." },
+#     "darwin-x64": { "checksum": "..." },
+#     "linux-arm64": { "checksum": "..." },
+#     "linux-x64": { "checksum": "..." },
+#     "win32-x64": { "checksum": "..." }
+#   }
+# }
+
+### ----------------------------------------------------------------------------
+### 21.3 Download Binary
+### ----------------------------------------------------------------------------
+
+# @name downloadBinary
+GET https://downloads.claude.ai/claude-code-releases/{{version}}/{{platform}}/{{filename}}
+
+
+### ============================================================================
+### SECTION 22: EXTERNAL SERVICES (Telemetry)
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 22.1 Datadog Logs
+### ----------------------------------------------------------------------------
+# Pattern: rg "datadoghq\.com" cli.js
+
+# @name datadogLogs
+POST https://http-intake.logs.datadoghq.com/api/v2/logs
+Content-Type: application/json
+DD-API-KEY: pubbc113c03434b701e6e00977875d7382f
+
+[
+    {
+        "ddsource": "claude-code",
+        "message": "..."
+    }
+]
+
+### ----------------------------------------------------------------------------
+### 22.2 Statsig SDK Exception
+### ----------------------------------------------------------------------------
+# Pattern: rg "statsigapi\.net" cli.js
+
+# @name statsigException
+POST https://statsigapi.net/v1/sdk_exception
+Content-Type: application/json
+
+{}
+
+### ----------------------------------------------------------------------------
+### 22.3 Statsig Config (Feature Flags)
+### ----------------------------------------------------------------------------
+# Pattern: rg "statsigcdn|featureassets|prodregistryv2" cli.js
+
+# @name statsigInitialize
+GET https://featureassets.org/v1/initialize
+
+# @name statsigConfigSpecs
+GET https://api.statsigcdn.com/v1/download_config_specs
+
+# @name statsigRegistry
+GET https://prodregistryv2.org/v1/rgstr
+
+
+### ============================================================================
+### SECTION 23: DOCUMENTATION FETCHING
+### ============================================================================
+# Pattern: rg "raw\.githubusercontent\.com|code\.claude\.com/docs|docs\.claude\.com" cli.js
+
+### ----------------------------------------------------------------------------
+### 23.1 Changelog
+### ----------------------------------------------------------------------------
+
+# @name fetchChangelog
+GET https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
+
+### ----------------------------------------------------------------------------
+### 23.2 Claude Code Docs Map
+### ----------------------------------------------------------------------------
+
+# @name fetchDocsMap
+GET https://code.claude.com/docs/en/claude_code_docs_map.md
+
+### ----------------------------------------------------------------------------
+### 23.3 Agent SDK Docs Map
+### ----------------------------------------------------------------------------
+
+# @name fetchAgentSdkDocsMap
+GET https://docs.claude.com/en/api/agent_sdk_docs_map.md
+
+
+### ============================================================================
+### SECTION 24: SESSION PERSISTENCE (with Session Token)
+### ============================================================================
+# Pattern: rg "session_ingress|Last-Uuid" cli.js
+
+### ----------------------------------------------------------------------------
+### 24.1 Persist Session Log Entry (PUT)
+### ----------------------------------------------------------------------------
+# Used for session log synchronization with Last-Uuid header for conflict detection
+
+# @name persistSessionLog
+PUT {{baseUrl}}/v1/session_ingress/session/{{sessionId}}
+Authorization: Bearer {{sessionToken}}
+Content-Type: application/json
+Last-Uuid: {{lastUuid}}
+
+{
+    "uuid": "{{entryUuid}}",
+    "data": {}
+}
+
+### Response:
+# 200/201 - Success
+# 409 - Conflict (UUID mismatch)
+# 401 - Token expired
+
+### ----------------------------------------------------------------------------
+### 24.2 Fetch Session Logs
+### ----------------------------------------------------------------------------
+# Same URL as PUT, different method - GET fetches, PUT persists
+
+# @name fetchSessionLogs
+GET {{baseUrl}}/v1/session_ingress/session/{{sessionId}}
+Authorization: Bearer {{sessionToken}}
+
+### Response:
+# {
+#   "loglines": [...]
+# }
+
+
+### ============================================================================
+### SECTION 25: NETWORK CONNECTIVITY CHECK
+### ============================================================================
+# Pattern: rg "1\.1\.1\.1|EHOSTUNREACH" cli.js
+
+### ----------------------------------------------------------------------------
+### 25.1 Cloudflare DNS Check (Network Connectivity)
+### ----------------------------------------------------------------------------
+
+# @name cloudflareCheck
+HEAD http://1.1.1.1
+
+
+### ============================================================================
+### SECTION 26: PLUGIN MARKETPLACE (User-Configured URLs)
+### ============================================================================
+# Pattern: rg "Plugin-Manager|\.mcpb" cli.js
+#
+# These are NOT fixed Anthropic endpoints - they are user-provided URLs:
+# - Marketplace: user adds via "/plugin marketplace add <path/url>"
+# - MCPB bundles: user-specified .mcpb or .dxt files (local or remote)
+
+### ----------------------------------------------------------------------------
+### 26.1 Fetch Plugin Marketplace (user-provided URL)
+### ----------------------------------------------------------------------------
+
+# @name fetchMarketplace
+# URL is user-configured, not a fixed endpoint
+GET {{marketplaceUrl}}
+User-Agent: Claude-Code-Plugin-Manager
+
+### ----------------------------------------------------------------------------
+### 26.2 Download MCPB Bundle (user-provided URL)
+### ----------------------------------------------------------------------------
+# URL must end with .mcpb or .dxt
+
+# @name downloadMcpb
+# URL is user-configured, not a fixed endpoint
+GET {{mcpbUrl}}
+
+
+### ============================================================================
+### APPENDIX A: BETA FLAGS
+### ============================================================================
+# Pattern: rg "anthropic-beta" cli.js | grep -o '"[a-z-]*-[0-9-]*"' | sort -u
+#
+# OAuth:
+#   oauth-2025-04-20
+#
+# Messages:
+#   interleaved-thinking-2025-05-14
+#   context-1m-2025-08-07
+#   context-management-2025-06-27
+#   structured-outputs-2025-09-17
+#   web-search-2025-03-05
+#   tool-examples-2025-10-29
+#
+# Batches:
+#   message-batches-2024-09-24
+#
+# Token counting:
+#   token-counting-2024-11-01
+#
+# Files:
+#   files-api-2025-04-14
+#
+# Skills:
+#   skills-2025-10-02
+#
+# Claude Code specific:
+#   claude-code-20250219
+
+
+### ============================================================================
+### APPENDIX B: HEADERS REFERENCE
+### ============================================================================
+#
+# Authentication:
+#   Authorization: Bearer <access_token>    (OAuth)
+#   x-api-key: <api_key>                    (API key)
+#
+# API Version:
+#   anthropic-version: 2023-06-01
+#   anthropic-beta: <beta-flags>
+#
+# Organization:
+#   x-organization-uuid: <org_uuid>
+#
+# User-Agent formats:
+#   claude-cli/2.0.55 (external, cli)                    - Qp() for OAuth requests
+#   claude-cli/2.0.55 (external, cli, agent-sdk/x.y.z)   - with SDK version
+#   claude-code/2.0.55                                   - LF() for internal APIs
+#
+# Stainless SDK headers (auto-generated by SDK):
+#   X-Stainless-Lang: js
+#   X-Stainless-Package-Version: 0.70.0
+#   X-Stainless-OS: Linux|MacOS|Windows|...
+#   X-Stainless-Arch: x64|arm64|...
+#   X-Stainless-Runtime: node|deno|edge|browser:...
+#   X-Stainless-Runtime-Version: v22.0.0
+#   X-Stainless-Helper-Method: stream (for streaming)
+#
+# Content:
+#   Content-Type: application/json
+#   Accept: application/binary (for file downloads)
+#
+# Caching:
+#   Cache-Control: no-cache (for health checks)
+
+
+### ============================================================================
+### APPENDIX C: SCOPES REFERENCE
+### ============================================================================
+# Pattern: rg '"user:inference"|"user:profile"|"user:sessions"' cli.js
+#
+# Full scopes (Fp0 - for initial authorization):
+#   org:create_api_key
+#   user:profile
+#   user:inference
+#   user:sessions:claude_code
+#
+# Session scopes (mH1 - for token refresh):
+#   user:profile
+#   user:inference
+#   user:sessions:claude_code
+#
+# Minimal scopes (G64 - for API key creation):
+#   org:create_api_key
+#   user:profile
+#
+# Inference scope (vxA):
+#   user:inference
+
+
+### ============================================================================
+### APPENDIX D: URL CONSTANTS
+### ============================================================================
+# Pattern: rg "BASE_API_URL|TOKEN_URL|AUTHORIZE_URL" cli.js
+#
+# Production:
+#   BASE_API_URL:           https://api.anthropic.com
+#   CONSOLE_AUTHORIZE_URL:  https://console.anthropic.com/oauth/authorize
+#   CLAUDE_AI_AUTHORIZE_URL: https://claude.ai/oauth/authorize
+#   TOKEN_URL:              https://console.anthropic.com/v1/oauth/token
+#   API_KEY_URL:            https://api.anthropic.com/api/oauth/claude_cli/create_api_key
+#   ROLES_URL:              https://api.anthropic.com/api/oauth/claude_cli/roles
+#   MANUAL_REDIRECT_URL:    https://console.anthropic.com/oauth/code/callback
+#   CLIENT_ID:              9d1c250a-e61b-44d9-88ed-5944d1962f5e
+#
+# Local (development):
+#   BASE_API_URL:           http://localhost:3000
+#   TOKEN_URL:              http://localhost:3000/v1/oauth/token
+#   CLIENT_ID:              22422756-60c9-4084-8eb7-27705fd5cf9a
+
+
+### ============================================================================
+### APPENDIX E: COMPLETE ENDPOINT INDEX
+### ============================================================================
+# Total: 75+ unique endpoints across 26 sections
+#
+# === ANTHROPIC API (api.anthropic.com) ===
+#
+# OAuth & Auth:
+#   GET  /api/oauth/profile
+#   GET  /api/claude_cli_profile
+#   GET  /api/oauth/claude_cli/roles
+#   POST /api/oauth/claude_cli/create_api_key
+#   GET  /api/oauth/claude_cli/client_data
+#
+# Account:
+#   GET   /api/oauth/account/settings
+#   PATCH /api/oauth/account/settings
+#   POST  /api/oauth/account/grove_notice_viewed
+#   GET   /api/claude_code_grove
+#   GET   /api/oauth/usage
+#   GET   /api/organization/claude_code_first_token_date
+#   GET   /api/organization/{orgId}/claude_code_sonnet_1m_access
+#
+# Referrals:
+#   GET  /api/oauth/organizations/{orgId}/referral/eligibility
+#   GET  /api/oauth/organizations/{orgId}/referral/redemptions
+#
+# GitHub Integration:
+#   GET  /api/oauth/organizations/{orgId}/code/repos/{owner}/{repo}
+#   POST /api/claude_code/link_vcs_account
+#
+# Metrics:
+#   GET  /api/claude_code/organizations/metrics_enabled
+#   POST /api/claude_code/metrics
+#   POST /api/event_logging/batch
+#
+# Feedback:
+#   POST /api/claude_cli_feedback
+#
+# Health:
+#   GET  /api/hello
+#   HEAD /api/hello
+#
+# === ANTHROPIC API v1 (SDK Endpoints) ===
+#
+# Messages:
+#   POST /v1/messages
+#   POST /v1/messages?beta=true
+#   POST /v1/messages/count_tokens
+#   POST /v1/messages/count_tokens?beta=true
+#
+# Message Batches:
+#   GET    /v1/messages/batches
+#   POST   /v1/messages/batches
+#   GET    /v1/messages/batches/{id}
+#   DELETE /v1/messages/batches/{id}
+#   POST   /v1/messages/batches/{id}/cancel
+#
+# Files:
+#   GET    /v1/files
+#   POST   /v1/files
+#   GET    /v1/files/{id}
+#   GET    /v1/files/{id}/content
+#   DELETE /v1/files/{id}
+#
+# Models:
+#   GET  /v1/models
+#   GET  /v1/models/{id}
+#
+# Skills:
+#   GET    /v1/skills
+#   POST   /v1/skills
+#   GET    /v1/skills/{id}
+#   DELETE /v1/skills/{id}
+#   GET    /v1/skills/{id}/versions
+#   POST   /v1/skills/{id}/versions
+#   GET    /v1/skills/{id}/versions/{versionId}
+#   DELETE /v1/skills/{id}/versions/{versionId}
+#
+# Legacy:
+#   POST /v1/complete
+#
+# === WEB SESSIONS (api.anthropic.com) ===
+#
+#   GET  /v1/sessions
+#   POST /v1/sessions
+#   GET  /v1/sessions/{id}
+#   GET  /v1/sessions/{id}/events
+#   POST /v1/sessions/{id}/events
+#   GET  /v1/environment_providers
+#   PUT  /v1/session_ingress/session/{id}
+#   GET  /v1/session_ingress/session/{id}
+#
+# === CONSOLE (console.anthropic.com) ===
+#
+#   GET  /oauth/authorize
+#   POST /v1/oauth/token
+#   POST /v1/oauth/revoke
+#   GET  /v1/oauth/hello
+#   GET  /.well-known/oauth-authorization-server
+#
+# === CLAUDE.AI ===
+#
+#   GET /oauth/authorize
+#   GET /api/web/domain_info
+#
+# === GROWTHBOOK (Feature Flags) ===
+#
+#   GET  {host}/api/features/{clientKey}
+#   POST {host}/api/eval/{clientKey}
+#   SSE  {host}/sub/{clientKey}
+#
+# === CDN (Binary Distribution) ===
+#
+#   GET https://downloads.claude.ai/claude-code-releases/{channel}
+#   GET https://downloads.claude.ai/claude-code-releases/{version}/manifest.json
+#   GET https://downloads.claude.ai/claude-code-releases/{version}/{platform}/{file}
+#
+# === EXTERNAL SERVICES ===
+#
+# Datadog:
+#   POST https://http-intake.logs.datadoghq.com/api/v2/logs
+#
+# Statsig:
+#   GET  https://featureassets.org/v1/initialize
+#   GET  https://api.statsigcdn.com/v1/download_config_specs
+#   GET  https://prodregistryv2.org/v1/rgstr
+#   POST https://statsigapi.net/v1/sdk_exception
+#
+# GitHub:
+#   GET https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
+#
+# Docs:
+#   GET https://code.claude.com/docs/en/claude_code_docs_map.md
+#   GET https://docs.claude.com/en/api/agent_sdk_docs_map.md
+#
+# Connectivity:
+#   HEAD http://1.1.1.1
+#
+# === EXTRACTION COMMANDS ===
+#
+# Find all axios calls:
+#   rg "XQ\.(get|post|put|patch|delete|head)\(" cli.js -n
+#
+# Find all SDK client calls:
+#   rg "this\._client\.(get|post|delete|getAPIList)\(" cli.js -n
+#
+# Find all hardcoded URLs:
+#   rg -o 'https://[^"'\'']+' cli.js | sort -u
+#
+# Find all dynamic API paths:
+#   rg '\$\{o9\(\)\.BASE_API_URL\}' cli.js -n
