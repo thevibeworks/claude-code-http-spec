@@ -10,7 +10,7 @@ claude-oauth-api.http           # OAuth flow reference
 API-EXTRACTION-PIPELINE.md      # Reproducible extraction workflow
 API-EXTRACTION-METHODOLOGY.md   # Search patterns reference
 
-sbin/
+scripts/
   extract-api-endpoints.sh      # Automated extraction
   compare-api-versions.sh       # Version diff
 
@@ -28,10 +28,10 @@ archive/                        # Deprecated (v2.0.25, used runtime logs)
 npm pack @anthropic-ai/claude-code@latest
 tar -xzf anthropic-ai-claude-code-*.tgz
 npx prettier --write package/cli.js
-./sbin/extract-api-endpoints.sh package/cli.js
+./scripts/extract-api-endpoints.sh package/cli.js
 
 # Compare versions
-./sbin/compare-api-versions.sh old/cli.js new/cli.js
+./scripts/compare-api-versions.sh old/cli.js new/cli.js
 ```
 
 ## Methodology

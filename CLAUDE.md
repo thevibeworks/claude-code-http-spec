@@ -18,5 +18,5 @@ rg '"/api/oauth/profile"' cli.js
 
 - `*.http` - API requests (HTTP client format)
 - `*.md` - Documentation
-- `sbin/` - Shell scripts
+- `scripts/` - Shell scripts
 - `archive/` - Deprecated docs (don't update)

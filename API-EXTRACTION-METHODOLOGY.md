@@ -318,14 +318,14 @@ When updating for new CLI versions:
 
 1. Extract new package: `npm pack @anthropic-ai/claude-code@latest && tar -xzf *.tgz`
 2. Format: `npx prettier --write package/cli.js`
-3. Run extraction: `./references/sbin/extract-api-endpoints.sh package/cli.js`
-4. Compare versions: `./references/sbin/compare-api-versions.sh old/cli.js new/cli.js`
+3. Run extraction: `./scripts/extract-api-endpoints.sh package/cli.js`
+4. Compare versions: `./scripts/compare-api-versions.sh old/cli.js new/cli.js`
 5. Update `claude-code-api-complete.http` with changes
 6. Update version references
 
 ## Automation Scripts
 
-Located in `references/sbin/`:
+Located in `./scripts/`:
 
 - `extract-api-endpoints.sh` - Extract all HTTP patterns from cli.js
 - `compare-api-versions.sh` - Diff endpoints between two versions

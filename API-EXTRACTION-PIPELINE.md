@@ -203,7 +203,7 @@ Before finalizing documentation:
 ├── API-EXTRACTION-METHODOLOGY.md  # Search patterns
 ├── claude-code-api-complete.http  # API reference
 ├── claude-oauth-api.http          # OAuth reference
-├── sbin/
+├── scripts/
 │   ├── extract-api-endpoints.sh   # Extraction script
 │   └── compare-api-versions.sh    # Diff script
 └── archive/                       # Deprecated docs
