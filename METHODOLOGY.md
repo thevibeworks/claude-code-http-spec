@@ -199,14 +199,14 @@ Before finalizing documentation:
 
 ```
 ./
-├── API-EXTRACTION-PIPELINE.md     # This file
-├── API-EXTRACTION-METHODOLOGY.md  # Search patterns
+├── METHODOLOGY.md                 # This file
 ├── claude-code-api-complete.http  # API reference
 ├── claude-oauth-api.http          # OAuth reference
 ├── scripts/
-│   ├── extract-api-endpoints.sh   # Extraction script
-│   └── compare-api-versions.sh    # Diff script
-└── archive/                       # Deprecated docs
+│   ├── extract-api-endpoints.sh   # Extraction
+│   ├── compare-api-versions.sh    # Version diff
+│   └── validate-spec.sh           # Spec validation
+└── archive/                       # Deprecated
 ```
 
 ## Lessons Learned

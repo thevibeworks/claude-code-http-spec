@@ -7,12 +7,12 @@ HTTP API specification for Claude Code CLI, extracted from `@anthropic-ai/claude
 ```
 claude-code-api-complete.http   # Complete API reference
 claude-oauth-api.http           # OAuth flow reference
-API-EXTRACTION-PIPELINE.md      # Reproducible extraction workflow
-API-EXTRACTION-METHODOLOGY.md   # Search patterns reference
+METHODOLOGY.md                  # Extraction workflow + patterns
 
 scripts/
   extract-api-endpoints.sh      # Automated extraction
   compare-api-versions.sh       # Version diff
+  validate-spec.sh              # Spec validation
 
 archive/                        # Deprecated (v2.0.25, used runtime logs)
 ```

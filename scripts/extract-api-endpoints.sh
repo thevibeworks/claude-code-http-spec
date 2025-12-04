@@ -133,6 +133,22 @@ if [ ! -s "$OUTPUT_DIR/grant_types.txt" ]; then
   err "  warning: no matches for grant_types.txt"
 fi
 
+# --- Version metadata ---
+
+log ""
+log "=== METADATA ==="
+
+CLI_VERSION=$(rg -o 'claude-cli/[0-9]+\.[0-9]+\.[0-9]+' "$CLI_JS" -m 1 2>/dev/null | sed 's/claude-cli\///' || echo "unknown")
+log "CLI version: $CLI_VERSION"
+
+cat > "$OUTPUT_DIR/METADATA" <<EOF
+CLI_VERSION=$CLI_VERSION
+CLI_FILE=$CLI_JS
+EXTRACTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PATH_COUNT=$(wc -l < "$OUTPUT_DIR/path_literals.txt" 2>/dev/null | tr -d ' ' || echo 0)
+URL_COUNT=$(wc -l < "$OUTPUT_DIR/all_urls.txt" 2>/dev/null | tr -d ' ' || echo 0)
+EOF
+
 # --- Summary ---
 
 log ""
