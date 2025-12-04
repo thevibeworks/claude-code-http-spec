@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## Workflow
+
+Follow `WORKFLOW.md` step-by-step when updating specs.
+Gates at Step 4 and Step 7 - stop and report if they fail.
+
 ## What NOT to do
 
 - Don't use line numbers (change every build)

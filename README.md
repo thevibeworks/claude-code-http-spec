@@ -7,7 +7,7 @@ HTTP API specification for Claude Code CLI, extracted from `@anthropic-ai/claude
 ```
 claude-code-api-complete.http   # Complete API reference
 claude-oauth-api.http           # OAuth flow reference
-METHODOLOGY.md                  # Extraction workflow + patterns
+WORKFLOW.md                     # Extraction workflow (agent runbook)
 
 scripts/
   extract-api-endpoints.sh      # Automated extraction
@@ -34,20 +34,14 @@ npx prettier --write package/cli.js
 ./scripts/compare-api-versions.sh old/cli.js new/cli.js
 ```
 
-## Methodology
+## Workflow
 
-Search for **stable string literals**, not obfuscated function names (they change every build).
+See `WORKFLOW.md` for full agent-executable runbook.
+
+Core rule: Search **stable string literals**, not obfuscated names.
 
 ```bash
 # Verify endpoint exists
 rg '"/api/oauth/profile"' cli.js
-
 # If nothing returns, don't document it
 ```
-
-## Principles
-
-1. **Code is truth** - Only document endpoints found in source code
-2. **Stable patterns** - Search URL paths and literals, not `XQ`, `o9`, `yk`
-3. **Verify existence** - Every endpoint needs a matching `rg` pattern
-4. **Version lock** - Endpoints change between releases
