@@ -53,6 +53,16 @@ EOF
 version() { printf '%s %s\n' "$prog" "$VERSION"; }
 require() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
 
+# Run extraction and warn if no matches
+run_extract() {
+  pattern="$1"
+  outfile="$2"
+  rg -o "$pattern" "$CLI_JS" 2>/dev/null | sort -u > "$outfile" || true
+  if [ ! -s "$outfile" ]; then
+    err "  warning: no matches for ${outfile##*/}"
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help) usage; exit "$EXIT_OK" ;;
@@ -89,19 +99,19 @@ log ""
 log "=== URL EXTRACTION ==="
 
 log "Extracting all URLs..."
-rg -o 'https://[^"'\''`]+' "$CLI_JS" | sort -u > "$OUTPUT_DIR/all_urls.txt" 2>/dev/null || true
+run_extract 'https://[^"'\''`]+' "$OUTPUT_DIR/all_urls.txt"
 
 log "Extracting Anthropic API URLs..."
-rg -o 'https://api\.anthropic\.com[^"'\''`]*' "$CLI_JS" | sort -u > "$OUTPUT_DIR/api_urls.txt" 2>/dev/null || true
+run_extract 'https://api\.anthropic\.com[^"'\''`]*' "$OUTPUT_DIR/api_urls.txt"
 
 log "Extracting Console URLs..."
-rg -o 'https://console\.anthropic\.com[^"'\''`]*' "$CLI_JS" | sort -u > "$OUTPUT_DIR/console_urls.txt" 2>/dev/null || true
+run_extract 'https://console\.anthropic\.com[^"'\''`]*' "$OUTPUT_DIR/console_urls.txt"
 
 log "Extracting API path strings..."
-rg '"/(api|v1)/[^"]+' "$CLI_JS" -o | sort -u > "$OUTPUT_DIR/path_literals.txt" 2>/dev/null || true
+run_extract '"/(api|v1)/[^"]+' "$OUTPUT_DIR/path_literals.txt"
 
 log "Extracting org-scoped paths..."
-rg '/organizations/[^"'\''`]+' "$CLI_JS" -o | sort -u > "$OUTPUT_DIR/org_paths.txt" 2>/dev/null || true
+run_extract '/organizations/[^"'\''`]+' "$OUTPUT_DIR/org_paths.txt"
 
 # --- Header and payload extraction ---
 
@@ -109,16 +119,19 @@ log ""
 log "=== HEADERS & PAYLOADS ==="
 
 log "Extracting HTTP headers..."
-rg '"(Authorization|Content-Type|User-Agent|anthropic-beta|anthropic-version|x-api-key|x-organization-uuid)"' "$CLI_JS" -o | sort -u > "$OUTPUT_DIR/headers.txt" 2>/dev/null || true
+run_extract '"(Authorization|Content-Type|User-Agent|anthropic-beta|anthropic-version|x-api-key|x-organization-uuid)"' "$OUTPUT_DIR/headers.txt"
 
 log "Extracting beta flags..."
-rg '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' "$CLI_JS" -o | sort -u > "$OUTPUT_DIR/beta_flags.txt" 2>/dev/null || true
+run_extract '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' "$OUTPUT_DIR/beta_flags.txt"
 
 log "Extracting OAuth scopes..."
-rg '"user:[^"]*"' "$CLI_JS" -o | sort -u > "$OUTPUT_DIR/scopes.txt" 2>/dev/null || true
+run_extract '"user:[^"]*"' "$OUTPUT_DIR/scopes.txt"
 
 log "Extracting grant types..."
 rg 'grant_type' "$CLI_JS" -C 2 > "$OUTPUT_DIR/grant_types.txt" 2>/dev/null || true
+if [ ! -s "$OUTPUT_DIR/grant_types.txt" ]; then
+  err "  warning: no matches for grant_types.txt"
+fi
 
 # --- Summary ---
 

@@ -198,15 +198,15 @@ Before finalizing documentation:
 ## Files Structure
 
 ```
-references/
+./
 ├── API-EXTRACTION-PIPELINE.md     # This file
-├── API-EXTRACTION-METHODOLOGY.md  # Detailed patterns
-├── claude-code-api-complete.http  # The API reference
-└── extraction/                    # Raw extraction output
-    ├── axios_calls.txt
-    ├── sdk_calls.txt
-    ├── all_urls.txt
-    └── ...
+├── API-EXTRACTION-METHODOLOGY.md  # Search patterns
+├── claude-code-api-complete.http  # API reference
+├── claude-oauth-api.http          # OAuth reference
+├── sbin/
+│   ├── extract-api-endpoints.sh   # Extraction script
+│   └── compare-api-versions.sh    # Diff script
+└── archive/                       # Deprecated docs
 ```
 
 ## Lessons Learned

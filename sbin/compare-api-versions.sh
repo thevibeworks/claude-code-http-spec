@@ -97,24 +97,28 @@ log "New version: $NEW_COUNT endpoints"
 log ""
 
 # Find added endpoints
-ADDED=$(comm -13 "$OLD_ENDPOINTS" "$NEW_ENDPOINTS")
-ADDED_COUNT=$(printf '%s' "$ADDED" | grep -c . || echo 0)
+ADDED_FILE=$(mktemp)
+comm -13 "$OLD_ENDPOINTS" "$NEW_ENDPOINTS" > "$ADDED_FILE"
+ADDED_COUNT=$(wc -l < "$ADDED_FILE" | tr -d ' ')
 
 if [ "$ADDED_COUNT" -gt 0 ]; then
   log "=== ADDED ($ADDED_COUNT) ==="
-  printf '%s\n' "$ADDED"
+  cat "$ADDED_FILE"
   log ""
 fi
 
 # Find removed endpoints
-REMOVED=$(comm -23 "$OLD_ENDPOINTS" "$NEW_ENDPOINTS")
-REMOVED_COUNT=$(printf '%s' "$REMOVED" | grep -c . || echo 0)
+REMOVED_FILE=$(mktemp)
+comm -23 "$OLD_ENDPOINTS" "$NEW_ENDPOINTS" > "$REMOVED_FILE"
+REMOVED_COUNT=$(wc -l < "$REMOVED_FILE" | tr -d ' ')
 
 if [ "$REMOVED_COUNT" -gt 0 ]; then
   log "=== REMOVED ($REMOVED_COUNT) ==="
-  printf '%s\n' "$REMOVED"
+  cat "$REMOVED_FILE"
   log ""
 fi
+
+rm -f "$ADDED_FILE" "$REMOVED_FILE"
 
 # Summary
 UNCHANGED=$((OLD_COUNT - REMOVED_COUNT))

@@ -1,0 +1,12 @@
+# Extraction output
+extraction/
+
+# npm package artifacts
+package/
+*.tgz
+anthropic-ai-claude-code-*.tgz
+
+# Editor
+*.swp
+*~
+.DS_Store
