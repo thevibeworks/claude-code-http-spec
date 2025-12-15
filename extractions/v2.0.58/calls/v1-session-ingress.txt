@@ -1,0 +1,36 @@
+      g("No session token available for session persistence"),
+      T6("error", "session_persist_fail_jwt_no_token"),
+      !1
+    );
+  let Z = { Authorization: `Bearer ${G}`, "Content-Type": "application/json" };
+  return await hT2(A)(Q, B, Z);
+}
+async function uT2(A, Q) {
+  try {
+    let { accessToken: B, orgUUID: G } = await V0A(),
+      Z = `${t9().BASE_API_URL}/v1/session_ingress/session/${A}`,
+      I = { ...BC(B), "x-organization-uuid": G };
+    return await hT2(A)(Q, Z, I);
+  } catch (B) {
+    return (
+      g(
+        `Failed to get OAuth credentials: ${B instanceof Error ? B.message : String(B)}`,
+      ),
+      T6("error", "session_persist_fail_oauth_no_token"),
+      !1
+    );
+  }
+}
+async function mT2(A, Q) {
+  let B = G1A();
+  if (!B)
+    return (
+      g("No session token available for fetching session logs"),
+      T6("error", "session_get_fail_no_token"),
+      null
+    );
+  try {
+    let G = await YQ.get(Q, {
+      headers: { Authorization: `Bearer ${B}` },
+      validateStatus: (Z) => Z < 500,
+    });

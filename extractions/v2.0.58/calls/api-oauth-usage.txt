@@ -1,0 +1,31 @@
+  if (!eQ()) return {};
+  let A = $6();
+  if (A && gm(A.expiresAt)) return null;
+  let Q = HI();
+  if (Q.error) throw Error(`Auth error: ${Q.error}`);
+  let B = {
+      "Content-Type": "application/json",
+      "User-Agent": MF(),
+      ...Q.headers,
+    },
+    G = `${t9().BASE_API_URL}/api/oauth/usage`;
+  return (await YQ.get(G, { headers: B, timeout: 5000 })).data;
+}
+var wF0 = L(() => {
+  w3();
+  FE();
+  UX();
+  gB();
+  nN();
+});
+function qF0({ ratio: A, width: Q, fillColor: B, emptyColor: G }) {
+  let Z = Math.min(1, Math.max(0, A)),
+    I = Math.floor(Z * Q),
+    Y = [ojA[ojA.length - 1].repeat(I)];
+  if (I < Q) {
+    let J = Z * Q - I,
+      W = Math.floor(J * ojA.length);
+    Y.push(ojA[W]);
+    let X = Q - I - 1;
+    if (X > 0) Y.push(ojA[0].repeat(X));
+  }

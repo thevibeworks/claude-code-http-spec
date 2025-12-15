@@ -1,0 +1,70 @@
+    ).data;
+  } catch (A) {
+    return e(A), null;
+  }
+}
+async function ZQ0() {
+  try {
+    let A = HI();
+    if (A.error) return;
+    await YQ.post(
+      `${t9().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
+      {},
+      { headers: { ...A.headers, "User-Agent": MF() } },
+    );
+  } catch (A) {
+    e(A);
+  }
+}
+async function M91(A) {
+  try {
+    let Q = HI();
+    if (Q.error) {
+      g(`Failed to get auth headers: ${Q.error}`);
+      return;
+    }
+    await YQ.patch(
+      `${t9().BASE_API_URL}/api/oauth/account/settings`,
+      { grove_enabled: A },
+      { headers: { ...Q.headers, "User-Agent": MF() } },
+    );
+  } catch (Q) {
+--
+      userFacingName() {
+        return "passes";
+      },
+    });
+});
+function _V9(A, Q, B) {
+  if (A !== null && A.grove_enabled !== null) return !1;
+  if (B) return !0;
+  if (Q !== null && !Q.notice_is_grace_period) return !0;
+  let Z = Q?.notice_reminder_frequency;
+  if (Z !== null && Z !== void 0 && A?.grove_notice_viewed_at)
+    return (
+      Math.floor(
+        (Date.now() - new Date(A.grove_notice_viewed_at).getTime()) / 86400000,
+      ) >= Z
+    );
+  else {
+    let I = A?.grove_notice_viewed_at;
+    return I === null || I === void 0;
+  }
+}
+function r_3() {
+  return _Q.default.createElement(
+    _Q.default.Fragment,
+    null,
+    _Q.default.createElement(
+      j,
+      { flexDirection: "column" },
+      _Q.default.createElement(
+        $,
+        { bold: !0, color: "professionalBlue" },
+        "Updates to Consumer Terms and Policies",
+      ),
+      _Q.default.createElement(
+        $,
+        null,
+        "An update to our Consumer Terms and Privacy Policy will take effect on",
+        " ",

@@ -1,0 +1,239 @@
+  if (A === void 0)
+    throw Error(
+      "Claude Code web sessions require authentication with a Claude.ai account. API key authentication is not sufficient. Please run /login to authenticate, or check your authentication status with /status.",
+    );
+  let Q = await BS();
+  if (!Q) throw Error("Unable to get organization UUID");
+  return { accessToken: A, orgUUID: Q };
+}
+async function UT2() {
+  let { accessToken: A, orgUUID: Q } = await V0A(),
+    B = `${t9().BASE_API_URL}/v1/sessions`;
+  try {
+    let G = { ...BC(A), "x-organization-uuid": Q },
+      Z = await YQ.get(B, { headers: G });
+    if (Z.status !== 200)
+      throw Error(`Failed to fetch code sessions: ${Z.statusText}`);
+    return Z.data.data.map((Y) => {
+      let J = Y.session_context.sources.find(
+          (X) => X.type === "git_repository",
+        ),
+        W = null;
+      if (J?.url) {
+        let X = fh(J.url);
+        if (X) {
+          let [F, V] = X.split("/");
+          if (F && V)
+            W = {
+              name: V,
+              owner: { login: F },
+              default_branch: J.revision || void 0,
+            };
+        }
+      }
+      return {
+        id: Y.id,
+        title: Y.title || "Untitled",
+--
+function BC(A) {
+  return {
+    Authorization: `Bearer ${A}`,
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01",
+  };
+}
+async function $T2(A, Q) {
+  try {
+    let { accessToken: B, orgUUID: G } = await V0A(),
+      Z = `${t9().BASE_API_URL}/v1/sessions/${A}/events`,
+      I = { ...BC(B), "x-organization-uuid": G },
+      J = {
+        events: [
+          {
+            uuid: Mv5(),
+            session_id: A,
+            type: "user",
+            parent_tool_use_id: null,
+            message: { role: "user", content: Q },
+          },
+        ],
+      },
+      W = await YQ.post(Z, J, { headers: I, validateStatus: (X) => X < 500 });
+    if (W.status === 200 || W.status === 201) return !0;
+    return !1;
+  } catch {
+    return !1;
+  }
+}
+var Ov5, CaG;
+var In = L(() => {
+  UX();
+  gB();
+  w3();
+  nN();
+--
+    let G = await q61();
+    return { messages: PT2(A, null), branchName: G, branchError: null };
+  } catch (B) {
+    let G = await q61(),
+      Z = B instanceof Error ? B : Error(String(B));
+    return { messages: PT2(A, Z), branchName: G, branchError: Z };
+  }
+}
+async function xv5(A, Q, B) {
+  let G = await FO(),
+    Z = `${t9().BASE_API_URL}/v1/sessions/${A}`,
+    I = { ...B, "x-organization-uuid": Q };
+  if (!G) {
+    g(`Not in git repo, fetching session metadata to provide guidance: ${Z}`);
+    let J;
+    try {
+      J = await YQ.get(Z, { headers: I, timeout: 15000 });
+    } catch (W) {
+      if (YQ.isAxiosError(W))
+        g(
+          `Failed to fetch session metadata - Status: ${W.response?.status}, Message: ${W.message}`,
+        );
+      throw (
+        (BA("tengu_teleport_error_repo_validation_failed_sessions_api", {
+          sessionId: A,
+        }),
+        new YI(
+          `You must run claude --teleport ${A} from a checkout of the git repo the session was created in.`,
+          rA.red(`You must run claude --teleport ${A} from a checkout of the git repo the session was created in.
+`),
+        ))
+      );
+    }
+    if (J.status === 200) {
+      let X = J.data.session_context.sources.find(
+        (F) => F.type === "git_repository",
+--
+        errorMessage: "OAuth authentication required for teleport",
+      };
+    let B = await BS();
+    if (!B)
+      return {
+        status: "error",
+        errorMessage: "Unable to get organization UUID",
+      };
+    let G = BC(Q),
+      Z = await FO(),
+      I = `${t9().BASE_API_URL}/v1/sessions/${A}`,
+      Y = { ...G, "x-organization-uuid": B },
+      J;
+    try {
+      J = await YQ.get(I, { headers: Y, timeout: 15000 });
+    } catch (V) {
+      if (YQ.isAxiosError(V))
+        g(
+          `Failed to fetch session metadata - Status: ${V.response?.status}, Message: ${V.message}`,
+        );
+      return {
+        status: "error",
+        errorMessage: "Failed to fetch session metadata",
+      };
+    }
+    if (J.status !== 200)
+      return {
+        status: "error",
+        errorMessage: `Unexpected session response status: ${J.status}`,
+      };
+    let X = J.data.session_context.sources.find(
+      (V) => V.type === "git_repository",
+    );
+    if (!X?.url) return { status: "no_repo_required" };
+    let F = fh(X.url);
+    if (!F) return { status: "no_repo_required" };
+--
+  if (A && typeof A === "object" && "type" in A) {
+    if (A.type === "env_manager_log" || A.type === "control_response")
+      return null;
+    if ("session_id" in A) return A;
+  }
+  return g(`Event is not a valid SDKMessage: ${JSON.stringify(A)}`), null;
+}
+async function bv5(A, Q, B) {
+  let G = BC(B);
+  try {
+    let Z = `${t9().BASE_API_URL}/v1/sessions/${A}/events`;
+    g(`Fetching events from: ${Z}`);
+    let I = await YQ.get(Z, {
+      headers: { ...G, "x-organization-uuid": Q },
+      timeout: 30000,
+    });
+    if (I.status !== 200)
+      throw Error(`Failed to fetch session events: ${I.statusText}`);
+    let Y = I.data;
+    if (!Y?.data || !Array.isArray(Y.data))
+      throw Error("Invalid events response: missing or invalid data array");
+    let J = [];
+    for (let X of Y.data) {
+      let F = vv5(X);
+      if (F) J.push(F);
+    }
+    let W;
+    try {
+      let X = `${t9().BASE_API_URL}/v1/sessions/${A}`;
+      g(`Fetching session details from: ${X}`);
+      let F = await YQ.get(X, {
+        headers: { ...G, "x-organization-uuid": Q },
+        timeout: 15000,
+      });
+      if (F.status === 200) {
+        g(`Session details: ${JSON.stringify(F.data, null, 2)}`);
+        let K = F.data.session_context.outcomes?.find(
+          (D) => D.type === "git_repository",
+        );
+        if (K?.git_info?.branches.length)
+          (W = K.git_info.branches[0]),
+            g(`Found branch from session context: ${W}`);
+      }
+    } catch (X) {
+      e(Error(`Could not fetch session details: ${X}`));
+    }
+    return { log: J, branch: W };
+  } catch (Z) {
+    let I = Z instanceof Error ? Z : Error(String(Z));
+    if (YQ.isAxiosError(Z) && Z.response?.status === 404)
+      throw (
+        (BA("tengu_teleport_error_session_not_found_404", { sessionId: A }),
+        new YI(
+          `${A} not found.`,
+--
+      if (y) (H = y), g(`Using configured default environment: ${D}`);
+      else
+        g(
+          `Configured default environment ${D} not found in available environments, using first available`,
+        );
+    }
+    if (!H)
+      return e(Error("No environments available for session creation")), null;
+    let C = H.environment_id;
+    g(`Selected environment: ${C} (${H.name})`);
+    let E = `${t9().BASE_API_URL}/v1/sessions`,
+      z = { ...BC(Z), "x-organization-uuid": I },
+      q = { sources: J ? [J] : [], outcomes: W ? [W] : [], model: S3() },
+      w = Q
+        ? [
+            {
+              type: "event",
+              data: {
+                uuid: Rv5(),
+                session_id: "",
+                type: "user",
+                parent_tool_use_id: null,
+                message: { role: "user", content: Q },
+              },
+            },
+          ]
+        : [],
+      N = { title: X, events: w, session_context: q, environment_id: C };
+    g(`Creating session with payload: ${JSON.stringify(N, null, 2)}`);
+    let R = await YQ.post(E, N, { headers: z, signal: G });
+    if (R.status !== 200 && R.status !== 201)
+      return (
+        e(
+          Error(`API request failed with status ${R.status}: ${R.statusText}
+
+Response data: ${JSON.stringify(R.data, null, 2)}`),

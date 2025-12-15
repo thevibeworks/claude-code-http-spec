@@ -1,0 +1,31 @@
+        !1
+      );
+    let G = await BS();
+    if (!G)
+      return (
+        g(
+          "checkGithubAppInstalled: No org UUID found, assuming app not installed",
+        ),
+        !1
+      );
+    let Z = `${t9().BASE_API_URL}/api/oauth/organizations/${G}/code/repos/${A}/${Q}`,
+      I = { ...BC(B), "x-organization-uuid": G };
+    g(`Checking GitHub app installation for ${A}/${Q}`);
+    let Y = await YQ.get(Z, { headers: I, timeout: 15000 });
+    if (Y.status === 200 && Y.data.status) {
+      let J = Y.data.status.app_installed;
+      return g(`GitHub app ${J ? "is" : "is not"} installed on ${A}/${Q}`), J;
+    }
+    return (
+      g(`checkGithubAppInstalled: Unexpected response status ${Y.status}`), !1
+    );
+  } catch (B) {
+    if (YQ.isAxiosError(B)) {
+      let G = B.response?.status;
+      if (G && G >= 400 && G < 500)
+        return (
+          g(
+            `checkGithubAppInstalled: Got ${G} error, app likely not installed on ${A}/${Q}`,
+          ),
+          !1
+        );

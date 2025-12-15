@@ -1,0 +1,38 @@
+}
+async function ITB() {
+  try {
+    let A = N1();
+    if (A.claudeCodeFirstTokenDate !== void 0) return;
+    let Q = HI();
+    if (Q.error) {
+      e(Error(`Failed to get auth headers: ${Q.error}`));
+      return;
+    }
+    let G = `${t9().BASE_API_URL}/api/organization/claude_code_first_token_date`,
+      I =
+        (await YQ.get(G, { headers: { ...Q.headers, "User-Agent": MF() } }))
+          .data?.first_token_date ?? null;
+    if (I !== null) {
+      let Y = new Date(I).getTime();
+      if (isNaN(Y)) {
+        e(Error(`Received invalid first_token_date from API: ${I}`));
+        return;
+      }
+    }
+    d0({ ...A, claudeCodeFirstTokenDate: I });
+  } catch (A) {
+    e(A instanceof Error ? A : Error(String(A)));
+  }
+}
+function HrA() {
+  if (om1()) return "Sonnet 4.5 with 1M context · Best for everyday tasks";
+  if (g$A() || u$A()) return "Opus 4.5 · Most capable for complex work";
+  return "Sonnet 4.5 · Best for everyday tasks";
+}
+function fw6(A) {
+  if (A === "opusplan") return "Opus 4.5 in plan mode, else Sonnet 4.5";
+  return wp(KE(A));
+}
+function YTB(A) {
+  if (A === "opusplan")
+    return v4() === "pro" && s2("tengu_backstage_only")

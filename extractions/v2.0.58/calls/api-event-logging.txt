@@ -1,0 +1,31 @@
+  batchDelayMs;
+  baseBackoffDelayMs;
+  maxBackoffDelayMs;
+  pendingExports = [];
+  isShutdown = !1;
+  backoffRetryTimer = null;
+  backoffAttempt = 0;
+  isRetrying = !1;
+  constructor(A = {}) {
+    let Q = process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
+    (this.endpoint = `${Q}/api/event_logging/batch`),
+      (this.timeout = A.timeout || 1e4),
+      (this.maxQueuedEvents = A.maxQueuedEvents || 8192),
+      (this.maxBatchSize = A.maxBatchSize || 200),
+      (this.batchDelayMs = A.batchDelayMs || 100),
+      (this.baseBackoffDelayMs = A.baseBackoffDelayMs || 500),
+      (this.maxBackoffDelayMs = A.maxBackoffDelayMs || 30000),
+      this.retryPreviousBatches();
+  }
+  getQueuedEventCount() {
+    return this.loadEventsFromCurrentBatch().length;
+  }
+  getCurrentBatchFilePath() {
+    return qrA.join(IGA(), `${qTB}${Q0()}.${wTB}.json`);
+  }
+  loadEventsFromFile(A) {
+    try {
+      if (!c$A(A)) return [];
+      let Q = Gq6(A, "utf8");
+      return JSON.parse(Q);
+    } catch {

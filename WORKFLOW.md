@@ -3,6 +3,22 @@
 Sequential runbook for extracting HTTP endpoints from Claude Code CLI.
 Agent executes top-to-bottom. Gates require pass before proceeding.
 
+## HTTP Precision Requirements
+
+For each endpoint, document ALL of:
+
+| Field | Required | Example |
+|-------|----------|---------|
+| HTTP Method | ✓ | `POST`, `GET`, `PUT`, `PATCH`, `DELETE`, `HEAD` |
+| Full URL | ✓ | `{{baseUrl}}/api/oauth/profile` |
+| Query Params | if any | `?beta=true&campaign=claude_code_guest_pass` |
+| Headers | ✓ | `Authorization`, `Content-Type`, `User-Agent`, `x-organization-uuid` |
+| Header Values | ✓ | `Bearer {{token}}`, `application/json`, `claude-cli/2.0.58` |
+| Request Body | if any | Full JSON with all fields |
+| Response Shape | ✓ | Expected JSON structure with field types |
+| Auth Type | ✓ | `Bearer token`, `x-api-key`, `none` |
+| Beta Flags | if any | `anthropic-beta: oauth-2025-04-20` |
+
 ## Prerequisites
 
 ```bash
@@ -29,39 +45,141 @@ Formatting is critical - patterns won't match minified code.
 
 ## Step 3: Run Extraction Patterns
 
+**IMPORTANT**: Extractions go to `extractions/vX.X.X/` in this repo, NOT in `package/`.
+
 ```bash
-cd package
-mkdir -p extraction
+# Set version from package.json
+VERSION=$(grep '"version"' package/package.json | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+PKG=package
+OUT=extractions/v${VERSION}
 
-# URLs
-rg -o 'https://[^"'\''`]+' cli.js | sort -u > extraction/all_urls.txt
+mkdir -p $OUT/{raw,calls}
 
-# API paths
-rg '"/(api|v1)/[^"]+' cli.js -o | sort -u > extraction/path_literals.txt
+cd $PKG
 
-# Org-scoped paths
-rg '/organizations/[^"'\''`]+' cli.js -o | sort -u > extraction/org_paths.txt
+# === RAW EXTRACTION (to raw/) ===
+
+# URLs - all hardcoded
+rg -o 'https://[^"'\''`]+' cli.js | sort -u > ../$OUT/raw/urls.txt
+
+# API paths (literal strings)
+rg '"/(api|v1)/[^"]+' cli.js -o | sort -u > ../$OUT/raw/paths.txt
 
 # Headers
-rg '"(Authorization|Content-Type|User-Agent|anthropic-beta|anthropic-version|x-api-key|x-organization-uuid)"' cli.js -o | sort -u > extraction/headers.txt
+rg '"(Authorization|Content-Type|User-Agent|Accept|Cache-Control|anthropic-beta|anthropic-version|x-api-key|x-organization-uuid|X-Stainless-[A-Za-z-]+|Last-Uuid)"' cli.js -o | sort -u > ../$OUT/raw/headers.txt
 
 # Beta flags
-rg '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o | sort -u > extraction/beta_flags.txt
+rg '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o | sort -u > ../$OUT/raw/beta_flags.txt
 
 # OAuth scopes
-rg '"user:[^"]*"' cli.js -o | sort -u > extraction/scopes.txt
+rg '"(user|org):[^"]*"' cli.js -o | sort -u > ../$OUT/raw/scopes.txt
 
-# Grant types
-rg 'grant_type' cli.js -C 3 > extraction/grant_types.txt
+# HTTP methods
+rg 'method:\s*"(GET|POST|PUT|PATCH|DELETE)"' cli.js -o | sort | uniq -c > ../$OUT/raw/http_methods.txt
 
-# Version
-rg -o 'claude-cli/[0-9]+\.[0-9]+\.[0-9]+' cli.js -m 1 > extraction/version.txt
+# Axios calls
+rg 'YQ\.(get|post|put|patch|delete|head)\(' cli.js -o | sort | uniq -c > ../$OUT/raw/axios_methods.txt
+
+# Stainless SDK version
+rg 'var gp\s*=' cli.js > ../$OUT/raw/stainless_version.txt
+
+# Package version
+grep '"version"' package.json > ../$OUT/raw/pkg_version.txt
+
+# === CALL CONTEXT EXTRACTION (to calls/) ===
+# Each file: -B 10 -A 20 context around endpoint pattern
+
+# OAuth flow
+rg 'grant_type.*authorization_code' cli.js -B 10 -A 20 > ../$OUT/calls/oauth-token-exchange.txt
+rg 'grant_type.*refresh_token' cli.js -B 10 -A 20 > ../$OUT/calls/oauth-refresh.txt
+
+# API endpoints (use precise patterns)
+rg '/api/oauth/profile' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-profile.txt
+rg '/api/oauth/usage' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-usage.txt
+rg '/api/oauth/account/settings' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-account-settings.txt
+rg 'grove_notice_viewed' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-grove-notice.txt
+rg 'create_api_key' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-create-api-key.txt
+rg 'claude_cli/roles' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-roles.txt
+rg 'client_data' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-client-data.txt
+rg 'api/claude_code_grove' cli.js -B 10 -A 20 > ../$OUT/calls/api-grove-settings.txt
+rg 'first_token_date' cli.js -B 10 -A 20 > ../$OUT/calls/api-first-token-date.txt
+rg 'sonnet_1m_access' cli.js -B 10 -A 20 > ../$OUT/calls/api-sonnet-1m-access.txt
+rg 'referral' cli.js -B 10 -A 20 | head -100 > ../$OUT/calls/api-referral.txt
+rg '/api/hello' cli.js -B 10 -A 20 > ../$OUT/calls/api-hello.txt
+rg 'claude_cli_feedback' cli.js -B 10 -A 20 > ../$OUT/calls/api-feedback.txt
+rg 'api/claude_code/metrics' cli.js -B 10 -A 20 > ../$OUT/calls/api-metrics.txt
+rg 'metrics_enabled' cli.js -B 10 -A 20 > ../$OUT/calls/api-metrics-enabled.txt
+rg 'event_logging/batch' cli.js -B 10 -A 20 > ../$OUT/calls/api-event-logging.txt
+rg 'link_vcs_account' cli.js -B 10 -A 20 > ../$OUT/calls/api-link-vcs.txt
+rg 'code/repos' cli.js -B 10 -A 20 > ../$OUT/calls/api-github-repos.txt
+rg 'domain_info' cli.js -B 10 -A 20 > ../$OUT/calls/api-domain-info.txt
+
+# SDK v1 endpoints
+rg '"/v1/messages"' cli.js -B 10 -A 30 > ../$OUT/calls/v1-messages.txt
+rg 'count_tokens' cli.js -B 10 -A 20 > ../$OUT/calls/v1-count-tokens.txt
+rg '"/v1/files"' cli.js -B 10 -A 20 > ../$OUT/calls/v1-files.txt
+rg '"/v1/models"' cli.js -B 10 -A 20 > ../$OUT/calls/v1-models.txt
+rg 'skills\?beta=true' cli.js -B 10 -A 20 > ../$OUT/calls/v1-skills.txt
+rg 'messages/batches' cli.js -B 10 -A 20 > ../$OUT/calls/v1-batches.txt
+rg '/v1/sessions' cli.js -B 10 -A 25 > ../$OUT/calls/v1-sessions.txt
+rg 'session_ingress' cli.js -B 10 -A 25 > ../$OUT/calls/v1-session-ingress.txt
+rg 'environment_providers' cli.js -B 10 -A 20 > ../$OUT/calls/v1-environment-providers.txt
+
+cd ..
+echo "Extraction complete: $OUT"
 ```
 
 Or use script:
 ```bash
-./scripts/extract-api-endpoints.sh package/cli.js
+./scripts/extract-api-endpoints.sh
 ```
+
+## Step 3.5: Extract Full HTTP Details (PRECISION)
+
+For each endpoint found, extract complete HTTP specification:
+
+```bash
+# Template for documenting each endpoint
+extract_endpoint() {
+  local path="$1"
+  echo "=== $path ==="
+
+  # 1. Find HTTP method
+  echo "Method:"
+  rg "$path" cli.js -B 10 | rg -o 'YQ\.(get|post|put|patch|delete|head)\(' | head -1
+
+  # 2. Find query parameters
+  echo "Query params:"
+  rg "$path" cli.js -A 5 | rg -o '\?[^"'\''`]+' | head -1
+
+  # 3. Find headers object
+  echo "Headers:"
+  rg "$path" cli.js -B 15 -A 5 | rg -o 'headers:\s*\{[^}]+\}' | head -1
+
+  # 4. Find request body
+  echo "Body:"
+  rg "$path" cli.js -B 5 -A 25 | rg -o '\{[^{}]*\}' | head -3
+
+  # 5. Find timeout
+  echo "Timeout:"
+  rg "$path" cli.js -A 10 | rg -o 'timeout:\s*[0-9]+' | head -1
+}
+
+# Example: Extract full details for oauth/profile
+extract_endpoint "/api/oauth/profile"
+```
+
+### Required Fields Checklist
+
+For each endpoint in `.http` file:
+
+- [ ] HTTP method verified: `rg 'YQ\.(get|post|...)' -B 5 | grep 'endpoint'`
+- [ ] Full URL with base: `{{baseUrl}}/path` or hardcoded
+- [ ] Query params: `?param=value` if any
+- [ ] All headers with values
+- [ ] Request body JSON (if POST/PUT/PATCH)
+- [ ] Response shape documented in comments
+- [ ] Verification pattern: `# Verify: rg '"/path"' cli.js`
 
 ## Step 4: Verify Endpoints (GATE)
 
@@ -184,6 +302,34 @@ rm -f current_spec_paths.txt new_extracted_paths.txt added_endpoints.txt removed
 | Org paths | `rg '/organizations/' cli.js` |
 | Beta flags | `rg '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o` |
 | Version | `rg 'claude-cli/[0-9]' cli.js` |
+| HTTP methods | `rg 'method:\s*"(GET\|POST\|PUT\|PATCH\|DELETE)"' cli.js -o` |
+| Axios calls | `rg 'YQ\.(get\|post\|put\|patch\|delete\|head)\(' cli.js` |
+| Stainless ver | `rg 'var gp\s*=' cli.js` |
+| Timeouts | `rg 'timeout:\s*[0-9]+' cli.js` |
+| Grant types | `rg 'grant_type.*"[^"]*"' cli.js -o` |
+| Scopes | `rg '"user:[^"]*"\|"org:[^"]*"' cli.js -o` |
+
+## HTTP Precision Patterns
+
+```bash
+# Get endpoint with full call context
+rg '/api/path' cli.js -B 10 -A 30
+
+# Find all headers for an endpoint
+rg '/api/path' cli.js -B 20 | rg 'headers' -A 5
+
+# Find request body structure
+rg '/api/path' cli.js -A 30 | rg -o '\{[^{}]*\}'
+
+# Find query parameters
+rg '/api/path' cli.js | rg -o '\?[^"'\'']+' | sort -u
+
+# Find User-Agent patterns
+rg 'User-Agent' cli.js -A 2 | head -20
+
+# Find Content-Type patterns
+rg 'Content-Type' cli.js -A 2 | head -20
+```
 
 ## Anti-Patterns
 

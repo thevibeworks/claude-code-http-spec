@@ -1,0 +1,62 @@
+  _GA();
+  up();
+  xGA = class xGA extends lY {
+    constructor() {
+      super(...arguments);
+      this.versions = new $wA(this._client);
+    }
+    create(A = {}, Q) {
+      let { betas: B, ...G } = A ?? {};
+      return this._client.post(
+        "/v1/skills?beta=true",
+        SGA(
+          {
+            body: G,
+            ...Q,
+            headers: r4([
+              {
+                "anthropic-beta": [
+                  ...(B ?? []),
+                  "skills-2025-10-02",
+                ].toString(),
+              },
+              Q?.headers,
+            ]),
+          },
+          this._client,
+        ),
+      );
+    }
+    retrieve(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.get(YY`/v1/skills/${A}?beta=true`, {
+        ...B,
+        headers: r4([
+          { "anthropic-beta": [...(G ?? []), "skills-2025-10-02"].toString() },
+          B?.headers,
+        ]),
+      });
+    }
+    list(A = {}, Q) {
+      let { betas: B, ...G } = A ?? {};
+      return this._client.getAPIList("/v1/skills?beta=true", VwA, {
+        query: G,
+        ...Q,
+        headers: r4([
+          { "anthropic-beta": [...(B ?? []), "skills-2025-10-02"].toString() },
+          Q?.headers,
+        ]),
+      });
+    }
+    delete(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.delete(YY`/v1/skills/${A}?beta=true`, {
+        ...B,
+        headers: r4([
+          { "anthropic-beta": [...(G ?? []), "skills-2025-10-02"].toString() },
+          B?.headers,
+        ]),
+      });
+    }
+  };
+  xGA.Versions = $wA;

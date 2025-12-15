@@ -2,46 +2,63 @@
 
 HTTP API specification for Claude Code CLI, extracted from `@anthropic-ai/claude-code`.
 
-## Files
+## Structure
 
 ```
-claude-code-api-complete.http   # Complete API reference
-claude-oauth-api.http           # OAuth flow reference
-WORKFLOW.md                     # Extraction workflow (agent runbook)
+specs/                           # Finalized .http files
+  claude-code-api-complete.http  # Complete API reference (75+ endpoints)
+  claude-oauth-api.http          # OAuth flow reference
 
-scripts/
-  extract-api-endpoints.sh      # Automated extraction
-  compare-api-versions.sh       # Version diff
-  validate-spec.sh              # Spec validation
+extractions/                     # Version-stamped extractions (git tracked)
+  v2.0.58/
+    MANIFEST.md                  # Extraction manifest
+    raw/                         # Raw grep outputs (urls, headers, etc)
+    calls/                       # Full HTTP call contexts (-B 10 -A 20)
 
-archive/                        # Deprecated (v2.0.25, used runtime logs)
+scripts/                         # Extraction scripts
+archive/                         # Deprecated specs
+WORKFLOW.md                      # Extraction workflow (agent runbook)
 ```
 
 ## Version
 
-**v2.0.55** - 76 endpoints indexed, 66 with complete request examples
+**v2.0.58** - 75+ endpoints, 30+ call contexts extracted
+
+## Precision Requirements
+
+Every documented endpoint MUST have:
+- HTTP method (GET/POST/PUT/PATCH/DELETE/HEAD)
+- Full URL with query params
+- All headers with exact values
+- Request body JSON (if any)
+- Response shape
+- Verification pattern: `rg '"/api/path"' cli.js`
 
 ## Quick Start
 
 ```bash
-# Extract from new CLI version
+# 1. Fetch & extract package
 npm pack @anthropic-ai/claude-code@latest
 tar -xzf anthropic-ai-claude-code-*.tgz
 npx prettier --write package/cli.js
-./scripts/extract-api-endpoints.sh package/cli.js
 
-# Compare versions
-./scripts/compare-api-versions.sh old/cli.js new/cli.js
+# 2. Run extraction (outputs to extractions/vX.X.X/)
+# See WORKFLOW.md Step 3
+
+# 3. Compare versions
+diff -r extractions/v2.0.55 extractions/v2.0.58
 ```
 
 ## Workflow
 
 See `WORKFLOW.md` for full agent-executable runbook.
 
-Core rule: Search **stable string literals**, not obfuscated names.
+Core rule: Extract **stable string literals**, not obfuscated variable names.
 
 ```bash
 # Verify endpoint exists
-rg '"/api/oauth/profile"' cli.js
-# If nothing returns, don't document it
+rg '"/api/oauth/profile"' package/cli.js
+
+# Extract full call context
+rg '/api/oauth/profile' package/cli.js -B 10 -A 20
 ```

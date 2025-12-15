@@ -1,0 +1,40 @@
+      super(`Model fallback triggered: ${A} -> ${Q}`);
+      this.originalModel = A;
+      this.fallbackModel = Q;
+      this.name = "FallbackTriggeredError";
+    }
+  };
+});
+async function oS2() {
+  let A = $6();
+  if (!A?.accessToken) return;
+  let Q = `${t9().BASE_API_URL}/api/oauth/claude_cli/client_data`;
+  try {
+    rS2 = (
+      await YQ.get(Q, {
+        headers: {
+          Authorization: `Bearer ${A.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+    ).data.client_data;
+  } catch (B) {
+    e(B);
+  }
+}
+function tS2() {
+  return rS2;
+}
+var Lh5, rS2;
+var f60 = L(() => {
+  w3();
+  UX();
+  gB();
+  u1();
+  (Lh5 = {}), (rS2 = Lh5);
+});
+function h60(A) {
+  return Number.isInteger(A);
+}
+function g60() {
+  let A = tS2();

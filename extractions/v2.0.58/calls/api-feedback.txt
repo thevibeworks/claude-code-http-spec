@@ -1,0 +1,31 @@
+async function pS3(A) {
+  try {
+    let Q = HI();
+    if (Q.error) return { success: !1 };
+    let B = {
+        "Content-Type": "application/json",
+        "User-Agent": Dp(),
+        ...Q.headers,
+      },
+      G = await YQ.post(
+        "https://api.anthropic.com/api/claude_cli_feedback",
+        { content: JSON.stringify(A) },
+        { headers: B },
+      );
+    if (G.status === 200) {
+      let Z = G.data;
+      if (Z?.feedback_id) return { success: !0, feedbackId: Z.feedback_id };
+      return (
+        HY1(
+          Error(
+            "Failed to submit feedback: request did not return feedback_id",
+          ),
+        ),
+        { success: !1 }
+      );
+    }
+    return HY1(Error("Failed to submit feedback:" + G.status)), { success: !1 };
+  } catch (Q) {
+    if (YQ.isAxiosError(Q) && Q.response?.status === 403) {
+      let B = Q.response.data;
+      if (
