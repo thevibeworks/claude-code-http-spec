@@ -1,0 +1,31 @@
+  Y0();
+  h1();
+  YY8 = fyA(ZY8, GY8);
+});
+class re1 {
+  endpoint;
+  timeout;
+  pendingExports = [];
+  isShutdown = !1;
+  constructor(A = {}) {
+    ((this.endpoint = "https://api.anthropic.com/api/claude_code/metrics"),
+      (this.timeout = A.timeout || 5000));
+  }
+  async export(A, Q) {
+    if (this.isShutdown) {
+      Q({
+        code: DYA.ExportResultCode.FAILED,
+        error: Error("Exporter has been shutdown"),
+      });
+      return;
+    }
+    let B = this.doExport(A, Q);
+    (this.pendingExports.push(B),
+      B.finally(() => {
+        let G = this.pendingExports.indexOf(B);
+        if (G > -1) this.pendingExports.splice(G, 1);
+      }));
+  }
+  async doExport(A, Q) {
+    try {
+      if (!(await w01()).enabled) {

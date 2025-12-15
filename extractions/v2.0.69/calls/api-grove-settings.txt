@@ -1,0 +1,31 @@
+  lD();
+  h1();
+  eJ();
+  Y0();
+  F2();
+  o2();
+  Fl = Z0(async () => {
+    try {
+      let A = GY();
+      if (A.error) return (f(`Failed to get auth headers: ${A.error}`), null);
+      let Q = await wQ.get(`${u9().BASE_API_URL}/api/claude_code_grove`, {
+          headers: { ...A.headers, "User-Agent": zd() },
+        }),
+        {
+          grove_enabled: B,
+          domain_excluded: G,
+          notice_is_grace_period: Z,
+          notice_reminder_frequency: Y,
+        } = Q.data;
+      return {
+        grove_enabled: B,
+        domain_excluded: G ?? !1,
+        notice_is_grace_period: Z ?? !0,
+        notice_reminder_frequency: Y,
+      };
+    } catch (A) {
+      return (f(`Failed to fetch Grove notice config: ${A}`), null);
+    }
+  });
+});
+var JA1 = w((t_B) => {

@@ -22,7 +22,12 @@ WORKFLOW.md                      # Extraction workflow (agent runbook)
 
 ## Version
 
-**v2.0.58** - 75+ endpoints, 30+ call contexts extracted
+**v2.0.69** - 75+ endpoints, 31 call contexts extracted
+
+### Changes from v2.0.58
+- NEW beta flag: `advanced-tool-use-2025-11-20`
+- NEW endpoint: `POST /v1/token` (CreateOAuth2Token)
+- HTTP client obfuscation: `YQ` → `wQ`
 
 ## Precision Requirements
 

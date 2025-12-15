@@ -1,0 +1,137 @@
+    X.searchParams.append("code_challenge", A),
+    X.searchParams.append("code_challenge_method", "S256"),
+    X.searchParams.append("state", Q),
+    J)
+  )
+    X.searchParams.append("orgUUID", J);
+  return X.toString();
+}
+async function lu0(A, Q, B, G, Z = !1, Y) {
+  let J = {
+    grant_type: "authorization_code",
+    code: A,
+    redirect_uri: Z
+      ? u9().MANUAL_REDIRECT_URL
+      : `http://localhost:${G}/callback`,
+    client_id: u9().CLIENT_ID,
+    code_verifier: B,
+    state: Q,
+  };
+  if (Y !== void 0) J.expires_in = Y;
+  let I = await wQ.post(u9().TOKEN_URL, J, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (I.status !== 200)
+    throw Error(
+      I.status === 401
+        ? "Authentication failed: Invalid authorization code"
+        : `Token exchange failed (${I.status}): ${I.statusText}`,
+    );
+  return (r("tengu_oauth_token_exchange_success", {}), I.data);
+}
+--
+        );
+      else return this.getTokenAsync(B);
+    }
+    async getTokenAsync(A) {
+      let Q = this.endpoints.oauth2TokenUrl.toString(),
+        B = { "Content-Type": "application/x-www-form-urlencoded" },
+        G = {
+          client_id: A.client_id || this._clientId,
+          code_verifier: A.codeVerifier,
+          code: A.code,
+          grant_type: "authorization_code",
+          redirect_uri: A.redirect_uri || this.redirectUri,
+        };
+      if (this.clientAuthentication === uzA.ClientSecretBasic) {
+        let J = Buffer.from(`${this._clientId}:${this._clientSecret}`);
+        B.Authorization = `Basic ${J.toString("base64")}`;
+      }
+      if (this.clientAuthentication === uzA.ClientSecretPost)
+        G.client_secret = this._clientSecret;
+      let Z = await this.transporter.request({
+          ...jF.RETRY_CONFIG,
+          method: "POST",
+          url: Q,
+          data: rf1.stringify(G),
+          headers: B,
+        }),
+        Y = Z.data;
+      if (Z.data && Z.data.expires_in)
+        ((Y.expiry_date = new Date().getTime() + Z.data.expires_in * 1000),
+          delete Y.expires_in);
+      return (this.emit("tokens", Y), { tokens: Y, res: Z });
+--
+    fetchFn: X,
+  },
+) {
+  var W;
+  let K = "authorization_code",
+    V = (Q === null || Q === void 0 ? void 0 : Q.token_endpoint)
+      ? new URL(Q.token_endpoint)
+      : new URL("/token", A);
+  if (
+    (Q === null || Q === void 0 ? void 0 : Q.grant_types_supported) &&
+    !Q.grant_types_supported.includes("authorization_code")
+  )
+    throw Error(
+      "Incompatible auth server: does not support grant type authorization_code",
+    );
+  let E = new Headers({
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    }),
+    D = new URLSearchParams({
+      grant_type: "authorization_code",
+      code: G,
+      code_verifier: Z,
+      redirect_uri: String(Y),
+    });
+  if (I) I(E, D, A, Q);
+  else {
+    let F =
+        (W =
+          Q === null || Q === void 0
+            ? void 0
+            : Q.token_endpoint_auth_methods_supported) !== null && W !== void 0
+          ? W
+          : [],
+      C = lEB(B, F);
+    iEB(C, B, E, D);
+  }
+  if (J) D.set("resource", J.href);
+  let H = await (X !== null && X !== void 0 ? X : fetch)(V, {
+    method: "POST",
+    headers: E,
+--
+  get redirectUrl() {
+    return this.redirectUri;
+  }
+  get authorizationUrl() {
+    return this._authorizationUrl;
+  }
+  get clientMetadata() {
+    let A = {
+        client_name: `Claude Code (${this.serverName})`,
+        redirect_uris: [this.redirectUri],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      },
+      Q =
+        this._metadata?.scope ||
+        this._metadata?.default_scope ||
+        this._metadata?.scopes_supported?.join(" ");
+    if (Q)
+      ((A.scope = Q),
+        c0(this.serverName, `Using scope from metadata: ${A.scope}`));
+    return A;
+  }
+  setMetadata(A) {
+    this._metadata = A;
+  }
+  async state() {
+    if (!this._state)
+      ((this._state = qj3(32).toString("base64url")),
+        c0(this.serverName, "Generated new OAuth state"));
+    return this._state;

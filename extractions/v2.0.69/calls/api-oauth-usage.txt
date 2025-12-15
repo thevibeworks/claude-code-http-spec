@@ -1,0 +1,31 @@
+  if (!RB()) return {};
+  let A = t6();
+  if (A && Jm(A.expiresAt)) return null;
+  let Q = GY();
+  if (Q.error) throw Error(`Auth error: ${Q.error}`);
+  let B = {
+      "Content-Type": "application/json",
+      "User-Agent": iI(),
+      ...Q.headers,
+    },
+    G = `${u9().BASE_API_URL}/api/oauth/usage`;
+  return (await wQ.get(G, { headers: B, timeout: 5000 })).data;
+}
+var tG0 = L(() => {
+  b8();
+  lD();
+  eJ();
+  F2();
+  Xq();
+});
+function eG0({ ratio: A, width: Q, fillColor: B, emptyColor: G }) {
+  let Z = Math.min(1, Math.max(0, A)),
+    Y = Math.floor(Z * Q),
+    J = [KTA[KTA.length - 1].repeat(Y)];
+  if (Y < Q) {
+    let I = Z * Q - Y,
+      X = Math.floor(I * KTA.length);
+    J.push(KTA[X]);
+    let W = Q - Y - 1;
+    if (W > 0) J.push(KTA[0].repeat(W));
+  }

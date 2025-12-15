@@ -1,0 +1,40 @@
+  xQ();
+  eZ();
+  l2();
+  RG();
+  rQ();
+  OQ1();
+});
+async function qsB() {
+  let A = t6();
+  if (!A?.accessToken) return;
+  let Q = `${u9().BASE_API_URL}/api/oauth/claude_cli/client_data`;
+  try {
+    NsB = (
+      await wQ.get(Q, {
+        headers: {
+          Authorization: `Bearer ${A.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      })
+    ).data.client_data;
+  } catch (B) {
+    s(B);
+  }
+}
+function LsB() {
+  return NsB;
+}
+var hX8, NsB;
+var k10 = L(() => {
+  b8();
+  eJ();
+  F2();
+  h1();
+  ((hX8 = {}), (NsB = hX8));
+});
+function f10(A) {
+  return Number.isInteger(A);
+}
+function b10() {
+  let A = LsB();

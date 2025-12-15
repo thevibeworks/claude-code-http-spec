@@ -1,0 +1,70 @@
+var dM;
+var Ew2 = L(() => {
+  g2();
+  pB();
+  fA();
+  dM = o(WA(), 1);
+});
+async function j85(A = "claude_code_guest_pass") {
+  let { accessToken: Q, orgUUID: B } = await sS(),
+    G = { ...oW(Q), "x-organization-uuid": B },
+    Z = `${u9().BASE_API_URL}/api/oauth/organizations/${B}/referral/eligibility`;
+  return (await wQ.get(Z, { headers: G, params: { campaign: A } })).data;
+}
+async function Fw2(A = "claude_code_guest_pass") {
+  let { accessToken: Q, orgUUID: B } = await sS(),
+    G = { ...oW(Q), "x-organization-uuid": B },
+    Z = `${u9().BASE_API_URL}/api/oauth/organizations/${B}/referral/redemptions`;
+  return (await wQ.get(Z, { headers: G, params: { campaign: A } })).data;
+}
+function Cw2() {
+  return !!(q8()?.organizationUuid && RB() && d6() === "max");
+}
+function R31() {
+  if (!Cw2()) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let A = q8()?.organizationUuid;
+  if (!A) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let B = d1().passesEligibilityCache?.[A];
+  if (!B) return { eligible: !1, needsRefresh: !0, hasCache: !1 };
+  let { eligible: G, timestamp: Z } = B,
+    J = Date.now() - Z > Hw2;
+  return { eligible: G, needsRefresh: J, hasCache: !0 };
+}
+async function Dw2() {
+  if (z_A) return (f("Passes: Reusing in-flight eligibility fetch"), z_A);
+  let A = q8()?.organizationUuid;
+  if (!A) return null;
+  return (
+--
+        })();
+    }),
+    a0A.useEffect(() => {
+      async function D() {
+        try {
+          let H = await U_A();
+          if (!H || !H.eligible) {
+            (J(!1), B(!1));
+            return;
+          }
+          if ((J(!0), H.referral_code_details?.referral_link))
+            X(H.referral_code_details.referral_link);
+          let F;
+          try {
+            F = await Fw2();
+          } catch (q) {
+            (s(q), J(!1), B(!1));
+            return;
+          }
+          let C = F.redemptions || [],
+            U = F.limit || 3,
+            O = [];
+          for (let q = 0; q < U; q++) {
+            let M = C[q];
+            O.push({ passNumber: q + 1, isAvailable: !M });
+          }
+          (Z(O), B(!1));
+        } catch (H) {
+          (s(H), J(!1), B(!1));
+        }
+      }
+      D();

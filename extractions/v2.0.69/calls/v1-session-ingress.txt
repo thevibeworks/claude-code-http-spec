@@ -1,0 +1,36 @@
+      f("No session token available for session persistence"),
+      d3("error", "session_persist_fail_jwt_no_token"),
+      !1
+    );
+  let Z = { Authorization: `Bearer ${G}`, "Content-Type": "application/json" };
+  return await ELB(A)(Q, B, Z);
+}
+async function HLB(A, Q) {
+  try {
+    let { accessToken: B, orgUUID: G } = await sS(),
+      Z = `${u9().BASE_API_URL}/v1/session_ingress/session/${A}`,
+      Y = { ...oW(B), "x-organization-uuid": G };
+    return await ELB(A)(Q, Z, Y);
+  } catch (B) {
+    return (
+      f(
+        `Failed to get OAuth credentials: ${B instanceof Error ? B.message : String(B)}`,
+      ),
+      d3("error", "session_persist_fail_oauth_no_token"),
+      !1
+    );
+  }
+}
+async function FLB(A, Q) {
+  let B = Le();
+  if (!B)
+    return (
+      f("No session token available for fetching session logs"),
+      d3("error", "session_get_fail_no_token"),
+      null
+    );
+  try {
+    let G = await wQ.get(Q, {
+      headers: { Authorization: `Bearer ${B}` },
+      validateStatus: (Z) => Z < 500,
+    });

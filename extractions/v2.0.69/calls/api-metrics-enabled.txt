@@ -1,0 +1,31 @@
+      f(`Metrics opt-out check failed: ${A.error}`),
+      Error(`Auth error: ${A.error}`)
+    );
+  let Q = {
+    "Content-Type": "application/json",
+    "User-Agent": iI(),
+    ...A.headers,
+  };
+  try {
+    let G = await wQ.get(
+      "https://api.anthropic.com/api/claude_code/organizations/metrics_enabled",
+      { headers: Q, timeout: 5000 },
+    );
+    return (
+      f(
+        `Metrics opt-out API response: enabled=${G.data.metrics_logging_enabled}, vcsLinking=${G.data.vcs_account_linking_enabled}`,
+      ),
+      {
+        enabled: G.data.metrics_logging_enabled,
+        vcsAccountLinkingEnabled: G.data.vcs_account_linking_enabled,
+        hasError: !1,
+      }
+    );
+  } catch (B) {
+    return (
+      f(
+        `Failed to check metrics opt-out status: ${B instanceof Error ? B.message : String(B)}`,
+      ),
+      s(B),
+      { enabled: !1, vcsAccountLinkingEnabled: !1, hasError: !0 }
+    );

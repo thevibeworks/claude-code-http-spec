@@ -1,0 +1,31 @@
+  } catch {
+    return !1;
+  }
+  if (Q.username || Q.password) return !1;
+  if (Q.hostname.split(".").length < 2) return !1;
+  return !0;
+}
+async function hN8(A) {
+  try {
+    let Q = await wQ.get(
+      `https://claude.ai/api/web/domain_info?domain=${encodeURIComponent(A)}`,
+    );
+    if (Q.status === 200)
+      return Q.data.can_fetch === !0
+        ? { status: "allowed" }
+        : { status: "blocked" };
+    return {
+      status: "check_failed",
+      error: Error(`Domain check returned status ${Q.status}`),
+    };
+  } catch (Q) {
+    return (s(Q), { status: "check_failed", error: Q });
+  }
+}
+function gN8(A, Q) {
+  try {
+    let B = new URL(A),
+      G = new URL(Q);
+    if (G.protocol !== B.protocol) return !1;
+    if (G.port !== B.port) return !1;
+    if (G.username || G.password) return !1;

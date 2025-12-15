@@ -1,0 +1,60 @@
+}
+function r_B() {
+  return Uo1(zqA.randomBytes(32));
+}
+var s_B = () => {};
+async function UZA() {
+  try {
+    let A = GY();
+    if (A.error) return (f(`Failed to get auth headers: ${A.error}`), null);
+    return (
+      await wQ.get(`${u9().BASE_API_URL}/api/oauth/account/settings`, {
+        headers: { ...A.headers, "User-Agent": iI() },
+      })
+    ).data;
+  } catch (A) {
+    return (s(A), null);
+  }
+}
+async function $o1() {
+  try {
+    let A = GY();
+    if (A.error) return;
+    await wQ.post(
+      `${u9().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
+      {},
+      { headers: { ...A.headers, "User-Agent": iI() } },
+    );
+  } catch (A) {
+    s(A);
+  }
+}
+async function YA1(A) {
+  try {
+    let Q = GY();
+    if (Q.error) {
+      f(`Failed to get auth headers: ${Q.error}`);
+      return;
+    }
+    await wQ.patch(
+      `${u9().BASE_API_URL}/api/oauth/account/settings`,
+      { grove_enabled: A },
+      { headers: { ...Q.headers, "User-Agent": iI() } },
+    );
+  } catch (Q) {
+    s(Q);
+  }
+}
+async function $ZA() {
+  if (!dgA()) return !1;
+  let A = await Fl();
+  return A !== null && A.grove_enabled;
+}
+var Fl;
+var wZA = L(() => {
+  b8();
+  lD();
+  h1();
+  eJ();
+  Y0();
+  F2();

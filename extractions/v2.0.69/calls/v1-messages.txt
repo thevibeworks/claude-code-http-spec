@@ -1,0 +1,125 @@
+    }
+    create(A, Q) {
+      if (A.model in foQ)
+        console.warn(`The model '${A.model}' is deprecated and will reach end-of-life on ${foQ[A.model]}
+Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.`);
+      let B = this._client._options.timeout;
+      if (!A.stream && B == null) {
+        let G = upA[A.model] ?? void 0;
+        B = this._client.calculateNonstreamingTimeout(A.max_tokens, G);
+      }
+      return this._client.post("/v1/messages", {
+        body: A,
+        timeout: B ?? 600000,
+        ...Q,
+        stream: A.stream ?? !1,
+      });
+    }
+    stream(A, Q) {
+      return VzA.createMessage(this, A, Q);
+    }
+    countTokens(A, Q) {
+      return this._client.post("/v1/messages/count_tokens", { body: A, ...Q });
+    }
+  };
+  foQ = {
+    "claude-1.3": "November 6th, 2024",
+    "claude-1.3-100k": "November 6th, 2024",
+    "claude-instant-1.1": "November 6th, 2024",
+    "claude-instant-1.1-100k": "November 6th, 2024",
+    "claude-instant-1.2": "November 6th, 2024",
+    "claude-3-sonnet-20240229": "July 21st, 2025",
+    "claude-3-opus-20240229": "January 5th, 2026",
+    "claude-2.1": "July 21st, 2025",
+    "claude-2.0": "July 21st, 2025",
+    "claude-3-7-sonnet-latest": "February 19th, 2026",
+    "claude-3-7-sonnet-20250219": "February 19th, 2026",
+  };
+  Iw.Batches = EzA;
+});
+var p8A;
+var Nv1 = L(() => {
+--
+  rlA;
+var gk1 = L(() => {
+  Df();
+  DzA();
+  rtQ();
+  G0B();
+  OzA();
+  Y0B();
+  X0B();
+  Df();
+  y53 = new Set(["/v1/complete", "/v1/messages", "/v1/messages?beta=true"]);
+  rlA = class rlA extends i7 {
+    constructor({
+      awsRegion: A = fk1("AWS_REGION") ?? "us-east-1",
+      baseURL: Q = fk1("ANTHROPIC_BEDROCK_BASE_URL") ??
+        `https://bedrock-runtime.${A}.amazonaws.com`,
+      awsSecretKey: B = null,
+      awsAccessKey: G = null,
+      awsSessionToken: Z = null,
+      providerChainResolver: Y = null,
+      ...J
+    } = {}) {
+      super({ baseURL: Q, ...J });
+      ((this.skipAuth = !1),
+        (this.messages = v53(this)),
+        (this.completions = new Ec(this)),
+        (this.beta = k53(this)),
+        (this.awsSecretKey = B),
+        (this.awsAccessKey = G),
+        (this.awsRegion = A),
+        (this.awsSessionToken = Z),
+        (this.skipAuth = J.skipAuth ?? !1),
+        (this.providerChainResolver = Y));
+    }
+    validateHeaders() {}
+    async prepareRequest(A, { url: Q, options: B }) {
+      if (this.skipAuth) return;
+      let G = this.awsRegion;
+      if (!G)
+        throw Error(
+          "Expected `awsRegion` option to be passed to the client or the `AWS_REGION` environment variable to be present",
+--
+  mV3 = "vertex-2023-10-16",
+  dV3,
+  aiA;
+var Ih1 = L(() => {
+  Df();
+  DzA();
+  Jh1();
+  H3B();
+  Df();
+  ((F3B = o(Gh1(), 1)),
+    (dV3 = new Set(["/v1/messages", "/v1/messages?beta=true"])));
+  aiA = class aiA extends i7 {
+    constructor({
+      baseURL: A = iiA("ANTHROPIC_VERTEX_BASE_URL"),
+      region: Q = iiA("CLOUD_ML_REGION") ?? null,
+      projectId: B = iiA("ANTHROPIC_VERTEX_PROJECT_ID") ?? null,
+      ...G
+    } = {}) {
+      if (!Q)
+        throw Error(
+          "No region was given. The client should be instantiated with the `region` option or the `CLOUD_ML_REGION` environment variable should be set.",
+        );
+      super({
+        baseURL:
+          A ||
+          (Q === "global"
+            ? "https://aiplatform.googleapis.com/v1"
+            : `https://${Q}-aiplatform.googleapis.com/v1`),
+        ...G,
+      });
+      if (
+        ((this.messages = cV3(this)),
+        (this.beta = pV3(this)),
+        (this.region = Q),
+        (this.projectId = B),
+        (this.accessToken = G.accessToken ?? null),
+        G.authClient && G.googleAuth)
+      )
+        throw Error(
+          "You cannot provide both `authClient` and `googleAuth`. Please provide only one of them.",
+        );

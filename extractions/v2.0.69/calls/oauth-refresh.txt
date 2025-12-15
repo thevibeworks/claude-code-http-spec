@@ -1,0 +1,230 @@
+  if (I.status !== 200)
+    throw Error(
+      I.status === 401
+        ? "Authentication failed: Invalid authorization code"
+        : `Token exchange failed (${I.status}): ${I.statusText}`,
+    );
+  return (r("tengu_oauth_token_exchange_success", {}), I.data);
+}
+async function iu0(A) {
+  let Q = {
+    grant_type: "refresh_token",
+    refresh_token: A,
+    client_id: u9().CLIENT_ID,
+    scope: EK1.join(" "),
+  };
+  try {
+    let B = await wQ.post(u9().TOKEN_URL, Q, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (B.status !== 200) throw Error(`Token refresh failed: ${B.statusText}`);
+    let G = B.data,
+      { access_token: Z, refresh_token: Y = A, expires_in: J } = G,
+      I = Date.now() + J * 1000,
+      X = dyA(G.scope);
+    r("tengu_oauth_token_refresh_success", {});
+    let W = await eK1(Z);
+    if (d1().oauthAccount) {
+      let V = {};
+      if (W.displayName !== void 0) V.displayName = W.displayName;
+      if (typeof W.hasExtraUsageEnabled === "boolean")
+        V.hasExtraUsageEnabled = W.hasExtraUsageEnabled;
+--
+      return (this.refreshTokenPromises.set(A, Q), Q);
+    }
+    async refreshTokenNoCache(A) {
+      var Q;
+      if (!A) throw Error("No refresh token is set.");
+      let B = this.endpoints.oauth2TokenUrl.toString(),
+        G = {
+          refresh_token: A,
+          client_id: this._clientId,
+          client_secret: this._clientSecret,
+          grant_type: "refresh_token",
+        },
+        Z;
+      try {
+        Z = await this.transporter.request({
+          ...jF.RETRY_CONFIG,
+          method: "POST",
+          url: B,
+          data: rf1.stringify(G),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+      } catch (J) {
+        if (
+          J instanceof yX3.GaxiosError &&
+          J.message === "invalid_grant" &&
+          ((Q = J.response) === null || Q === void 0 ? void 0 : Q.data) &&
+          /ReAuth/i.test(J.response.data.error_description)
+        )
+          J.message = JSON.stringify(J.response.data);
+        throw J;
+      }
+--
+    async fetchIdToken(A) {
+      return (
+        await this.transporter.request({
+          ...giA.RETRY_CONFIG,
+          url: this.endpoints.oauth2TokenUrl,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          method: "POST",
+          data: (0, aW3.stringify)({
+            client_id: this._clientId,
+            client_secret: this._clientSecret,
+            grant_type: "refresh_token",
+            refresh_token: this._refreshToken,
+            target_audience: A,
+          }),
+        })
+      ).data.id_token;
+    }
+    fromJSON(A) {
+      if (!A)
+        throw Error(
+          "Must pass in a JSON object containing the user refresh token",
+        );
+      if (A.type !== "authorized_user")
+        throw Error(
+          'The incoming JSON object does not have the "authorized_user" type',
+        );
+      if (!A.client_id)
+        throw Error(
+          "The incoming JSON object does not contain a client_id field",
+        );
+      if (!A.client_secret)
+--
+  d6B.EXTERNAL_ACCOUNT_AUTHORIZED_USER_TYPE =
+    "external_account_authorized_user";
+  var eK3 = "https://sts.{universeDomain}/v1/oauthtoken";
+  class rb1 extends u6B.OAuthClientAuthHandler {
+    constructor(A, Q, B) {
+      super(B);
+      ((this.url = A), (this.transporter = Q));
+    }
+    async refreshToken(A, Q) {
+      let B = new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: A,
+        }),
+        G = { "Content-Type": "application/x-www-form-urlencoded", ...Q },
+        Z = {
+          ...rb1.RETRY_CONFIG,
+          url: this.url,
+          method: "POST",
+          headers: G,
+          data: B.toString(),
+          responseType: "json",
+        };
+      this.applyClientAuthenticationOptions(Z);
+      try {
+        let Y = await this.transporter.request(Z),
+          J = Y.data;
+        return ((J.res = Y), J);
+      } catch (Y) {
+        if (Y instanceof rK3.GaxiosError && Y.response)
+          throw (0, u6B.getErrorFromOAuthErrorResponse)(Y.response.data, Y);
+        throw Y;
+--
+          B
+        );
+      }
+    }
+    async refreshAccessToken(A, Q, B, G, Z, Y = {}) {
+      if (G === void 0) return null;
+      LL.info(
+        `IdentityClient: refreshing access token with client ID: ${Q}, scopes: ${B} started`,
+      );
+      let J = {
+        grant_type: "refresh_token",
+        client_id: Q,
+        refresh_token: G,
+        scope: B,
+      };
+      if (Z !== void 0) J.client_secret = Z;
+      let I = new URLSearchParams(J);
+      return oY.withSpan("IdentityClient.refreshAccessToken", Y, async (X) => {
+        try {
+          let W = C7B(A),
+            K = Y_({
+              url: `${this.authorityHost}/${A}/${W}`,
+              method: "POST",
+              body: I.toString(),
+              abortSignal: Y.abortSignal,
+              headers: Wt({
+                Accept: "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+              }),
+              tracingOptions: X.tracingOptions,
+            }),
+--
+    fetchFn: J,
+  },
+) {
+  var I;
+  let X = "refresh_token",
+    W;
+  if (Q) {
+    if (
+      ((W = new URL(Q.token_endpoint)),
+      Q.grant_types_supported &&
+        !Q.grant_types_supported.includes("refresh_token"))
+    )
+      throw Error(
+        "Incompatible auth server: does not support grant type refresh_token",
+      );
+  } else W = new URL("/token", A);
+  let K = new Headers({ "Content-Type": "application/x-www-form-urlencoded" }),
+    V = new URLSearchParams({ grant_type: "refresh_token", refresh_token: G });
+  if (Y) Y(K, V, A, Q);
+  else {
+    let D =
+        (I =
+          Q === null || Q === void 0
+            ? void 0
+            : Q.token_endpoint_auth_methods_supported) !== null && I !== void 0
+          ? I
+          : [],
+      H = lEB(B, D);
+    iEB(H, B, K, V);
+  }
+  if (Z) V.set("resource", Z.href);
+  let E = await (J !== null && J !== void 0 ? J : fetch)(W, {
+    method: "POST",
+    headers: K,
+    body: V,
+  });
+  if (!E.ok) throw await Yp1(E);
+  return Gp1.parse({ refresh_token: G, ...(await E.json()) });
+--
+  get redirectUrl() {
+    return this.redirectUri;
+  }
+  get authorizationUrl() {
+    return this._authorizationUrl;
+  }
+  get clientMetadata() {
+    let A = {
+        client_name: `Claude Code (${this.serverName})`,
+        redirect_uris: [this.redirectUri],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      },
+      Q =
+        this._metadata?.scope ||
+        this._metadata?.default_scope ||
+        this._metadata?.scopes_supported?.join(" ");
+    if (Q)
+      ((A.scope = Q),
+        c0(this.serverName, `Using scope from metadata: ${A.scope}`));
+    return A;
+  }
+  setMetadata(A) {
+    this._metadata = A;
+  }
+  async state() {
+    if (!this._state)
+      ((this._state = qj3(32).toString("base64url")),
+        c0(this.serverName, "Generated new OAuth state"));
+    return this._state;

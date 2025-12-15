@@ -1,0 +1,41 @@
+  var u84 = [-3, WF, R84, { [Lm]: Hz1, [Fz1]: 429 }, [Lm, mkA], [0, 0]];
+  z4A.TypeRegistry.for(WF).registerError(u84, L1Q);
+  var m84 = [-3, WF, _84, { [Lm]: Hz1, [Fz1]: 400 }, [Lm, mkA], [0, 0]];
+  z4A.TypeRegistry.for(WF).registerError(m84, M1Q);
+  var d84 = [-3, O1Q, "SigninServiceException", 0, [], []];
+  z4A.TypeRegistry.for(O1Q).registerError(d84, U4A);
+  var c84 = [
+    9,
+    WF,
+    $84,
+    { [j84]: ["POST", "/v1/token", 200] },
+    () => k84,
+    () => b84,
+  ];
+  class Cz1 extends qm.Command.classBuilder()
+    .ep(D84)
+    .m(function (A, Q, B, G) {
+      return [w1Q.getEndpointPlugin(B, A.getEndpointParameterInstructions())];
+    })
+    .s("Signin", "CreateOAuth2Token", {})
+    .n("SigninClient", "CreateOAuth2TokenCommand")
+    .sc(c84)
+    .build() {}
+  var p84 = { CreateOAuth2TokenCommand: Cz1 };
+  class zz1 extends Dz1 {}
+  qm.createAggregatedClient(p84, zz1);
+  var l84 = {
+    AUTHCODE_EXPIRED: "AUTHCODE_EXPIRED",
+    INSUFFICIENT_PERMISSIONS: "INSUFFICIENT_PERMISSIONS",
+    INVALID_REQUEST: "INVALID_REQUEST",
+    SERVER_ERROR: "server_error",
+    TOKEN_EXPIRED: "TOKEN_EXPIRED",
+    USER_CREDENTIALS_CHANGED: "USER_CREDENTIALS_CHANGED",
+  };
+  Object.defineProperty(Uz1, "$Command", {
+    enumerable: !0,
+    get: function () {
+      return qm.Command;
+    },
+  });
+  Object.defineProperty(Uz1, "__Client", {
