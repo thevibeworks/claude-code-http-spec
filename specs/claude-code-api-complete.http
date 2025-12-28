@@ -1329,6 +1329,10 @@ GET {{mcpbUrl}}
 #
 # Claude Code specific:
 #   claude-code-20250219
+#
+# Cloud Provider specific:
+#   bedrock-2023-05-31    (AWS Bedrock)
+#   vertex-2023-10-16     (Google Vertex AI)
 
 
 ### ============================================================================

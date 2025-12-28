@@ -77,11 +77,13 @@ rg '"(user|org):[^"]*"' cli.js -o | sort -u > ../$OUT/raw/scopes.txt
 # HTTP methods
 rg 'method:\s*"(GET|POST|PUT|PATCH|DELETE)"' cli.js -o | sort | uniq -c > ../$OUT/raw/http_methods.txt
 
-# Axios calls
-rg 'YQ\.(get|post|put|patch|delete|head)\(' cli.js -o | sort | uniq -c > ../$OUT/raw/axios_methods.txt
+# Axios calls (NOTE: obfuscated var name changes per build - find it first)
+# v2.0.58: YQ, v2.0.69: wQ - use dynamic detection:
+AXIOS_VAR=$(rg -o '[A-Za-z0-9]+\.(get|post|put|patch|delete|head)\(' cli.js | head -1 | cut -d. -f1)
+rg "${AXIOS_VAR}\.(get|post|put|patch|delete|head)\(" cli.js -o | sort | uniq -c > ../$OUT/raw/axios_methods.txt
 
-# Stainless SDK version
-rg 'var gp\s*=' cli.js > ../$OUT/raw/stainless_version.txt
+# Stainless SDK version (NOTE: var name changes - v2.0.58: gp, v2.0.69: Wc)
+rg 'var [A-Za-z0-9]+\s*=\s*"0\.[0-9]+\.[0-9]+"' cli.js | head -1 > ../$OUT/raw/stainless_version.txt
 
 # Package version
 grep '"version"' package.json > ../$OUT/raw/pkg_version.txt
@@ -303,8 +305,8 @@ rm -f current_spec_paths.txt new_extracted_paths.txt added_endpoints.txt removed
 | Beta flags | `rg '"[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o` |
 | Version | `rg 'claude-cli/[0-9]' cli.js` |
 | HTTP methods | `rg 'method:\s*"(GET\|POST\|PUT\|PATCH\|DELETE)"' cli.js -o` |
-| Axios calls | `rg 'YQ\.(get\|post\|put\|patch\|delete\|head)\(' cli.js` |
-| Stainless ver | `rg 'var gp\s*=' cli.js` |
+| Axios calls | `rg '[A-Za-z0-9]+\.(get\|post\|put\|patch\|delete\|head)\(' cli.js -o \| head -5` (var name changes) |
+| Stainless ver | `rg 'var [A-Za-z0-9]+\s*=\s*"0\.[0-9]+\.[0-9]+"' cli.js` (var name changes) |
 | Timeouts | `rg 'timeout:\s*[0-9]+' cli.js` |
 | Grant types | `rg 'grant_type.*"[^"]*"' cli.js -o` |
 | Scopes | `rg '"user:[^"]*"\|"org:[^"]*"' cli.js -o` |
