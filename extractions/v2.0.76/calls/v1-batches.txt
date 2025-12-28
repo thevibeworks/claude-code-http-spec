@@ -1,0 +1,140 @@
+var WOA;
+var Ca1 = O(() => {
+  Rv();
+  nM();
+  za1();
+  M0A();
+  Yn();
+  WOA = class WOA extends RX {
+    create(A, Q) {
+      let { betas: B, ...G } = A;
+      return this._client.post("/v1/messages/batches?beta=true", {
+        body: G,
+        ...Q,
+        headers: M6([
+          {
+            "anthropic-beta": [
+              ...(B ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          Q?.headers,
+        ]),
+      });
+    }
+    retrieve(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.get(lJ`/v1/messages/batches/${A}?beta=true`, {
+        ...B,
+        headers: M6([
+          {
+            "anthropic-beta": [
+              ...(G ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          B?.headers,
+        ]),
+      });
+    }
+    list(A = {}, Q) {
+      let { betas: B, ...G } = A ?? {};
+      return this._client.getAPIList("/v1/messages/batches?beta=true", NT, {
+        query: G,
+        ...Q,
+        headers: M6([
+          {
+            "anthropic-beta": [
+              ...(B ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          Q?.headers,
+        ]),
+      });
+    }
+    delete(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.delete(lJ`/v1/messages/batches/${A}?beta=true`, {
+        ...B,
+        headers: M6([
+          {
+            "anthropic-beta": [
+              ...(G ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          B?.headers,
+        ]),
+      });
+    }
+    cancel(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.post(lJ`/v1/messages/batches/${A}/cancel?beta=true`, {
+        ...B,
+        headers: M6([
+          {
+            "anthropic-beta": [
+              ...(G ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          B?.headers,
+        ]),
+      });
+    }
+    async results(A, Q = {}, B) {
+      let G = await this.retrieve(A);
+      if (!G.results_url)
+        throw new U2(
+          `No batch \`results_url\`; Has it finished processing? ${G.processing_status} - ${G.id}`,
+        );
+      let { betas: Z } = Q ?? {};
+      return this._client
+--
+});
+var COA;
+var ja1 = O(() => {
+  Rv();
+  nM();
+  za1();
+  M0A();
+  Yn();
+  COA = class COA extends RX {
+    create(A, Q) {
+      return this._client.post("/v1/messages/batches", { body: A, ...Q });
+    }
+    retrieve(A, Q) {
+      return this._client.get(lJ`/v1/messages/batches/${A}`, Q);
+    }
+    list(A = {}, Q) {
+      return this._client.getAPIList("/v1/messages/batches", NT, {
+        query: A,
+        ...Q,
+      });
+    }
+    delete(A, Q) {
+      return this._client.delete(lJ`/v1/messages/batches/${A}`, Q);
+    }
+    cancel(A, Q) {
+      return this._client.post(lJ`/v1/messages/batches/${A}/cancel`, Q);
+    }
+    async results(A, Q) {
+      let B = await this.retrieve(A);
+      if (!B.results_url)
+        throw new U2(
+          `No batch \`results_url\`; Has it finished processing? ${B.processing_status} - ${B.id}`,
+        );
+      return this._client
+        .get(B.results_url, {
+          ...Q,
+          headers: M6([{ Accept: "application/binary" }, Q?.headers]),
+          stream: !0,
+          __binaryResponse: !0,
+        })
+        ._thenUnwrap((G, Z) => NJA.fromResponse(Z.response, Z.controller));
+    }
+  };
+});
+var uN, oCB;
+var Ta1 = O(() => {

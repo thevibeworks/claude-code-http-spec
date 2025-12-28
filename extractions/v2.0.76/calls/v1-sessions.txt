@@ -1,0 +1,170 @@
+  if (A === void 0)
+    throw Error(
+      "Claude Code web sessions require authentication with a Claude.ai account. API key authentication is not sufficient. Please run /login to authenticate, or check your authentication status with /status.",
+    );
+  let Q = await By();
+  if (!Q) throw Error("Unable to get organization UUID");
+  return { accessToken: A, orgUUID: Q };
+}
+async function aA2() {
+  let { accessToken: A, orgUUID: Q } = await KP(),
+    B = `${D9().BASE_API_URL}/v1/sessions`;
+  try {
+    let G = { ..._V(A), "x-organization-uuid": Q },
+      Z = await Ns3(B, { headers: G });
+    if (Z.status !== 200)
+      throw Error(`Failed to fetch code sessions: ${Z.statusText}`);
+    return Z.data.data.map((J) => {
+      let X = J.session_context.sources.find(
+          (W) => W.type === "git_repository",
+        ),
+        I = null;
+      if (X?.url) {
+        let W = bBA(X.url);
+        if (W) {
+          let [K, V] = W.split("/");
+          if (K && V)
+            I = {
+              name: V,
+              owner: { login: K },
+              default_branch: X.revision || void 0,
+            };
+        }
+      }
+      return {
+        id: J.id,
+        title: J.title || "Untitled",
+--
+}
+function _V(A) {
+  return {
+    Authorization: `Bearer ${A}`,
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01",
+  };
+}
+async function RTA(A) {
+  let { accessToken: Q, orgUUID: B } = await KP(),
+    G = `${D9().BASE_API_URL}/v1/sessions/${A}`,
+    Z = { ..._V(Q), "x-organization-uuid": B },
+    Y = await SQ.get(G, {
+      headers: Z,
+      timeout: 15000,
+      validateStatus: (J) => J < 500,
+    });
+  if (Y.status !== 200) {
+    let X = Y.data?.error?.message;
+    if (Y.status === 404) throw Error(`Session not found: ${A}`);
+    if (Y.status === 401)
+      throw Error("Session expired. Please run /login to sign in again.");
+    throw Error(X || `Failed to fetch session: ${Y.status} ${Y.statusText}`);
+  }
+  return Y.data;
+}
+function W50(A) {
+  return A.session_context.outcomes?.find((B) => B.type === "git_repository")
+    ?.git_info?.branches[0];
+}
+async function oA2(A, Q) {
+  try {
+    let { accessToken: B, orgUUID: G } = await KP(),
+      Z = `${D9().BASE_API_URL}/v1/sessions/${A}/events`,
+      Y = { ..._V(B), "x-organization-uuid": G },
+      X = {
+        events: [
+          {
+            uuid: ws3(),
+            session_id: A,
+            type: "user",
+            parent_tool_use_id: null,
+            message: { role: "user", content: Q },
+          },
+        ],
+      },
+      I = await SQ.post(Z, X, { headers: Y, validateStatus: (W) => W < 500 });
+    if (I.status === 200 || I.status === 201) return !0;
+    return !1;
+  } catch {
+    return !1;
+  }
+}
+var nA2, I50, Ls3, rBZ;
+var Kk = O(() => {
+  cY();
+  V2();
+  K5();
+  AN();
+--
+      Error(`Failed to fetch session from Sessions API: ${X.message}`)
+    );
+  }
+}
+async function Fj2(A) {
+  let Q = d6()?.accessToken;
+  if (!Q) throw Error("No access token for polling");
+  let B = await By();
+  if (!B) throw Error("No org UUID for polling");
+  let G = _V(Q),
+    Z = `${D9().BASE_API_URL}/v1/sessions/${A}/events`,
+    Y = await SQ.get(Z, {
+      headers: { ...G, "x-organization-uuid": B },
+      timeout: 30000,
+    });
+  if (Y.status !== 200)
+    throw Error(`Failed to fetch session events: ${Y.statusText}`);
+  let J = Y.data;
+  if (!J?.data || !Array.isArray(J.data))
+    throw Error("Invalid events response");
+  let X = [];
+  for (let W of J.data)
+    if (W && typeof W === "object" && "type" in W) {
+      if (W.type === "env_manager_log" || W.type === "control_response")
+        continue;
+      if ("session_id" in W) X.push(W);
+    }
+  let I;
+  try {
+    let W = await RTA(A);
+    I = W50(W);
+  } catch {}
+  return { log: X, branch: I };
+}
+async function ZyA(A) {
+  let { initialMessage: Q, description: B, signal: G } = A;
+--
+      if (P) ((F = P), k(`Using configured default environment: ${D}`));
+      else
+        k(
+          `Configured default environment ${D} not found in available environments, using first available`,
+        );
+    }
+    if (!F)
+      return (t(Error("No environments available for session creation")), null);
+    let E = F.environment_id;
+    k(`Selected environment: ${E} (${F.name})`);
+    let z = `${D9().BASE_API_URL}/v1/sessions`,
+      $ = { ..._V(Z), "x-organization-uuid": Y },
+      L = { sources: X ? [X] : [], outcomes: I ? [I] : [], model: p3() },
+      N = Q
+        ? [
+            {
+              type: "event",
+              data: {
+                uuid: Ax5(),
+                session_id: "",
+                type: "user",
+                parent_tool_use_id: null,
+                message: { role: "user", content: Q },
+              },
+            },
+          ]
+        : [],
+      M = { title: W, events: N, session_context: L, environment_id: E };
+    k(`Creating session with payload: ${JSON.stringify(M, null, 2)}`);
+    let R = await SQ.post(z, M, { headers: $, signal: G });
+    if (R.status !== 200 && R.status !== 201)
+      return (
+        t(
+          Error(`API request failed with status ${R.status}: ${R.statusText}
+
+Response data: ${JSON.stringify(R.data, null, 2)}`),

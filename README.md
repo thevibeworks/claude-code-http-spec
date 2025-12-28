@@ -22,7 +22,15 @@ WORKFLOW.md                      # Extraction workflow (agent runbook)
 
 ## Version
 
-**v2.0.69** - 75+ endpoints, 31 call contexts extracted
+**v2.0.76** - 75+ endpoints, 31 call contexts extracted
+
+### Changes from v2.0.69
+- NEW beta flags:
+  - `fine-grained-tool-streaming-2025-05-14`
+  - `mcp-servers-2025-12-04`
+  - `tool-search-tool-2025-10-19`
+- NEW endpoint: `/v1/toolbox/shttp/mcp/{server_id}` (MCP HTTP proxy)
+- Stainless SDK: 0.70.0 (unchanged)
 
 ### Changes from v2.0.58
 - NEW beta flag: `advanced-tool-use-2025-11-20`

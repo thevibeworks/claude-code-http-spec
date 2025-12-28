@@ -1,0 +1,31 @@
+  Q0();
+  c1();
+  iT5 = epA(lT5, cT5);
+});
+class eK0 {
+  endpoint;
+  timeout;
+  pendingExports = [];
+  isShutdown = !1;
+  constructor(A = {}) {
+    ((this.endpoint = "https://api.anthropic.com/api/claude_code/metrics"),
+      (this.timeout = A.timeout || 5000));
+  }
+  async export(A, Q) {
+    if (this.isShutdown) {
+      Q({
+        code: $9A.ExportResultCode.FAILED,
+        error: Error("Exporter has been shutdown"),
+      });
+      return;
+    }
+    let B = this.doExport(A, Q);
+    (this.pendingExports.push(B),
+      B.finally(() => {
+        let G = this.pendingExports.indexOf(B);
+        if (G > -1) this.pendingExports.splice(G, 1);
+      }));
+  }
+  async doExport(A, Q) {
+    try {
+      if (!(uZ(!0) || q9())) {

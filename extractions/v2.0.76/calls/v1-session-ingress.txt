@@ -1,0 +1,66 @@
+      k("No session token available for session persistence"),
+      V3("error", "session_persist_fail_jwt_no_token"),
+      !1
+    );
+  let Z = { Authorization: `Bearer ${G}`, "Content-Type": "application/json" };
+  return await tA2(A)(Q, B, Z);
+}
+async function A12(A, Q) {
+  try {
+    let { accessToken: B, orgUUID: G } = await KP(),
+      Z = `${D9().BASE_API_URL}/v1/session_ingress/session/${A}`,
+      Y = { ..._V(B), "x-organization-uuid": G };
+    return await tA2(A)(Q, Z, Y);
+  } catch (B) {
+    return (
+      k(
+        `Failed to get OAuth credentials: ${B instanceof Error ? B.message : String(B)}`,
+      ),
+      V3("error", "session_persist_fail_oauth_no_token"),
+      !1
+    );
+  }
+}
+async function Q12(A, Q) {
+  let B = kBA();
+  if (!B)
+    return (
+      k("No session token available for fetching session logs"),
+      V3("error", "session_get_fail_no_token"),
+      null
+    );
+  let G = { Authorization: `Bearer ${B}` },
+    Z = await G12(A, Q, G);
+  if (Z && Z.length > 0) {
+    let Y = Z[Z.length - 1];
+    if (Y && "uuid" in Y && Y.uuid) K50.set(A, Y.uuid);
+  }
+  return Z;
+}
+async function B12(A, Q, B) {
+  let G = `${D9().BASE_API_URL}/v1/session_ingress/session/${A}`;
+  k(`[session-ingress] Fetching session logs from: ${G}`);
+  let Z = { ..._V(Q), "x-organization-uuid": B };
+  return await G12(A, G, Z);
+}
+async function G12(A, Q, B) {
+  try {
+    let G = await SQ.get(Q, {
+      headers: B,
+      timeout: 1e4,
+      validateStatus: (Z) => Z < 500,
+    });
+    if (G.status === 200) {
+      let Z = G.data;
+      if (!Z || typeof Z !== "object" || !Array.isArray(Z.loglines))
+        return (
+          t(
+            Error(`Invalid session logs response format: ${JSON.stringify(Z)}`),
+          ),
+          V3("error", "session_get_fail_invalid_response"),
+          null
+        );
+      let Y = Z.loglines;
+      return (k(`Fetched ${Y.length} session logs for session ${A}`), Y);
+    }
+    if (G.status === 404)

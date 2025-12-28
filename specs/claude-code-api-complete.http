@@ -1,5 +1,5 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.0.69
+# Extracted from @anthropic-ai/claude-code v2.0.76
 #
 # Validation: Search for URL path strings (stable across builds)
 #   rg '"/api/oauth/profile"' cli.js
@@ -20,7 +20,7 @@
 @oauthBeta = oauth-2025-04-20
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
 @stainlessVersion = 0.70.0
-@cliVersion = 2.0.69
+@cliVersion = 2.0.76
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
@@ -1297,6 +1297,30 @@ GET {{mcpbUrl}}
 
 
 ### ============================================================================
+### SECTION 27: MCP SERVER PROXY (NEW in v2.0.76)
+### ============================================================================
+# Pattern: rg "toolbox/shttp/mcp" cli.js
+
+### ----------------------------------------------------------------------------
+### 27.1 MCP Server HTTP Proxy
+### ----------------------------------------------------------------------------
+# Pattern: rg 'MCP_PROXY_PATH|MCP_PROXY_URL' cli.js -B 5 -A 5
+# This endpoint proxies HTTP requests to MCP servers
+
+# @name mcpServerProxy
+# Note: Actual URL may be localhost:8205 for local MCP proxy
+POST {{mcpProxyUrl}}/v1/toolbox/shttp/mcp/{{serverId}}
+Content-Type: application/json
+anthropic-beta: mcp-servers-2025-12-04
+
+{
+    "method": "POST",
+    "path": "/",
+    "body": {}
+}
+
+
+### ============================================================================
 ### APPENDIX A: BETA FLAGS
 ### ============================================================================
 # Pattern: rg "anthropic-beta" cli.js | grep -o '"[a-z-]*-[0-9-]*"' | sort -u
@@ -1312,8 +1336,13 @@ GET {{mcpbUrl}}
 #   web-search-2025-03-05
 #   tool-examples-2025-10-29
 #
-# Advanced Tool Use (NEW in v2.0.69):
+# Advanced Tool Use (v2.0.69):
 #   advanced-tool-use-2025-11-20
+#
+# NEW in v2.0.76:
+#   fine-grained-tool-streaming-2025-05-14
+#   mcp-servers-2025-12-04
+#   tool-search-tool-2025-10-19
 #
 # Batches:
 #   message-batches-2024-09-24

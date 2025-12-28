@@ -1,0 +1,95 @@
+      customUserCacheKeyFunc: (Y, J) => {
+        return aD8("sha1")
+          .update(Y)
+          .update(J.userID || "")
+          .digest("hex")
+          .slice(0, 10);
+      },
+    },
+    G = new _rA.StatsigClient(A, Q, B);
+  G.on("error", () => {
+    SQ.head("https://api.anthropic.com/api/hello").catch(() => {});
+  });
+  let Z = G.initializeAsync();
+  return (
+    process.on("beforeExit", async () => {
+      await G.flush();
+    }),
+    process.on("exit", () => {
+      G.flush();
+    }),
+    { client: G, initialized: Z }
+  );
+}
+function KiQ() {
+  ((kg1 = !1),
+    F1A.cache?.clear?.(),
+    Ig.cache?.clear?.(),
+    sD8.cache?.clear?.(),
+    $X.cache?.clear?.());
+}
+function ViQ() {
+--
+});
+async function RP5() {
+  try {
+    if (
+      F0(process.env.CLAUDE_CODE_USE_BEDROCK) ||
+      F0(process.env.CLAUDE_CODE_USE_VERTEX) ||
+      F0(process.env.CLAUDE_CODE_USE_FOUNDRY)
+    )
+      return !0;
+    return (
+      await SQ.get("https://api.anthropic.com/api/hello", {
+        timeout: 5000,
+        headers: { "Cache-Control": "no-cache" },
+      }),
+      !0
+    );
+  } catch (A) {
+    if (!(A instanceof DBQ)) return !0;
+    return A.code !== "EHOSTUNREACH";
+  }
+}
+function _V0() {
+  let [A, Q] = hY1.useState(null);
+  return (
+    hY1.useEffect(() => {
+      let B = !0;
+      if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) return;
+      let G = async () => {
+        if (!B) return;
+        let Y = await RP5();
+        if (B) Q(Y);
+--
+    B
+  );
+}
+var lD1;
+var HH9 = O(() => {
+  lD1 = l(JA(), 1);
+});
+async function wW7() {
+  try {
+    let A = [
+        "https://api.anthropic.com/api/hello",
+        "https://console.anthropic.com/v1/oauth/hello",
+      ],
+      Q = async (Z) => {
+        try {
+          let Y = await SQ.get(Z, { headers: { "User-Agent": Yi() } });
+          if (Y.status !== 200)
+            return {
+              success: !1,
+              error: `Failed to connect to ${new URL(Z).hostname}: Status ${Y.status}`,
+            };
+          return { success: !0 };
+        } catch (Y) {
+          return {
+            success: !1,
+            error: `Failed to connect to ${new URL(Z).hostname}: ${Y instanceof Error ? Y.code || Y.message : String(Y)}`,
+          };
+        }
+      },
+      G = (await Promise.all(A.map(Q))).find((Z) => !Z.success);
+    if (G)

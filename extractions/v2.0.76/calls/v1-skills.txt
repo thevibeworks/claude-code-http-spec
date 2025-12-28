@@ -1,0 +1,62 @@
+  wJA();
+  Yn();
+  LJA = class LJA extends RX {
+    constructor() {
+      super(...arguments);
+      this.versions = new KOA(this._client);
+    }
+    create(A = {}, Q) {
+      let { betas: B, ...G } = A ?? {};
+      return this._client.post(
+        "/v1/skills?beta=true",
+        UJA(
+          {
+            body: G,
+            ...Q,
+            headers: M6([
+              {
+                "anthropic-beta": [
+                  ...(B ?? []),
+                  "skills-2025-10-02",
+                ].toString(),
+              },
+              Q?.headers,
+            ]),
+          },
+          this._client,
+        ),
+      );
+    }
+    retrieve(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.get(lJ`/v1/skills/${A}?beta=true`, {
+        ...B,
+        headers: M6([
+          { "anthropic-beta": [...(G ?? []), "skills-2025-10-02"].toString() },
+          B?.headers,
+        ]),
+      });
+    }
+    list(A = {}, Q) {
+      let { betas: B, ...G } = A ?? {};
+      return this._client.getAPIList("/v1/skills?beta=true", BOA, {
+        query: G,
+        ...Q,
+        headers: M6([
+          { "anthropic-beta": [...(B ?? []), "skills-2025-10-02"].toString() },
+          Q?.headers,
+        ]),
+      });
+    }
+    delete(A, Q = {}, B) {
+      let { betas: G } = Q ?? {};
+      return this._client.delete(lJ`/v1/skills/${A}?beta=true`, {
+        ...B,
+        headers: M6([
+          { "anthropic-beta": [...(G ?? []), "skills-2025-10-02"].toString() },
+          B?.headers,
+        ]),
+      });
+    }
+  };
+  LJA.Versions = KOA;
