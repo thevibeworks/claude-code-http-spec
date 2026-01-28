@@ -1,7 +1,2 @@
-Axios var: SQ (v2.0.76)
-SQ.get: 31
-SQ.post: 15
-SQ.put: 1
-SQ.patch: 1
-SQ.delete: 0
-SQ.head: 2
+      4 Y.delete(
+     36 Y.get(

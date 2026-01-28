@@ -47,19 +47,53 @@ log "Endpoints in spec: $SPEC_COUNT"
 
 # Extract paths from .http file
 SPEC_PATHS=$(mktemp)
-grep -oE '(GET|POST|PUT|PATCH|DELETE|HEAD) \{\{[^}]+\}\}/[^ ]+' "$HTTP_SPEC" \
-  | sed 's|.*}}/|/|' \
-  | sed 's/\?.*//; s/{{[^}]*}}/.*/g' \
+SPEC_RAW=$(mktemp)
+grep -oE '^(GET|POST|PUT|PATCH|DELETE|HEAD) \{\{[^}]+\}\}/[^ ]+' "$HTTP_SPEC" > "$SPEC_RAW" 2>/dev/null || true
+sed 's/^[A-Z][A-Z]* {{[^}]*}}//' "$SPEC_RAW" \
+  | sed 's/\?.*//' \
+  | sed 's/{{[^}]*}}/.*/g' \
   | sort -u > "$SPEC_PATHS"
 
 # Extract paths from cli.js
+# Note: modern builds use template strings (backticks) and `${...}` interpolation.
 CODE_PATHS=$(mktemp)
-{
-  rg -o '"/(api|v1)/[^"]+' "$CLI_JS" 2>/dev/null || true
-  rg -o 'https://api\.anthropic\.com/[^"]+' "$CLI_JS" 2>/dev/null | sed 's|https://api\.anthropic\.com||' || true
-} | sed 's/"//g; s/\?.*//; s/${[^}]*}/.*/g' | sort -u > "$CODE_PATHS"
+CODE_RAW=$(mktemp)
 
-CODE_COUNT=$(wc -l < "$CODE_PATHS" | tr -d ' ')
+# Relative paths in string literals
+rg -o '"/(api|v1)/[^"]+' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+rg -o "'/(api|v1)/[^']+" "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+rg -o '`/(api|v1)/[^`]+' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+
+# Common OAuth metadata path (used via `new URL("/.well-known/oauth-authorization-server", origin)`)
+rg -o '"/\.well-known/oauth-authorization-server[^"]*' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+rg -o "'/\.well-known/oauth-authorization-server[^']*" "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+rg -o '`/\.well-known/oauth-authorization-server[^`]*' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+
+# Full URLs for Anthropic hosts (strip host -> path)
+rg -o 'https://api\.anthropic\.com/[^"[:space:]]+' "$CLI_JS" 2>/dev/null | sed 's|https://api.anthropic.com||' >> "$CODE_RAW" || true
+rg -o 'https://console\.anthropic\.com/[^"[:space:]]+' "$CLI_JS" 2>/dev/null | sed 's|https://console.anthropic.com||' >> "$CODE_RAW" || true
+
+# Narrow claude.ai extraction: only the domain info API endpoint (not browser/navigation URLs)
+rg -o 'https://claude\.ai/api/web/domain_info[^"[:space:]]*' "$CLI_JS" 2>/dev/null | sed 's|https://claude.ai||' >> "$CODE_RAW" || true
+
+# Template string fragments that include BASE_API_URL interpolation
+rg -o 'BASE_API_URL}/api/[^"[:space:]]+' "$CLI_JS" 2>/dev/null | sed 's|BASE_API_URL}||' >> "$CODE_RAW" || true
+rg -o 'BASE_API_URL}/v1/[^"[:space:]]+' "$CLI_JS" 2>/dev/null | sed 's|BASE_API_URL}||' >> "$CODE_RAW" || true
+
+# Stable API path fragments that are built from non-literal hosts (e.g. `${host}/api/...`).
+rg -o '/api/event_logging/batch' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+
+sed -e 's/\"//g' -e "s/'//g" -e 's/`//g' -e 's/[),;]$//' -e 's/\?.*//' -e 's/\${[^}]*}/.*/g' "$CODE_RAW" \
+  | sed 's|^/\.well-known/oauth-authorization-server\..*|/.well-known/oauth-authorization-server|' \
+  | sort -u > "$CODE_PATHS"
+
+# Scope CODE_PATHS to endpoints we actually spec in this repo.
+# Avoid false positives from bundled deps with generic `/v1/*` paths (e.g. Segment, AWS, Google libs).
+CODE_PATHS_SCOPED=$(mktemp)
+grep -E '^/api/(oauth|claude_code|claude_cli|organization|web|event_logging|hello)|^/v1/(messages|files|models|skills|sessions|session_ingress|environment_providers|oauth|toolbox|complete)|^/\.well-known/oauth-authorization-server' "$CODE_PATHS" \
+  > "$CODE_PATHS_SCOPED" || true
+
+CODE_COUNT=$(wc -l < "$CODE_PATHS_SCOPED" | tr -d ' ')
 log "Paths in code: $CODE_COUNT"
 log ""
 
@@ -74,18 +108,26 @@ while IFS= read -r path; do
     fi
   done < "$SPEC_PATHS"
   [ "$found" -eq 0 ] && echo "$path"
-done < "$CODE_PATHS" > "$UNDOC"
+done < "$CODE_PATHS_SCOPED" > "$UNDOC"
 
 UNDOC_COUNT=$(wc -l < "$UNDOC" | tr -d ' ')
 
 # Find phantom (in spec but not in code)
 PHANTOM=$(mktemp)
 while IFS= read -r spec_path; do
-  # Convert spec pattern to grep pattern
-  pattern=$(echo "$spec_path" | sed 's/\./\\./g; s/\*/.*/g')
-  if ! grep -qE "$pattern" "$CODE_PATHS" 2>/dev/null; then
-    echo "$spec_path"
-  fi
+  found=0
+  while IFS= read -r path; do
+    # Either direction can establish coverage because both sides may contain wildcards (`.*`).
+    if echo "$path" | grep -qE "^${spec_path}$"; then
+      found=1
+      break
+    fi
+    if echo "$spec_path" | grep -qE "^${path}$"; then
+      found=1
+      break
+    fi
+  done < "$CODE_PATHS_SCOPED"
+  [ "$found" -eq 0 ] && echo "$spec_path"
 done < "$SPEC_PATHS" > "$PHANTOM"
 
 PHANTOM_COUNT=$(wc -l < "$PHANTOM" | tr -d ' ')
@@ -106,7 +148,7 @@ if [ "$PHANTOM_COUNT" -gt 0 ]; then
 fi
 
 # Cleanup
-rm -f "$SPEC_PATHS" "$CODE_PATHS" "$UNDOC" "$PHANTOM"
+rm -f "$SPEC_RAW" "$CODE_RAW" "$SPEC_PATHS" "$CODE_PATHS" "$CODE_PATHS_SCOPED" "$UNDOC" "$PHANTOM"
 
 # Summary
 log "=== SUMMARY ==="

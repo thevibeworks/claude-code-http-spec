@@ -9,7 +9,7 @@
 | Metric | Count |
 |--------|-------|
 | URLs | 290 |
-| API Paths | 14 |
+| API Paths | 15 |
 | Headers | 19 |
 | Beta Flags | 16 |
 | OAuth Scopes | 4 |
@@ -24,6 +24,9 @@
 
 ### New API Paths (+1)
 - `/v1/toolbox/shttp/mcp/{server_id}` - MCP server HTTP proxy endpoint
+
+### Previously Undocumented (present since v2.0.69)
+- `/v1/token` - AWS Signin OAuth2 token endpoint (Bedrock auth)
 
 ### SDK Version
 - Stainless SDK: 0.70.0 (unchanged)
@@ -58,7 +61,7 @@
 "user:sessions:claude_code"
 ```
 
-## API Paths (14 total)
+## API Paths (15 total)
 
 ```
 "/api/
@@ -74,6 +77,7 @@
 "/v1/messages"
 "/v1/messages/batches"
 "/v1/models"
+"/v1/token"                            # AWS Signin (since v2.0.69, now documented)
 "/v1/toolbox/shttp/mcp/{server_id}     # NEW
 ```
 
@@ -82,6 +86,9 @@
 ```bash
 # Verify new MCP endpoint
 rg 'toolbox/shttp/mcp' cli.js -B 15 -A 25
+
+# Verify AWS Signin endpoint
+rg 'CreateOAuth2Token|signin\.aws' cli.js -B 10 -A 20
 
 # Verify new beta flags
 rg 'mcp-servers-2025-12-04' cli.js

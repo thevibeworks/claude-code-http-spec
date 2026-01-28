@@ -16,7 +16,7 @@ Gates at Step 4 and Step 7 - stop and report if they fail.
 
 ```bash
 # If this returns nothing, endpoint doesn't exist
-rg '"/api/oauth/profile"' cli.js
+rg '/api/oauth/profile' cli.js
 ```
 
 ## File Types

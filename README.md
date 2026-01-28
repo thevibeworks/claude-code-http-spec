@@ -70,7 +70,7 @@ Core rule: Extract **stable string literals**, not obfuscated variable names.
 
 ```bash
 # Verify endpoint exists
-rg '"/api/oauth/profile"' package/cli.js
+rg '/api/oauth/profile' package/cli.js
 
 # Extract full call context
 rg '/api/oauth/profile' package/cli.js -B 10 -A 20

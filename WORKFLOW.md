@@ -181,7 +181,7 @@ For each endpoint in `.http` file:
 - [ ] All headers with values
 - [ ] Request body JSON (if POST/PUT/PATCH)
 - [ ] Response shape documented in comments
-- [ ] Verification pattern: `# Verify: rg '"/path"' cli.js`
+- [ ] Verification pattern: `# Verify: rg '/path' cli.js`
 
 ## Step 4: Verify Endpoints (GATE)
 
@@ -189,7 +189,7 @@ For each endpoint in `extraction/path_literals.txt`, verify it exists:
 
 ```bash
 # Must return matches
-rg '"/api/oauth/profile"' package/cli.js
+rg '/api/oauth/profile' package/cli.js
 
 # If returns nothing = phantom endpoint, do NOT document
 ```
@@ -346,7 +346,7 @@ rg 'Content-Type' cli.js -A 2 | head -20
 # Saw /api/org/xxx in network tab
 
 # DO: string literals
-rg '"/api/oauth/profile"' cli.js
+rg '/api/oauth/profile' cli.js
 ```
 
 ## Failure Conditions

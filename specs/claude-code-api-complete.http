@@ -2,7 +2,7 @@
 # Extracted from @anthropic-ai/claude-code v2.0.76
 #
 # Validation: Search for URL path strings (stable across builds)
-#   rg '"/api/oauth/profile"' cli.js
+#   rg '/api/oauth/profile' cli.js
 #   rg '"/v1/messages"' cli.js
 #   rg 'api\.anthropic\.com' cli.js
 #
@@ -26,6 +26,7 @@
 @accessToken = YOUR_ACCESS_TOKEN
 @apiKey = YOUR_API_KEY
 @orgUuid = YOUR_ORG_UUID
+@remoteSettingsChecksum = sha256:YOUR_CHECKSUM
 
 
 ### ============================================================================
@@ -111,7 +112,7 @@ Content-Type: application/json
 ### ----------------------------------------------------------------------------
 ### 2.1 OAuth Profile (with Bearer token)
 ### ----------------------------------------------------------------------------
-# Pattern: rg '"/api/oauth/profile"' cli.js
+# Pattern: rg '/api/oauth/profile' cli.js
 
 # @name oauthProfile
 GET {{baseUrl}}/api/oauth/profile
@@ -242,6 +243,36 @@ User-Agent: claude-cli/{{cliVersion}} (external, cli)
 #   "notice_reminder_frequency": ...
 # }
 
+### ----------------------------------------------------------------------------
+### 3.5 Remote Settings (Enterprise / First Party)
+### ----------------------------------------------------------------------------
+# Pattern: rg "Remote settings:" cli.js
+# Verify: rg "/api/claude_code/settings" cli.js
+
+# @name getRemoteSettingsWithApiKey
+GET {{baseUrl}}/api/claude_code/settings
+x-api-key: {{apiKey}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+If-None-Match: "{{remoteSettingsChecksum}}"
+
+### Response (200):
+# {
+#   "settings": { ... },
+#   "checksum": "sha256:..."
+# }
+#
+# Response (304): no body (use cached settings)
+# Response (404): no settings (treat as {})
+
+###
+
+# @name getRemoteSettingsWithOAuth
+GET {{baseUrl}}/api/claude_code/settings
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+If-None-Match: "{{remoteSettingsChecksum}}"
+
 
 ### ============================================================================
 ### SECTION 4: USAGE & BILLING
@@ -297,6 +328,40 @@ User-Agent: claude-code/{{cliVersion}}
 #   "has_access": true,
 #   "has_access_not_as_default": false
 # }
+
+### ----------------------------------------------------------------------------
+### 4.4 Create Extra Usage Admin Request
+### ----------------------------------------------------------------------------
+# Pattern: rg "admin_requests" cli.js
+
+# @name createAdminRequest
+POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests
+Authorization: Bearer {{accessToken}}
+x-organization-uuid: {{orgUuid}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+    "request_type": "limit_increase",
+    "details": null
+}
+
+### Response:
+# (CLI ignores response body; server returns JSON)
+
+### ----------------------------------------------------------------------------
+### 4.5 List My Admin Requests
+### ----------------------------------------------------------------------------
+# Pattern: rg "admin_requests/me" cli.js
+
+# @name listMyAdminRequests
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/me?request_type=limit_increase&statuses=pending&statuses=dismissed
+Authorization: Bearer {{accessToken}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# [ ... ]
 
 
 ### ============================================================================
@@ -613,7 +678,7 @@ anthropic-version: {{version}}
 ### ----------------------------------------------------------------------------
 
 # @name getModel
-GET {{baseUrl}}/v1/models/claude-sonnet-4-20250514?beta=true
+GET {{baseUrl}}/v1/models/{{modelId}}?beta=true
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
 
@@ -1029,48 +1094,19 @@ GET {{claudeAiUrl}}/api/web/domain_info?domain={{domain}}
 ### ----------------------------------------------------------------------------
 
 # @name fetchFeatures
-GET {{baseUrl}}/api/features/{{clientKey}}
+GET https://cdn.growthbook.io/api/features/{{clientKey}}
 
 ### ----------------------------------------------------------------------------
 ### 18.2 Remote Eval
 ### ----------------------------------------------------------------------------
 
 # @name remoteEval
-POST {{baseUrl}}/api/eval/{{clientKey}}
+POST https://cdn.growthbook.io/api/eval/{{clientKey}}
 Content-Type: application/json
 
 {
     "attributes": {}
 }
-
-
-### ============================================================================
-### SECTION 19: TOKEN REVOCATION (OAuth 2.0 RFC 7009)
-### ============================================================================
-# Pattern: rg "revocation_endpoint|token_type_hint" cli.js
-# Discovered via OAuth metadata at /.well-known/oauth-authorization-server
-
-### ----------------------------------------------------------------------------
-### 19.1 Revoke Access Token
-### ----------------------------------------------------------------------------
-
-# @name revokeAccessToken
-POST {{consoleUrl}}/v1/oauth/revoke
-Content-Type: application/x-www-form-urlencoded
-Authorization: Bearer {{accessToken}}
-
-token={{accessToken}}&token_type_hint=access_token&client_id={{clientId}}
-
-### ----------------------------------------------------------------------------
-### 19.2 Revoke Refresh Token
-### ----------------------------------------------------------------------------
-
-# @name revokeRefreshToken
-POST {{consoleUrl}}/v1/oauth/revoke
-Content-Type: application/x-www-form-urlencoded
-Authorization: Bearer {{accessToken}}
-
-token={{refreshToken}}&token_type_hint=refresh_token&client_id={{clientId}}
 
 
 ### ============================================================================
@@ -1321,6 +1357,69 @@ anthropic-beta: mcp-servers-2025-12-04
 
 
 ### ============================================================================
+### SECTION 28: AWS SIGNIN (Bedrock OAuth2)
+### ============================================================================
+# Pattern: rg "signin\.aws|CreateOAuth2Token" cli.js
+# Used for AWS IAM Identity Center OAuth2 token exchange (Bedrock access)
+# Note: This endpoint was present since v2.0.69 but undocumented
+
+@signinAwsUrl = https://{{awsRegion}}.signin.aws.amazon.com
+@signinAwsCnUrl = https://{{awsRegion}}.signin.amazonaws.cn
+
+### ----------------------------------------------------------------------------
+### 28.1 Create OAuth2 Token (Authorization Code Grant)
+### ----------------------------------------------------------------------------
+# Pattern: rg 'CreateOAuth2Token' cli.js -B 10 -A 30
+# Exchange authorization code for tokens
+
+# @name awsSigninTokenAuthCode
+POST {{signinAwsUrl}}/v1/token
+Content-Type: application/json
+
+{
+    "clientId": "{{awsClientId}}",
+    "grantType": "authorization_code",
+    "code": "{{authorizationCode}}",
+    "redirectUri": "{{redirectUri}}",
+    "codeVerifier": "{{pkceCodeVerifier}}"
+}
+
+# Response:
+# {
+#     "accessToken": "...",
+#     "tokenType": "Bearer",
+#     "expiresIn": 3600,
+#     "refreshToken": "...",
+#     "idToken": "..."
+# }
+
+### ----------------------------------------------------------------------------
+### 28.2 Refresh OAuth2 Token
+### ----------------------------------------------------------------------------
+# Pattern: rg 'refreshToken.*grantType|grantType.*refresh' cli.js
+
+# @name awsSigninTokenRefresh
+POST {{signinAwsUrl}}/v1/token
+Content-Type: application/json
+
+{
+    "clientId": "{{awsClientId}}",
+    "grantType": "refresh_token",
+    "refreshToken": "{{awsRefreshToken}}"
+}
+
+# Response: Same as 28.1
+
+# Error codes:
+#   AUTHCODE_EXPIRED
+#   INSUFFICIENT_PERMISSIONS
+#   INVALID_REQUEST
+#   SERVER_ERROR (server_error)
+#   TOKEN_EXPIRED
+#   USER_CREDENTIALS_CHANGED
+
+
+### ============================================================================
 ### APPENDIX A: BETA FLAGS
 ### ============================================================================
 # Pattern: rg "anthropic-beta" cli.js | grep -o '"[a-z-]*-[0-9-]*"' | sort -u
@@ -1543,7 +1642,6 @@ anthropic-beta: mcp-servers-2025-12-04
 #
 #   GET  /oauth/authorize
 #   POST /v1/oauth/token
-#   POST /v1/oauth/revoke
 #   GET  /v1/oauth/hello
 #   GET  /.well-known/oauth-authorization-server
 #
