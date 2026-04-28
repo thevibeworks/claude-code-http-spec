@@ -260,7 +260,6 @@ GET {{baseApiUrl}}/api/oauth/usage
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 User-Agent: claude-code/{{cliVersion}}
-anthropic-beta: oauth-2025-04-20
 
 ###
 
@@ -282,7 +281,6 @@ User-Agent: claude-code/{{cliVersion}}
 GET {{baseApiUrl}}/api/oauth/account/settings
 Authorization: Bearer {{accessToken}}
 User-Agent: claude-code/{{cliVersion}}
-anthropic-beta: oauth-2025-04-20
 
 ### ============================================================================
 ### RESPONSE SCHEMAS
