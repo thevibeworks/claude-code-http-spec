@@ -1,0 +1,192 @@
+          P28(K, A, { logger: this._client.logger ?? console }),
+        )
+      );
+    }
+    stream(A, q) {
+      return ab6.createMessage(this, A, q);
+    }
+    countTokens(A, q) {
+      let K = tX7(A),
+        { betas: Y, ...z } = K;
+      return this._client.post("/v1/messages/count_tokens?beta=true", {
+        body: z,
+        ...q,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(Y ?? []),
+              "token-counting-2024-11-01",
+            ].toString(),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+    toolRunner(A, q) {
+      return new Ax6(this._client, A, q);
+    }
+  };
+  ba.Batches = qx6;
+  ba.BetaToolRunner = Ax6;
+  ba.ToolError = QM6;
+--
+      return this.create(A, q).then((K) =>
+        I28(K, A, { logger: this._client.logger ?? console }),
+      );
+    }
+    stream(A, q) {
+      return Hx6.createMessage(this, A, q, {
+        logger: this._client.logger ?? console,
+      });
+    }
+    countTokens(A, q) {
+      return this._client.post("/v1/messages/count_tokens", { body: A, ...q });
+    }
+  };
+  ((wP7 = {
+    "claude-1.3": "November 6th, 2024",
+    "claude-1.3-100k": "November 6th, 2024",
+    "claude-instant-1.1": "November 6th, 2024",
+    "claude-instant-1.1-100k": "November 6th, 2024",
+    "claude-instant-1.2": "November 6th, 2024",
+    "claude-3-sonnet-20240229": "July 21st, 2025",
+    "claude-3-opus-20240229": "January 5th, 2026",
+    "claude-2.1": "July 21st, 2025",
+    "claude-2.0": "July 21st, 2025",
+    "claude-3-7-sonnet-latest": "February 19th, 2026",
+    "claude-3-7-sonnet-20250219": "February 19th, 2026",
+    "claude-3-5-haiku-latest": "February 19th, 2026",
+    "claude-3-5-haiku-20241022": "February 19th, 2026",
+  }),
+    (IR3 = ["claude-opus-4-6"]));
+  Yk.Batches = jx6;
+});
+--
+        if (!HD1(A.body))
+          throw Error(
+            "Expected request body to be an object for post /v1/messages",
+          );
+        let q = A.body.model;
+        A.body.model = void 0;
+        let Y = (A.body.stream ?? !1) ? "streamRawPredict" : "rawPredict";
+        A.path = `/projects/${this.projectId}/locations/${this.region}/publishers/anthropic/models/${q}:${Y}`;
+      }
+      if (
+        A.path === "/v1/messages/count_tokens" ||
+        (A.path == "/v1/messages/count_tokens?beta=true" && A.method === "post")
+      ) {
+        if (!this.projectId)
+          throw Error(
+            "No projectId was given and it could not be resolved from credentials. The client should be instantiated with the `projectId` option or the `ANTHROPIC_VERTEX_PROJECT_ID` environment variable should be set.",
+          );
+        A.path = `/projects/${this.projectId}/locations/${this.region}/publishers/anthropic/models/count-tokens:rawPredict`;
+      }
+      return super.buildRequest(A);
+    }
+  };
+});
+var S64 = {};
+N1(S64, {
+  default: () => Df8,
+  BaseAnthropic: () => yz,
+  AnthropicVertex: () => Df8,
+});
+var C64 = E(() => {
+  Xf8();
+  Xf8();
+--
+        Y = bk(K),
+        z = FZq(A);
+      if (QA() === "bedrock")
+        return t5z({
+          model: lg(K),
+          messages: A,
+          tools: q,
+          betas: Y,
+          containsThinking: z,
+        });
+      let _ = await MI({ maxRetries: 1, model: K, source: "count_tokens" }),
+        w = QA() === "vertex" ? Y.filter(($) => en1.has($)) : Y,
+        O = await _.beta.messages.countTokens({
+          model: lg(K),
+          messages: A.length > 0 ? A : [{ role: "user", content: "foo" }],
+          tools: q,
+          ...(w.length > 0 ? { betas: w } : {}),
+          ...(z ? { thinking: { type: "enabled", budget_tokens: Qi8 } } : {}),
+        });
+      if (typeof O.input_tokens !== "number") return null;
+      return O.input_tokens;
+    } catch (K) {
+      return (_6(K), null);
+    }
+  });
+}
+function j5(A, q = 4) {
+  return Math.round(A.length / q);
+}
+function PV8(A) {
+  switch (A) {
+--
+}
+function C94(A, q) {
+  return j5(A, PV8(q));
+}
+async function xZq(A, q) {
+  let K = FZq(A),
+    Y = t6(process.env.CLAUDE_CODE_USE_VERTEX) && lt6(lH()) === "global",
+    z = t6(process.env.CLAUDE_CODE_USE_BEDROCK) && K,
+    _ = t6(process.env.CLAUDE_CODE_USE_VERTEX) && K,
+    w = Y || z || _ ? Ef() : lH(),
+    O = await MI({ maxRetries: 1, model: w, source: "count_tokens" }),
+    $ = a5z(A),
+    H = $.length > 0 ? $ : [{ role: "user", content: "count" }],
+    j = bk(w),
+    J = QA() === "vertex" ? j.filter((Z) => en1.has(Z)) : j,
+    D = (
+      await O.beta.messages.create({
+        model: lg(w),
+        max_tokens: K ? gZq : 1,
+        messages: H,
+        tools: q.length > 0 ? q : void 0,
+        ...(J.length > 0 ? { betas: J } : {}),
+        metadata: Vt(),
+        ...Ih1(),
+        ...(K ? { thinking: { type: "enabled", budget_tokens: Qi8 } } : {}),
+      })
+    ).usage,
+    X = D.input_tokens,
+    P = D.cache_creation_input_tokens || 0,
+    W = D.cache_read_input_tokens || 0;
+  return X + P + W;
+--
+simple_response = client.messages.create(
+    model="{{HAIKU_ID}}",  # $1.00/$5.00 per 1M tokens
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Classify this as positive or negative"}]
+)
+\`\`\`
+
+### 3. Use Token Counting Before Requests
+
+\`\`\`python
+count_response = client.messages.count_tokens(
+    model="{{OPUS_ID}}",
+    messages=messages,
+    system=system
+)
+
+estimated_input_cost = count_response.input_tokens * 0.000005  # $5/1M tokens
+print(f"Estimated input cost: \${estimated_input_cost:.4f}")
+\`\`\`
+
+---
+
+## Retry with Exponential Backoff
+
+> **Note:** The Anthropic SDK automatically retries rate limit (429) and server errors (5xx) with exponential backoff. You can configure this with \`max_retries\` (default: 2). Only implement custom retry logic if you need behavior beyond what the SDK provides.
+
+\`\`\`python
+import time
+import random
+import anthropic
+

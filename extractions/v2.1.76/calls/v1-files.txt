@@ -1,0 +1,63 @@
+var Ub6;
+var J28 = E(() => {
+  _m();
+  qk();
+  Qb6();
+  gM6();
+  ha();
+  Ub6 = class Ub6 extends p$ {
+    list(A = {}, q) {
+      let { betas: K, ...Y } = A ?? {};
+      return this._client.getAPIList("/v1/files", VC, {
+        query: Y,
+        ...q,
+        headers: oK([
+          {
+            "anthropic-beta": [...(K ?? []), "files-api-2025-04-14"].toString(),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+    delete(A, q = {}, K) {
+      let { betas: Y } = q ?? {};
+      return this._client.delete(oO`/v1/files/${A}`, {
+        ...K,
+        headers: oK([
+          {
+            "anthropic-beta": [...(Y ?? []), "files-api-2025-04-14"].toString(),
+          },
+          K?.headers,
+        ]),
+--
+          {
+            "anthropic-beta": [...(Y ?? []), "files-api-2025-04-14"].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    upload(A, q) {
+      let { betas: K, ...Y } = A;
+      return this._client.post(
+        "/v1/files",
+        BM6(
+          {
+            body: Y,
+            ...q,
+            headers: oK([
+              {
+                "anthropic-beta": [
+                  ...(K ?? []),
+                  "files-api-2025-04-14",
+                ].toString(),
+              },
+              BX7(Y.file),
+              q?.headers,
+            ]),
+          },
+          this._client,
+        ),
+      );
+    }
+  };

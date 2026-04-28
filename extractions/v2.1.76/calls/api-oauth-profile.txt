@@ -1,0 +1,31 @@
+        headers: { "x-api-key": K, "anthropic-beta": DP },
+        params: { account_uuid: q },
+        timeout: 1e4,
+      })
+    ).data;
+  } catch (z) {
+    _6(z);
+  }
+}
+async function Kg(A) {
+  let q = `${P7().BASE_API_URL}/api/oauth/profile`;
+  try {
+    return (
+      await X8.get(q, {
+        headers: {
+          Authorization: `Bearer ${A}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 1e4,
+      })
+    ).data;
+  } catch (K) {
+    _6(K);
+  }
+}
+var RZ6 = E(() => {
+  kK();
+  F5();
+  fA();
+  k8();
+  k1();

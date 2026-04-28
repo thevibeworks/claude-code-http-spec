@@ -1,0 +1,31 @@
+            ...(Y?.toString() != null
+              ? { "anthropic-beta": Y?.toString() }
+              : void 0),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    list(A = {}, q) {
+      let { betas: K, ...Y } = A ?? {};
+      return this._client.getAPIList("/v1/models", VC, {
+        query: Y,
+        ...q,
+        headers: oK([
+          {
+            ...(K?.toString() != null
+              ? { "anthropic-beta": K?.toString() }
+              : void 0),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+  };
+});
+var Jx6 = E(() => {
+  h28();
+  S28();
+  p28();
+  Q28();
+  uX7();

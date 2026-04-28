@@ -1,0 +1,7 @@
+bedrock-2023-05-31
+compact-2026-01-12
+effort-2025-11-24
+environments-2025-11-01
+oauth-2025-04-20
+skills-2025-10-02
+vertex-2023-10-16

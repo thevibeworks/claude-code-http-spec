@@ -1,0 +1,66 @@
+      h("No session token available for session persistence"),
+      E8("error", "session_persist_fail_jwt_no_token"),
+      !1
+    );
+  let z = { Authorization: `Bearer ${Y}`, "Content-Type": "application/json" };
+  return await OHK(A)(K, q, z);
+}
+async function $HK(A, K) {
+  try {
+    let { accessToken: q, orgUUID: Y } = await Dv(),
+      z = `${C7().BASE_API_URL}/v1/session_ingress/session/${A}`,
+      w = { ...W_(q), "x-organization-uuid": Y };
+    return await OHK(A)(K, z, w);
+  } catch (q) {
+    return (
+      h(
+        `Failed to get OAuth credentials: ${q instanceof Error ? q.message : String(q)}`,
+      ),
+      E8("error", "session_persist_fail_oauth_no_token"),
+      !1
+    );
+  }
+}
+async function _HK(A, K) {
+  let q = RC();
+  if (!q)
+    return (
+      h("No session token available for fetching session logs"),
+      E8("error", "session_get_fail_no_token"),
+      null
+    );
+  let Y = { Authorization: `Bearer ${q}` },
+    z = await GHK(A, K, Y);
+  if (z && z.length > 0) {
+    let w = z[z.length - 1];
+    if (w && "uuid" in w && w.uuid) If1.set(A, w.uuid);
+  }
+  return z;
+}
+async function ZHK(A, K, q) {
+  let Y = `${C7().BASE_API_URL}/v1/session_ingress/session/${A}`;
+  h(`[session-ingress] Fetching session logs from: ${Y}`);
+  let z = { ...W_(K), "x-organization-uuid": q };
+  return await GHK(A, Y, z);
+}
+async function GHK(A, K, q) {
+  try {
+    let Y = await t6.get(K, {
+      headers: q,
+      timeout: 20000,
+      validateStatus: (z) => z < 500,
+    });
+    if (Y.status === 200) {
+      let z = Y.data;
+      if (!z || typeof z !== "object" || !Array.isArray(z.loglines))
+        return (
+          KA(Error(`Invalid session logs response format: ${QA(z)}`)),
+          E8("error", "session_get_fail_invalid_response"),
+          null
+        );
+      let w = z.loglines;
+      return (h(`Fetched ${w.length} session logs for session ${A}`), w);
+    }
+    if (Y.status === 404)
+      return (
+        h(`No existing logs for session ${A}`),

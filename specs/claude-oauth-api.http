@@ -5,16 +5,17 @@
 #   Constants:  rg "BASE_API_URL|TOKEN_URL|CLIENT_ID" cli.js
 #   Scopes:     rg "user:inference|user:profile|user:sessions" cli.js
 #   Headers:    rg "anthropic-beta|anthropic-version|X-Stainless" cli.js
-#   Endpoints:  rg "/oauth/|/v1/messages|/api/hello" cli.js
+#   Endpoints:  rg "/oauth/|/v1/oauth/token|/api/hello" cli.js
 
 ### ============================================================================
 ### VARIABLES
 ### ============================================================================
 
 @baseApiUrl = https://api.anthropic.com
-@consoleUrl = https://console.anthropic.com
+@platformUrl = https://platform.claude.com
 @claudeAiUrl = https://claude.ai
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
+@cliVersion = 2.1.22
 
 # PKCE: base64url(crypto.randomBytes(32)) - no padding, URL-safe
 @codeVerifier = {{$randomInt 1000000000 9999999999}}abc
@@ -57,10 +58,10 @@
 # User opens this URL in browser to authorize.
 # Two hosts available:
 #   - claude.ai/oauth/authorize (loginWithClaudeAi=true, uses Claude.ai session)
-#   - console.anthropic.com/oauth/authorize (loginWithClaudeAi=false)
+#   - platform.claude.com/oauth/authorize (loginWithClaudeAi=false)
 #
 # Two redirect modes:
-#   - Manual: https://console.anthropic.com/oauth/code/callback (copy/paste code)
+#   - Manual: https://platform.claude.com/oauth/code/callback (copy/paste code)
 #   - Automatic: http://localhost:{port}/callback (local server catches it)
 
 # @name auth_claude_ai_manual_inference_only
@@ -69,7 +70,7 @@ GET {{claudeAiUrl}}/oauth/authorize
     ?code=true
     &client_id={{clientId}}
     &response_type=code
-    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &redirect_uri=https://platform.claude.com/oauth/code/callback
     &scope=user:inference
     &code_challenge={{codeChallenge}}
     &code_challenge_method=S256
@@ -83,7 +84,7 @@ GET {{claudeAiUrl}}/oauth/authorize
     ?code=true
     &client_id={{clientId}}
     &response_type=code
-    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &redirect_uri=https://platform.claude.com/oauth/code/callback
     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
     &code_challenge={{codeChallenge}}
     &code_challenge_method=S256
@@ -105,13 +106,13 @@ GET {{claudeAiUrl}}/oauth/authorize
 
 ###
 
-# @name auth_console_with_org
-# Console authorize with organization UUID (for org-specific auth)
-GET {{consoleUrl}}/oauth/authorize
+# @name auth_platform_with_org
+# Platform authorize with organization UUID (for org-specific auth)
+GET {{platformUrl}}/oauth/authorize
     ?code=true
     &client_id={{clientId}}
     &response_type=code
-    &redirect_uri=https://console.anthropic.com/oauth/code/callback
+    &redirect_uri=https://platform.claude.com/oauth/code/callback
     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
     &code_challenge={{codeChallenge}}
     &code_challenge_method=S256
@@ -132,13 +133,13 @@ GET {{consoleUrl}}/oauth/authorize
 
 # @name token_exchange_with_expiry
 # setup-token mode: request 1-year token
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
     "grant_type": "authorization_code",
     "code": "{{authCode}}",
-    "redirect_uri": "https://console.anthropic.com/oauth/code/callback",
+    "redirect_uri": "https://platform.claude.com/oauth/code/callback",
     "client_id": "{{clientId}}",
     "code_verifier": "{{codeVerifier}}",
     "state": "{{state}}",
@@ -149,13 +150,13 @@ Content-Type: application/json
 
 # @name token_exchange_default_expiry
 # login mode: server-default expiry (gets refresh token)
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
     "grant_type": "authorization_code",
     "code": "{{authCode}}",
-    "redirect_uri": "https://console.anthropic.com/oauth/code/callback",
+    "redirect_uri": "https://platform.claude.com/oauth/code/callback",
     "client_id": "{{clientId}}",
     "code_verifier": "{{codeVerifier}}",
     "state": "{{state}}"
@@ -165,7 +166,7 @@ Content-Type: application/json
 
 # @name token_exchange_automatic_callback
 # Automatic callback mode (localhost redirect)
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
@@ -188,7 +189,7 @@ Content-Type: application/json
 # IMPORTANT: CLI sends scope parameter with session scopes
 
 # @name token_refresh
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
@@ -258,7 +259,7 @@ Cache-Control: no-cache
 GET {{baseApiUrl}}/api/oauth/usage
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-User-Agent: claude-code/2.0.55
+User-Agent: claude-code/{{cliVersion}}
 anthropic-beta: oauth-2025-04-20
 
 ###
@@ -267,7 +268,7 @@ anthropic-beta: oauth-2025-04-20
 GET {{baseApiUrl}}/api/oauth/usage
 x-api-key: {{apiKey}}
 Content-Type: application/json
-User-Agent: claude-code/2.0.55
+User-Agent: claude-code/{{cliVersion}}
 
 ### ============================================================================
 ### 8. ACCOUNT SETTINGS
@@ -280,106 +281,8 @@ User-Agent: claude-code/2.0.55
 # @name get_account_settings
 GET {{baseApiUrl}}/api/oauth/account/settings
 Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/2.0.55
+User-Agent: claude-code/{{cliVersion}}
 anthropic-beta: oauth-2025-04-20
-
-### ============================================================================
-### 9. CLIENT DATA (Status)
-### ============================================================================
-# Search: rg "/claude_cli/client_data" cli.js
-
-# @name get_client_data
-GET {{baseApiUrl}}/api/oauth/claude_cli/client_data
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-User-Agent: axios/1.8.4
-
-### ============================================================================
-### 10. MESSAGES API (Chat/Inference)
-### ============================================================================
-# Search: rg "/v1/messages|anthropic-version|X-Stainless" cli.js
-#
-# Main inference endpoint for Claude models.
-# Uses Anthropic SDK (Stainless) with specific headers.
-
-@model = claude-haiku-4-5-20251001
-@maxTokens = 32000
-
-# @name messages_api_oauth
-POST {{baseApiUrl}}/v1/messages?beta=true
-Accept: application/json
-Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14
-anthropic-dangerous-direct-browser-access: true
-anthropic-version: 2023-06-01
-User-Agent: claude-cli/2.0.55 (external, cli)
-X-Stainless-Lang: js
-X-Stainless-Package-Version: 0.70.0
-X-Stainless-OS: MacOS
-X-Stainless-Arch: arm64
-X-Stainless-Runtime: node
-X-Stainless-Runtime-Version: v22.20.0
-X-Stainless-Retry-Count: 0
-X-Stainless-Timeout: 600
-X-Stainless-Helper-Method: stream
-
-{
-    "model": "{{model}}",
-    "max_tokens": {{maxTokens}},
-    "stream": true,
-    "messages": [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Hello, Claude!"
-                }
-            ]
-        }
-    ],
-    "metadata": {
-        "user_id": "user_<hash>_account_<uuid>_session_<uuid>"
-    },
-    "system": [
-        {
-            "type": "text",
-            "text": "You are Claude Code, Anthropic's official CLI for Claude."
-        }
-    ],
-    "tools": []
-}
-
-###
-
-# @name messages_api_apikey
-POST {{baseApiUrl}}/v1/messages?beta=true
-Accept: application/json
-Content-Type: application/json
-x-api-key: {{apiKey}}
-anthropic-version: 2023-06-01
-User-Agent: claude-cli/2.0.55 (external, cli)
-X-Stainless-Lang: js
-X-Stainless-Package-Version: 0.70.0
-X-Stainless-OS: MacOS
-X-Stainless-Arch: arm64
-X-Stainless-Runtime: node
-X-Stainless-Runtime-Version: v22.20.0
-X-Stainless-Retry-Count: 0
-X-Stainless-Timeout: 600
-
-{
-    "model": "{{model}}",
-    "max_tokens": {{maxTokens}},
-    "stream": false,
-    "messages": [
-        {
-            "role": "user",
-            "content": "Hello, Claude!"
-        }
-    ]
-}
 
 ### ============================================================================
 ### RESPONSE SCHEMAS
@@ -534,5 +437,6 @@ X-Stainless-Timeout: 600
 ### ============================================================================
 # Search: rg "SUCCESS_URL|REDIRECT_URL|/oauth/code/" cli.js
 #
-# CONSOLE_SUCCESS_URL: https://console.anthropic.com/oauth/code/success?app=claude-code
-# MANUAL_REDIRECT_URL: https://console.anthropic.com/oauth/code/callback
+# CONSOLE_SUCCESS_URL: https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code
+# CLAUDEAI_SUCCESS_URL: https://platform.claude.com/oauth/code/success?app=claude-code
+# MANUAL_REDIRECT_URL: https://platform.claude.com/oauth/code/callback

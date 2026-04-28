@@ -1,0 +1,31 @@
+});
+async function Yb4() {
+  let A = QO();
+  if (A.error) throw Error(`Auth error: ${A.error}`);
+  let q = {
+      "Content-Type": "application/json",
+      "User-Agent": pO(),
+      ...A.headers,
+    },
+    K =
+      "https://api.anthropic.com/api/claude_code/organizations/metrics_enabled";
+  return (await X8.get(K, { headers: q, timeout: 5000 })).data;
+}
+async function W2Y() {
+  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)
+    return { enabled: !1, hasError: !1 };
+  try {
+    let A;
+    try {
+      A = await Yb4();
+    } catch (q) {
+      if (
+        X8.isAxiosError(q) &&
+        (q.response?.status === 401 ||
+          (q.response?.status === 403 &&
+            typeof q.response?.data === "string" &&
+            q.response.data.includes("OAuth token has been revoked")))
+      ) {
+        let Y = sA()?.accessToken;
+        if (Y) (await DG(Y), (A = await Yb4()));
+        else throw q;

@@ -1,0 +1,31 @@
+  let A = x5()?.organizationUuid;
+  if (!A) throw Error("No organization ID available");
+  let K = mH();
+  if (K.error) throw Error(`Auth error: ${K.error}`);
+  let q = {
+    "Content-Type": "application/json",
+    "User-Agent": BH(),
+    ...K.headers,
+  };
+  try {
+    let Y = `https://api.anthropic.com/api/organization/${A}/claude_code_sonnet_1m_access`,
+      z = await t6.get(Y, { headers: q, timeout: 5000 });
+    return {
+      hasAccess: z.data.has_access,
+      hasAccessNotAsDefault: z.data.has_access_not_as_default,
+      hasError: !1,
+    };
+  } catch (Y) {
+    return (KA(Y), { hasAccess: !1, hasError: !0 });
+  }
+}
+async function Ko3() {
+  try {
+    return await Ao3();
+  } catch (A) {
+    return (
+      h("Sonnet-1M access check failed, defaulting to no access"),
+      { hasAccess: !1, hasError: !0 }
+    );
+  }
+}

@@ -1,0 +1,31 @@
+            (h("Policy limits: Loading promise timed out, resolving anyway"),
+              Yd(),
+              (Yd = null));
+        }, yX2));
+    });
+}
+function Bj1() {
+  return TX2(H8(), CX2);
+}
+function IX2() {
+  return `${C7().BASE_API_URL}/api/claude_code/policy_limits`;
+}
+function kL6(A) {
+  if (Array.isArray(A)) return A.map(kL6);
+  if (A !== null && typeof A === "object") {
+    let K = {};
+    for (let [q, Y] of Object.entries(A).sort(([z], [w]) => z.localeCompare(w)))
+      K[q] = kL6(Y);
+    return K;
+  }
+  return A;
+}
+function SX2(A) {
+  let K = kL6(A),
+    q = QA(K);
+  return `sha256:${vX2("sha256").update(q).digest("hex")}`;
+}
+function BB() {
+  if (VK() !== "firstParty") return !1;
+  if (!LJA()) return !1;
+  try {

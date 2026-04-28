@@ -1,0 +1,207 @@
+  if (A === void 0)
+    throw Error(
+      "Claude Code web sessions require authentication with a Claude.ai account. API key authentication is not sufficient. Please run /login to authenticate, or check your authentication status with /status.",
+    );
+  let K = await yx();
+  if (!K) throw Error("Unable to get organization UUID");
+  return { accessToken: A, orgUUID: K };
+}
+async function c6K() {
+  let { accessToken: A, orgUUID: K } = await Dv(),
+    q = `${C7().BASE_API_URL}/v1/sessions`;
+  try {
+    let Y = { ...W_(A), "x-organization-uuid": K },
+      z = await nG2(q, { headers: Y });
+    if (z.status !== 200)
+      throw Error(`Failed to fetch code sessions: ${z.statusText}`);
+    return z.data.data.map((H) => {
+      let J = H.session_context.sources.find(
+          (X) => X.type === "git_repository",
+        ),
+        O = null;
+      if (J?.url) {
+        let X = $3A(J.url);
+        if (X) {
+          let [$, _] = X.split("/");
+          if ($ && _)
+            O = {
+              name: _,
+              owner: { login: $ },
+              default_branch: J.revision || void 0,
+            };
+        }
+      }
+      return {
+        id: H.id,
+        title: H.title || "Untitled",
+--
+}
+function W_(A) {
+  return {
+    Authorization: `Bearer ${A}`,
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01",
+  };
+}
+async function cFA(A) {
+  let { accessToken: K, orgUUID: q } = await Dv(),
+    Y = `${C7().BASE_API_URL}/v1/sessions/${A}`,
+    z = { ...W_(K), "x-organization-uuid": q },
+    w = await t6.get(Y, {
+      headers: z,
+      timeout: 15000,
+      validateStatus: (H) => H < 500,
+    });
+  if (w.status !== 200) {
+    let J = w.data?.error?.message;
+    if (w.status === 404) throw Error(`Session not found: ${A}`);
+    if (w.status === 401)
+      throw Error("Session expired. Please run /login to sign in again.");
+    throw Error(J || `Failed to fetch session: ${w.status} ${w.statusText}`);
+  }
+  return w.data;
+}
+function nR6(A) {
+  return A.session_context.outcomes?.find((q) => q.type === "git_repository")
+    ?.git_info?.branches[0];
+}
+async function vM1(A, K) {
+  try {
+    let { accessToken: q, orgUUID: Y } = await Dv(),
+      z = `${C7().BASE_API_URL}/v1/sessions/${A}/events`,
+      w = { ...W_(q), "x-organization-uuid": Y },
+      J = {
+        events: [
+          {
+            uuid: lG2(),
+            session_id: A,
+            type: "user",
+            parent_tool_use_id: null,
+            message: { role: "user", content: K },
+          },
+        ],
+      };
+    h(`[sendEventToRemoteSession] Sending event to session ${A}`);
+    let O = await t6.post(z, J, { headers: w, validateStatus: (X) => X < 500 });
+    if (O.status === 200 || O.status === 201)
+      return (
+        h(`[sendEventToRemoteSession] Successfully sent event to session ${A}`),
+        !0
+      );
+    return (
+      h(
+        `[sendEventToRemoteSession] Failed with status ${O.status}: ${QA(O.data)}`,
+      ),
+      !1
+    );
+--
+      Error(`Failed to fetch session from Sessions API: ${J.message}`)
+    );
+  }
+}
+async function DHK(A) {
+  let K = EK()?.accessToken;
+  if (!K) throw Error("No access token for polling");
+  let q = await yx();
+  if (!q) throw Error("No org UUID for polling");
+  let Y = W_(K),
+    z = `${C7().BASE_API_URL}/v1/sessions/${A}/events`,
+    w = await t6.get(z, {
+      headers: { ...Y, "x-organization-uuid": q },
+      timeout: 30000,
+    });
+  if (w.status !== 200)
+    throw Error(`Failed to fetch session events: ${w.statusText}`);
+  let H = w.data;
+  if (!H?.data || !Array.isArray(H.data))
+    throw Error("Invalid events response");
+  let J = [];
+  for (let X of H.data)
+    if (X && typeof X === "object" && "type" in X) {
+      if (X.type === "env_manager_log" || X.type === "control_response")
+        continue;
+      if ("session_id" in X) J.push(X);
+    }
+  let O;
+  try {
+    let X = await cFA(A);
+    O = nR6(X);
+  } catch {}
+  return { log: J, branch: O };
+}
+async function K9A(A) {
+  if (!YP("allow_remote_sessions"))
+--
+    if (G) {
+      let b = W.environment_id === G;
+      h(
+        b
+          ? `Using configured default environment: ${G}`
+          : `Configured default environment ${G} not found, using first available`,
+      );
+    }
+    let D = W.environment_id;
+    h(`Selected environment: ${D} (${W.name})`);
+    let j = `${C7().BASE_API_URL}/v1/sessions`,
+      M = { ...W_(z), "x-organization-uuid": w },
+      P = { sources: J ? [J] : [], outcomes: O ? [O] : [], model: Z3() },
+      V = K
+        ? [
+            {
+              type: "event",
+              data: {
+                uuid: mk2(),
+                session_id: "",
+                type: "user",
+                parent_tool_use_id: null,
+                message: { role: "user", content: K },
+              },
+            },
+          ]
+        : [],
+      N = { title: X, events: V, session_context: P, environment_id: D };
+    h(`Creating session with payload: ${QA(N, null, 2)}`);
+    let T = await t6.post(j, N, { headers: M, signal: Y });
+    if (!(T.status === 200 || T.status === 201))
+      return (
+        KA(
+          Error(`API request failed with status ${T.status}: ${T.statusText}
+
+Response data: ${QA(T.data, null, 2)}`),
+--
+    this.orgUuid = K;
+    this.accessToken = q;
+    this.callbacks = Y;
+  }
+  connect() {
+    if (this.state === "connecting") {
+      h("[SessionsWebSocket] Already connecting");
+      return;
+    }
+    this.state = "connecting";
+    let K = `${C7().BASE_API_URL.replace("https://", "wss://")}/v1/sessions/ws/${this.sessionId}/subscribe?organization_uuid=${this.orgUuid}`;
+    (h(`[SessionsWebSocket] Connecting to ${K}`),
+      (this.ws = new Lu(K, {
+        agent: Q8A(K),
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "anthropic-version": "2023-06-01",
+        },
+      })),
+      this.ws.on("open", () => {
+        (h("[SessionsWebSocket] Connection opened, authenticated via headers"),
+          (this.state = "connected"),
+          (this.reconnectAttempts = 0),
+          this.startPingInterval(),
+          this.callbacks.onConnected?.());
+      }),
+      this.ws.on("message", (q) => {
+        this.handleMessage(q.toString());
+      }),
+      this.ws.on("error", (q) => {
+        (KA(Error(`[SessionsWebSocket] Error: ${q.message}`)),
+          this.callbacks.onError?.(q));
+      }),
+      this.ws.on("close", (q, Y) => {
+        (h(`[SessionsWebSocket] Closed: code=${q} reason=${Y.toString()}`),
+          this.handleClose());

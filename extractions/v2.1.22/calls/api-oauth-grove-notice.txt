@@ -1,0 +1,70 @@
+  } catch (A) {
+    return (KA(A), { success: !1 });
+  }
+}
+async function IT6() {
+  try {
+    await $W1(() => {
+      let A = mH();
+      if (A.error) throw Error(`Failed to get auth headers: ${A.error}`);
+      return t6.post(
+        `${C7().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
+        {},
+        { headers: { ...A.headers, "User-Agent": BH() } },
+      );
+    });
+  } catch (A) {
+    KA(A);
+  }
+}
+async function _W1(A) {
+  try {
+    await $W1(() => {
+      let K = mH();
+      if (K.error) throw Error(`Failed to get auth headers: ${K.error}`);
+      return t6.patch(
+        `${C7().BASE_API_URL}/api/oauth/account/settings`,
+        { grove_enabled: A },
+        { headers: { ...K.headers, "User-Agent": BH() } },
+      );
+    });
+  } catch (K) {
+--
+    }));
+});
+function FPK(A, K, q) {
+  if (!A.success || !K.success) return !1;
+  let Y = A.data,
+    z = K.data;
+  if (Y.grove_enabled !== null) return !1;
+  if (q) return !0;
+  if (!z.notice_is_grace_period) return !0;
+  let H = z.notice_reminder_frequency;
+  if (H !== null && Y.grove_notice_viewed_at)
+    return (
+      Math.floor(
+        (Date.now() - new Date(Y.grove_notice_viewed_at).getTime()) / 86400000,
+      ) >= H
+    );
+  else {
+    let J = Y.grove_notice_viewed_at;
+    return J === null || J === void 0;
+  }
+}
+function ed2() {
+  let A = s(10),
+    K;
+  if (A[0] === Symbol.for("react.memo_cache_sentinel"))
+    ((K = t8.default.createElement(
+      f,
+      { bold: !0, color: "professionalBlue" },
+      "Updates to Consumer Terms and Policies",
+    )),
+      (A[0] = K));
+  else K = A[0];
+  let q;
+  if (A[1] === Symbol.for("react.memo_cache_sentinel"))
+    ((q = t8.default.createElement(
+      I,
+      { flexDirection: "column" },
+      K,

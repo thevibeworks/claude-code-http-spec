@@ -1,0 +1,31 @@
+      return (_6(A), eI.cache.clear?.(), { success: !1 });
+    }
+  });
+  Ie = e1(async () => {
+    if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)
+      return { success: !1 };
+    try {
+      let A = await bG1(() => {
+          let _ = QO();
+          if (_.error) throw Error(`Failed to get auth headers: ${_.error}`);
+          return X8.get(`${P7().BASE_API_URL}/api/claude_code_grove`, {
+            headers: { ..._.headers, "User-Agent": Gy() },
+            timeout: 3000,
+          });
+        }),
+        {
+          grove_enabled: q,
+          domain_excluded: K,
+          notice_is_grace_period: Y,
+          notice_reminder_frequency: z,
+        } = A.data;
+      return {
+        success: !0,
+        data: {
+          grove_enabled: q,
+          domain_excluded: K ?? !1,
+          notice_is_grace_period: Y ?? !0,
+          notice_reminder_frequency: z,
+        },
+      };
+    } catch (A) {

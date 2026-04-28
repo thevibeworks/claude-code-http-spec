@@ -1,0 +1,31 @@
+  if (!O4()) return {};
+  let A = EK();
+  if (A && bQ(A.expiresAt)) return null;
+  let K = mH();
+  if (K.error) throw Error(`Auth error: ${K.error}`);
+  let q = {
+      "Content-Type": "application/json",
+      "User-Agent": BH(),
+      ...K.headers,
+    },
+    Y = `${C7().BASE_API_URL}/api/oauth/usage`;
+  return (await t6.get(Y, { headers: q, timeout: 5000 })).data;
+}
+var pB6 = C(() => {
+  n3();
+  wZ();
+  Fz();
+  L4();
+  vT();
+});
+function hpA(A) {
+  let K = s(13),
+    { ratio: q, width: Y, fillColor: z, emptyColor: w } = A,
+    H = Math.min(1, Math.max(0, q)),
+    J = Math.floor(H * Y),
+    O;
+  if (K[0] !== J) ((O = SpA[SpA.length - 1].repeat(J)), (K[0] = J), (K[1] = O));
+  else O = K[1];
+  let X;
+  if (K[2] !== H || K[3] !== O || K[4] !== J || K[5] !== Y) {
+    if (((X = [O]), J < Y)) {

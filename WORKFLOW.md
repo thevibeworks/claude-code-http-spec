@@ -253,7 +253,10 @@ Update version in file headers.
 ## Step 7: Validate Spec (GATE)
 
 ```bash
-./scripts/validate-spec.sh package/cli.js claude-code-api-complete.http
+./scripts/validate-spec.sh package/cli.js specs/claude-code-api-complete.http
+
+# Subset validation (OAuth-only spec)
+./scripts/validate-spec.sh --subset package/cli.js specs/claude-oauth-api.http
 ```
 
 **GATE**: Script must exit 0.

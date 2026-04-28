@@ -1,0 +1,7 @@
+    133 GET
+     92 POST
+     65 HEAD
+     23 DELETE
+     19 PUT
+     13 OPTIONS
+     12 PATCH

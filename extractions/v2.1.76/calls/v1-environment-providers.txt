@@ -1,0 +1,31 @@
+  ((wj = t(P6(), 1)), (_z6 = t(P6(), 1)));
+});
+async function jl6() {
+  let A = sA()?.accessToken;
+  if (!A)
+    throw Error(
+      "Claude Code web sessions require authentication with a Claude.ai account. API key authentication is not sufficient. Please run /login to authenticate, or check your authentication status with /status.",
+    );
+  let q = await mR();
+  if (!q) throw Error("Unable to get organization UUID");
+  let K = `${P7().BASE_API_URL}/v1/environment_providers`;
+  try {
+    let Y = { ...zj(A), "x-organization-uuid": q },
+      z = await X8.get(K, { headers: Y, timeout: 15000 });
+    if (z.status !== 200)
+      throw Error(`Failed to fetch environments: ${z.status} ${z.statusText}`);
+    return z.data.environments;
+  } catch (Y) {
+    let z = Y instanceof Error ? Y : Error(String(Y));
+    throw (_6(z), Error(`Failed to fetch environments: ${z.message}`));
+  }
+}
+var wV1 = E(() => {
+  kK();
+  F5();
+  fA();
+  W0();
+  k1();
+  EZ();
+});
+async function nu8() {

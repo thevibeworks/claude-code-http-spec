@@ -1,0 +1,2 @@
+      5 z.delete(
+     26 z.get(

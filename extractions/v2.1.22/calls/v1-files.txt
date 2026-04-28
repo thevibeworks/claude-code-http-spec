@@ -1,0 +1,63 @@
+});
+var QEA;
+var Mp1 = C(() => {
+  Pb();
+  gE();
+  BHA();
+  fi();
+  QEA = class QEA extends YO {
+    list(A = {}, K) {
+      let { betas: q, ...Y } = A ?? {};
+      return this._client.getAPIList("/v1/files", SR, {
+        query: Y,
+        ...K,
+        headers: f5([
+          {
+            "anthropic-beta": [...(q ?? []), "files-api-2025-04-14"].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    delete(A, K = {}, q) {
+      let { betas: Y } = K ?? {};
+      return this._client.delete(WJ`/v1/files/${A}`, {
+        ...q,
+        headers: f5([
+          {
+            "anthropic-beta": [...(Y ?? []), "files-api-2025-04-14"].toString(),
+          },
+          q?.headers,
+        ]),
+--
+          {
+            "anthropic-beta": [...(Y ?? []), "files-api-2025-04-14"].toString(),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+    upload(A, K) {
+      let { betas: q, ...Y } = A;
+      return this._client.post(
+        "/v1/files",
+        uHA(
+          {
+            body: Y,
+            ...K,
+            headers: f5([
+              {
+                "anthropic-beta": [
+                  ...(q ?? []),
+                  "files-api-2025-04-14",
+                ].toString(),
+              },
+              K?.headers,
+            ]),
+          },
+          this._client,
+        ),
+      );
+    }
+  };
+});

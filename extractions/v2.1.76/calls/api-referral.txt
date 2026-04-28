@@ -1,0 +1,74 @@
+var Ojq = E(() => {
+  e6();
+  i6();
+  _jq();
+  C16();
+  lb = t(P6(), 1);
+});
+async function ptY(A = "claude_code_guest_pass") {
+  let { accessToken: q, orgUUID: K } = await k0(),
+    Y = { ...zj(q), "x-organization-uuid": K },
+    z = `${P7().BASE_API_URL}/api/oauth/organizations/${K}/referral/eligibility`;
+  return (
+    await X8.get(z, { headers: Y, params: { campaign: A }, timeout: 5000 })
+  ).data;
+}
+async function jjq(A = "claude_code_guest_pass") {
+  let { accessToken: q, orgUUID: K } = await k0(),
+    Y = { ...zj(q), "x-organization-uuid": K },
+    z = `${P7().BASE_API_URL}/api/oauth/organizations/${K}/referral/redemptions`;
+  return (
+    await X8.get(z, { headers: Y, params: { campaign: A }, timeout: 1e4 })
+  ).data;
+}
+function Jjq() {
+  return !!(L3()?.organizationUuid && iA() && CK() === "max");
+}
+function HN6() {
+  if (!Jjq()) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let A = L3()?.organizationUuid;
+  if (!A) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let K = X1().passesEligibilityCache?.[A];
+  if (!K) return { eligible: !1, needsRefresh: !0, hasCache: !1 };
+  let { eligible: Y, timestamp: z } = K,
+    w = Date.now() - z > Hjq;
+  return { eligible: Y, needsRefresh: w, hasCache: !0 };
+}
+function I16(A) {
+  let q = QtY[A.currency] ?? `${A.currency} `,
+    K = A.amount_minor_units / 100,
+--
+        })();
+    }),
+    fF.useEffect(() => {
+      async function W() {
+        try {
+          let Z = await Nc8();
+          if (!Z || !Z.eligible) {
+            (w(!1), K(!1));
+            return;
+          }
+          if ((w(!0), Z.referral_code_details?.referral_link))
+            $(Z.referral_code_details.referral_link);
+          j(Z.referrer_reward);
+          let G = Z.referral_code_details?.campaign ?? "claude_code_guest_pass",
+            f;
+          try {
+            f = await jjq(G);
+          } catch (L) {
+            (_6(L), w(!1), K(!1));
+            return;
+          }
+          let v = f.redemptions || [],
+            N = f.limit || 3,
+            V = [];
+          for (let L = 0; L < N; L++) {
+            let h = v[L];
+            V.push({ passNumber: L + 1, isAvailable: !h });
+          }
+          (z(V), K(!1));
+        } catch (Z) {
+          (_6(Z), w(!1), K(!1));
+        }
+      }
+      W();

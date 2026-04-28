@@ -1,0 +1,31 @@
+  try {
+    await iG();
+    let q = mH();
+    if (q.error) return { success: !1 };
+    let Y = {
+        "Content-Type": "application/json",
+        "User-Agent": gn(),
+        ...q.headers,
+      },
+      z = await t6.post(
+        "https://api.anthropic.com/api/claude_cli_feedback",
+        { content: QA(A) },
+        { headers: Y, timeout: 30000, signal: K },
+      );
+    if (z.status === 200) {
+      let w = z.data;
+      if (w?.feedback_id) return { success: !0, feedbackId: w.feedback_id };
+      return (
+        QN1(
+          Error(
+            "Failed to submit feedback: request did not return feedback_id",
+          ),
+        ),
+        { success: !1 }
+      );
+    }
+    return (
+      QN1(Error("Failed to submit feedback:" + z.status)),
+      { success: !1 }
+    );
+  } catch (q) {

@@ -1,0 +1,31 @@
+    return !1;
+  }
+  if (q.username || q.password) return !1;
+  if (q.hostname.split(".").length < 2) return !1;
+  return !0;
+}
+async function i6q(A) {
+  if (xg8.has(A)) return { status: "allowed" };
+  try {
+    let q = await X8.get(
+      `https://api.anthropic.com/api/web/domain_info?domain=${encodeURIComponent(A)}`,
+      { timeout: LCY },
+    );
+    if (q.status === 200) {
+      if (q.data.can_fetch === !0)
+        return (xg8.set(A, !0), { status: "allowed" });
+      return { status: "blocked" };
+    }
+    return {
+      status: "check_failed",
+      error: Error(`Domain check returned status ${q.status}`),
+    };
+  } catch (q) {
+    return (_6(q), { status: "check_failed", error: q });
+  }
+}
+function n6q(A, q) {
+  try {
+    let K = new URL(A),
+      Y = new URL(q);
+    if (Y.protocol !== K.protocol) return !1;

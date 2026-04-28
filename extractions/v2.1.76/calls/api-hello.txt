@@ -1,0 +1,31 @@
+  );
+}
+var CC1;
+var HEq = E(() => {
+  CC1 = t(P6(), 1);
+});
+async function aHz() {
+  try {
+    let A = P7(),
+      q = new URL(A.TOKEN_URL),
+      K = [`${A.BASE_API_URL}/api/hello`, `${q.origin}/v1/oauth/hello`],
+      Y = async (w) => {
+        try {
+          let O = await X8.get(w, { headers: { "User-Agent": Gy() } });
+          if (O.status !== 200)
+            return {
+              success: !1,
+              error: `Failed to connect to ${new URL(w).hostname}: Status ${O.status}`,
+            };
+          return { success: !0 };
+        } catch (O) {
+          let $ = new URL(w).hostname,
+            H = kt(O);
+          return {
+            success: !1,
+            error: `Failed to connect to ${$}: ${O instanceof Error ? O.code || O.message : String(O)}`,
+            sslHint: H ?? void 0,
+          };
+        }
+      },
+      _ = (await Promise.all(K.map(Y))).find((w) => !w.success);

@@ -1,0 +1,295 @@
+https://_
+https://_____
+https://${_}/${$}
+https://$1.
+https://${A}
+https://${A}/${this.authority.tenant}/
+https://${K}-aiplatform.googleapis.com/v1
+https://${O}${w}
+https://${q}.services.ai.azure.com/anthropic/
+https://${this.defaultServicePath}/
+https://${X}/${O}
+https://[::1]
+https://accounts.google.com
+https://accounts.google.com/o/oauth2/revoke?token=
+https://accounts.google.com/o/oauth2/v2/auth
+https://a.co/74kJMmI
+https://aiplatform.googleapis.com/v1
+https://aka.ms/azsdk/identity/mfa.
+https://aka.ms/azsdk/js/identity/azdevclicredential/troubleshoot.
+https://aka.ms/azsdk/js/identity/environmentcredential/troubleshoot.
+https://aka.ms/azsdk/js/identity/powershellcredential/troubleshoot.
+https://aka.ms/azsdk/js/identity/serviceprincipalauthentication/troubleshoot.
+https://aka.ms/azsdk/js/identity/usernamepasswordcredential/troubleshoot.
+https://aka.ms/azsdk/js/identity/workloadidentitycredential/troubleshoot
+https://aka.ms/azure-cli for installation instructions and then, once installed, authenticate to your Azure account using 
+https://aka.ms/msaljs/optional-claims for more information.
+https://aka.ms/servicefabricmi for more information
+https://anthropic.com/legal/privacy
+https://anthropic.com/legal/terms
+https://anthropic.com/supported-countries
+https://api.anthropic.com
+https://api.anthropic.com/
+https://api.anthropic.com/api/claude_cli_feedback
+https://api.anthropic.com/api/claude_code/link_vcs_account
+https://api.anthropic.com/api/claude_code/metrics
+https://api.anthropic.com/api/claude_code/organizations/metrics_enabled
+https://api.anthropic.com/api/hello
+https://api.anthropic.com/api/oauth/claude_cli/create_api_key
+https://api.anthropic.com/api/oauth/claude_cli/roles
+https://api.anthropic.com/api/organization/${A}/claude_code_sonnet_1m_access
+https://api.anthropic.com/api/web/domain_info?domain=${encodeURIComponent(A)}
+https://api.segment.io
+https://api-staging.anthropic.com
+https://api.statsigcdn.com/v1
+https://app.corridor.dev/api/mcp --header 
+https://apps.apple.com/app/claude-by-anthropic/id6473753684
+https://aws.amazon.com/javascript/
+https://bedrock-fips.{Region}.{PartitionResult#dnsSuffix}
+https://bedrock-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://bedrock.{Region}.{PartitionResult#dnsSuffix}
+https://bedrock.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://bedrock-runtime.${A}.amazonaws.com
+https://bedrock-runtime-fips.{Region}.{PartitionResult#dnsSuffix}
+https://bedrock-runtime-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://bedrock-runtime.{Region}.{PartitionResult#dnsSuffix}
+https://bedrock-runtime.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://cdn.growthbook.io
+https://claude.ai
+https://claude.ai/admin-settings/usage
+https://claude.ai/chrome
+https://claude.ai/chrome to install
+https://claude.ai/code
+https://claude.ai/code/${f7.id}?m=0
+https://claude.ai/oauth/authorize
+https://claude.ai/settings/data-privacy-controls
+https://claude.ai/settings/usage
+https://claude.ai/upgrade/max
+https://claude.ai/upgrade/max to upgrade.
+https://clau.de/chrome/permissions
+https://clau.de/chrome/reconnect
+https://clau.de/chrome/tab/
+https://claude.com/claude-code
+https://claude.com/claude-code) is an AI coding agent that can help with:
+https://cli.github.com/
+https://cloudflare-dns.com/dns-query
+https://cloud.google.com/compute/docs/metadata/predefined-metadata-keys
+https://cloud.google.com/docs/authentication/getting-started
+https://cloud.google.com/docs/authentication/getting-started for more information.
+https://cloudresourcemanager.${this.universeDomain}/v1/projects/
+https://cloudresourcemanager.googleapis.com/v1/projects/
+https://code.claude.com/docs/en/amazon-bedrock
+https://code.claude.com/docs/en/chrome
+https://code.claude.com/docs/en/claude_code_docs_map.md
+https://code.claude.com/docs/en/cli-reference for available options
+https://code.claude.com/docs/en/costs
+https://code.claude.com/docs/en/google-vertex-ai
+https://code.claude.com/docs/en/hooks
+https://code.claude.com/docs/en/iam#configuring-permissions
+https://code.claude.com/docs/en/iam#permission-modes
+https://code.claude.com/docs/en/iam#working-directories
+https://code.claude.com/docs/en/keybindings
+https://code.claude.com/docs/en/legal-and-compliance.
+https://code.claude.com/docs/en/mcp
+https://code.claude.com/docs/en/mcp#configure-mcp-servers
+https://code.claude.com/docs/en/mcp to learn more.
+https://code.claude.com/docs/en/memory
+https://code.claude.com/docs/en/microsoft-foundry
+https://code.claude.com/docs/en/overview
+https://code.claude.com/docs/en/sandboxing
+https://code.claude.com/docs/en/sandboxing#configure-sandboxing
+https://code.claude.com/docs/en/security
+https://code.claude.com/docs/en/settings
+https://code.claude.com/docs/en/settings#environment-variables
+https://cognitiveservices.azure.com/.default
+https://cognito-identity-fips.{Region}.{PartitionResult#dnsSuffix}
+https://cognito-identity-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://cognito-identity-fips.us-east-1.amazonaws.com
+https://cognito-identity-fips.us-east-2.amazonaws.com
+https://cognito-identity-fips.us-west-1.amazonaws.com
+https://cognito-identity-fips.us-west-2.amazonaws.com
+https://cognito-identity.{Region}.amazonaws.com
+https://cognito-identity.{Region}.{PartitionResult#dnsSuffix}
+https://cognito-identity.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://console.staging.ant.dev/oauth/code/callback
+https://docs.anthropic.com/en/docs/claude-code/getting-started for more options.
+https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html
+https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/node-configuring-maxsockets.html
+https://docs.aws.amazon.com/sdkref/latest/guide/feature-static-credentials.html
+https://docs.claude.com/s/claude-code-jetbrains
+https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api
+https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-js-initializing-client-applications#configuration-options
+https://docs.statsig.com/client/javascript-sdk/#typed-getters
+https://e531a1d9ec1de9064fae9d4affb0b0f4@o1158394.ingest.us.sentry.io/4508259541909504
+https://, etc.)
+https://evil.com -d @-) => command_injection_detected
+https://*.example.com/*
+https://example.com
+https://example.com/1)
+https://example.com/2)
+https://example.com/iiif
+https://example.com/marketplace.json
+https://featureassets.org/v1
+https://feross.org/opensource> */ var Sz1 =
+https://github.com/${A}/compare/${$}...${G}?quick_pull=1&title=${encodeURIComponent(EZK)}&body=${encodeURIComponent(CZK)}
+https://github.com/${A}.git
+https://github.com/${A.repo}.git
+https://github.com/${b}/${S}
+https://github.com/${H.repo}.git
+https://github.com/${mA}
+https://github.com/${ZA}
+https://github.com/anthropics/anthropic-sdk-typescript#long-requests for more details
+https://github.com/anthropics/anthropic-sdk-typescript#streaming-responses for more details
+https://github.com/anthropics/claude-code-action
+https://github.com/anthropics/claude-code-action).
+https://github.com/anthropics/claude-code-action/blob/main/docs/setup.md
+https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+https://github.com/anthropics/claude-code-action/blob/main/examples/
+https://github.com/anthropics/claude-code-action/blob/main/examples/claude.yml
+https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
+https://github.com/anthropics/claude-code.git
+https://github.com/anthropics/claude-code/issues
+https://github.com/anthropics/claude-code/issues/new?labels=bug,claude-in-chrome
+https://github.com/apps/claude
+https://github.com/apps/claude/installations/new
+https://github.com/aws/aws-sdk-js-v3/blob/main/supplemental-docs/CLIENTS.md.
+https://github.com/aws/aws-sdk-js-v3.git
+https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-bedrock
+https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-bedrock-runtime
+https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-cognito-identity
+https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sso
+https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sts
+https://github.com/aws/aws-sdk-js-v3/tree/main/packages/nested-clients
+https://github.com/axios/axios to learn more about the valid request options.
+https://github.com/bitinn/node-fetch)
+https://github.com/cli/cli#installation
+https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
+https://github.com/getsentry/sentry-javascript */ Jeq.base64WorkerScript =
+https://github.com/grpc/grpc-node/issues/1173
+https://github.com/grpc/grpc-node/tree/master/packages/grpc-js
+https://github.com/highlightjs/highlight.js/issues/2277
+https://github.com/highlightjs/highlight.js/issues/2534
+https://github.com/highlightjs/highlight.js/issues/2559
+https://github.com/highlightjs/highlight.js/pull/2844
+https://github.com/jprichardson/node-fs-extra/issues/269
+https://github.com/markedjs/marked.
+https://github.com/owner/repo
+https://github.com/owner/repo…
+https://github.com/vadimdemedes/ink/#israwmodesupported
+https://git-scm.com/downloads/win). If installed but not in PATH, set environment variable pointing to your bash.exe, similar to: CLAUDE_CODE_GIT_BASH_PATH=C:\\Program Files\\Git\\bin\\bash.exe
+https://, got ${K.protocol}
+https://grpc.io/
+https://http-intake.logs.us5.datadoghq.com/api/v2/logs
+https://iamcredentials.${this.universeDomain}
+https://iamcredentials.${Y}/v1/projects/-/serviceAccounts/
+https://jimmy.warting.se/opensource> */ let $ =
+https://job-boards.greenhouse.io/anthropic/jobs/4816199008
+https://json-schema.org/draft/2020-12/schema
+https://json.schemastore.org/claude-code-settings.json
+https://learn.microsoft.com/azure/azure-portal/get-subscription-tenant-id.
+https://learn.microsoft.com/en-us/azure/service-fabric/configure-existing-cluster-enable-managed-identity-token-service.
+https://learn.microsoft.com/partner-center/find-ids-and-domain-names.
+https://localforage.github.io/localForage
+https://login.chinacloudapi.cn
+https://login.chinacloudapi.cn/{tenantid}/discovery/v2.0/keys
+https://login.chinacloudapi.cn/{tenantid}/oauth2/v2.0/authorize
+https://login.chinacloudapi.cn/{tenantid}/oauth2/v2.0/logout
+https://login.chinacloudapi.cn/{tenantid}/oauth2/v2.0/token
+https://login.microsoftonline.com
+https://login.microsoftonline.com/${t6Y}/
+https://login.microsoftonline.com/common/
+https://login.microsoftonline.com/common/discovery/instance?api-version=1.1&authorization_endpoint=
+https://login.microsoftonline.com/{tenantid}/discovery/v2.0/keys
+https://login.microsoftonline.com/{tenantid}/oauth2/v2.0/authorize
+https://login.microsoftonline.com/{tenantid}/oauth2/v2.0/logout
+https://login.microsoftonline.com/{tenantid}/oauth2/v2.0/token
+https://login.microsoftonline.com/{tenantid}/v2.0
+https://login.microsoftonline.de
+https://login.microsoftonline.us
+https://login.microsoftonline.us/{tenantid}/discovery/v2.0/keys
+https://login.microsoftonline.us/{tenantid}/oauth2/v2.0/authorize
+https://login.microsoftonline.us/{tenantid}/oauth2/v2.0/logout
+https://login.microsoftonline.us/{tenantid}/oauth2/v2.0/token
+https://login.microsoftonline.us/{tenantid}/v2.0
+https://login.partner.microsoftonline.cn/{tenantid}/v2.0
+https://login.windows-ppe.net
+https://mcp-proxy.anthropic.com
+https://mcp.sentry.dev/mcp
+https://mozilla.github.io/localForage/#definedriver
+https://npms.io/search?q=ponyfill.
+https://oauth2.googleapis.com/revoke
+https://oauth2.googleapis.com/token
+https://oauth2.googleapis.com/tokeninfo
+https://oidc-fips.{Region}.{PartitionResult#dnsSuffix}
+https://oidc-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://oidc.{Region}.amazonaws.com
+https://oidc.{Region}.{PartitionResult#dnsSuffix}
+https://oidc.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://opencollective.com/libvips
+https:// or git@)
+https://..., or ./path
+https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code
+https://platform.claude.com/docs/schemas/claude-code/keybindings.json
+https://platform.claude.com/llms.txt
+https://platform.claude.com/oauth/authorize
+https://platform.claude.com/oauth/code/callback
+https://platform.claude.com/oauth/code/success?app=claude-code
+https://platform.claude.com/settings/billing
+https://platform.claude.com/settings/keys)
+https://platform.claude.com/v1/oauth/hello
+https://platform.claude.com/v1/oauth/token
+https://play.google.com/store/apps/details?id=com.anthropic.claude
+https://portal.sso-fips.{Region}.{PartitionResult#dnsSuffix}
+https://portal.sso-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://portal.sso.{Region}.amazonaws.com
+https://portal.sso.{Region}.{PartitionResult#dnsSuffix}
+https://portal.sso.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://prodregistryv2.org/v1
+https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#
+https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
+https://raw.githubusercontent.com/anthropics/claude-plugins-official/refs/heads/stats/stats/plugin-installs.json
+https://react.dev/errors/
+https://react-native.canny.io/feature-requests/p/fetch-streaming-body
+https://{Region}.signin.amazonaws.cn
+https://{Region}.signin.amazonaws-us-gov.com
+https://{Region}.signin.aws.amazon.com
+https:// scheme
+https://sharp.pixelplumbing.com
+https://sharp.pixelplumbing.com/install
+https://sharp.pixelplumbing.com/install#canvas-and-windows
+https://sharp.pixelplumbing.com/install#cross-platform
+https://signin-fips.{Region}.{PartitionResult#dnsSuffix}
+https://signin-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://signin.{Region}.{PartitionResult#dnsSuffix}
+https://signin.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://slack.com/marketplace/A08SF47R6P4-claude
+https://staging.claude.ai
+https://statsig.anthropic.com/v1/
+https://statsigapi.net/v1/sdk_exception
+https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases
+https://sts.${this.universeDomain}/v1/token
+https://sts.amazonaws.com
+https://sts.amazonaws.com/doc/2011-06-15/
+https://sts-fips.{Region}.{PartitionResult#dnsSuffix}
+https://sts-fips.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://sts.{Region}.amazonaws.com
+https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15
+https://sts.{Region}.{PartitionResult#dnsSuffix}
+https://sts.{Region}.{PartitionResult#dualStackDnsSuffix}
+https://sts.{universeDomain}/v1/oauthtoken
+https://sts.{universeDomain}/v1/token
+https://support.claude.com/en/articles/12875061-claude-code-guest-passes
+https://support.claude.com/en/articles/13456702-claude-code-guest-passes
+https://tools.ietf.org/html/rfc7515
+https://). Use 
+https:// website.
+https://www.anthropic.com/legal/aup). Please double press esc to edit your last message or start a new session for Claude Code to assist with a different task.
+https://www.anthropic.com/legal/aup). Try rephrasing the request or attempting a different approach.
+https://www.anthropic.com/news/updates-to-our-consumer-terms
+https://www.googleapis.com/auth/cloud-platform
+https://www.googleapis.com/oauth2/v1/certs
+https://www.googleapis.com/oauth2/v3/certs
+https://www.googleapis.com/oauth2/v4/token
+https://www.gstatic.com/iap/verify/public_key
+https://www.stickermule.com/claudecode

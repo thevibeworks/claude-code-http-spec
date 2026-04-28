@@ -1,0 +1,42 @@
+  xY6 = t(P6(), 1);
+});
+async function CU4() {
+  try {
+    if (X1().claudeCodeFirstTokenDate !== void 0) return;
+    let q = QO();
+    if (q.error) {
+      _6(Error(`Failed to get auth headers: ${q.error}`));
+      return;
+    }
+    let Y = `${P7().BASE_API_URL}/api/organization/claude_code_first_token_date`,
+      _ =
+        (
+          await X8.get(Y, {
+            headers: { ...q.headers, "User-Agent": pO() },
+            timeout: 1e4,
+          })
+        ).data?.first_token_date ?? null;
+    if (_ !== null) {
+      let w = new Date(_).getTime();
+      if (isNaN(w)) {
+        _6(Error(`Received invalid first_token_date from API: ${_}`));
+        return;
+      }
+    }
+    d1((w) => ({ ...w, claudeCodeFirstTokenDate: _ }));
+  } catch (A) {
+    _6(A);
+  }
+}
+var IU4 = E(() => {
+  k8();
+  RM();
+  k1();
+  F5();
+  kK();
+});
+var Sv1 = {};
+N1(Sv1, {
+  installOAuthTokens: () => wc6,
+  authStatus: () => PGY,
+  authLogout: () => WGY,

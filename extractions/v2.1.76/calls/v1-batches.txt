@@ -1,0 +1,236 @@
+var qx6;
+var E28 = E(() => {
+  _m();
+  qk();
+  k28();
+  Sa();
+  ha();
+  qx6 = class qx6 extends p$ {
+    create(A, q) {
+      let { betas: K, ...Y } = A;
+      return this._client.post("/v1/messages/batches?beta=true", {
+        body: Y,
+        ...q,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(K ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+    retrieve(A, q = {}, K) {
+      let { betas: Y } = q ?? {};
+      return this._client.get(oO`/v1/messages/batches/${A}?beta=true`, {
+        ...K,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(Y ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    list(A = {}, q) {
+      let { betas: K, ...Y } = A ?? {};
+      return this._client.getAPIList("/v1/messages/batches?beta=true", VC, {
+        query: Y,
+        ...q,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(K ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          q?.headers,
+        ]),
+      });
+    }
+    delete(A, q = {}, K) {
+      let { betas: Y } = q ?? {};
+      return this._client.delete(oO`/v1/messages/batches/${A}?beta=true`, {
+        ...K,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(Y ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    cancel(A, q = {}, K) {
+      let { betas: Y } = q ?? {};
+      return this._client.post(oO`/v1/messages/batches/${A}/cancel?beta=true`, {
+        ...K,
+        headers: oK([
+          {
+            "anthropic-beta": [
+              ...(Y ?? []),
+              "message-batches-2024-09-24",
+            ].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    async results(A, q = {}, K) {
+      let Y = await this.retrieve(A);
+      if (!Y.results_url)
+        throw new n7(
+          `No batch \`results_url\`; Has it finished processing? ${Y.processing_status} - ${Y.id}`,
+        );
+      let { betas: z } = q ?? {};
+      return this._client
+--
+});
+var jx6;
+var F28 = E(() => {
+  _m();
+  qk();
+  k28();
+  Sa();
+  ha();
+  jx6 = class jx6 extends p$ {
+    create(A, q) {
+      return this._client.post("/v1/messages/batches", { body: A, ...q });
+    }
+    retrieve(A, q) {
+      return this._client.get(oO`/v1/messages/batches/${A}`, q);
+    }
+    list(A = {}, q) {
+      return this._client.getAPIList("/v1/messages/batches", VC, {
+        query: A,
+        ...q,
+      });
+    }
+    delete(A, q) {
+      return this._client.delete(oO`/v1/messages/batches/${A}`, q);
+    }
+    cancel(A, q) {
+      return this._client.post(oO`/v1/messages/batches/${A}/cancel`, q);
+    }
+    async results(A, q) {
+      let K = await this.retrieve(A);
+      if (!K.results_url)
+        throw new n7(
+          `No batch \`results_url\`; Has it finished processing? ${K.processing_status} - ${K.id}`,
+        );
+      return this._client
+        .get(K.results_url, {
+          ...q,
+          headers: oK([{ Accept: "application/binary" }, q?.headers]),
+          stream: !0,
+          __binaryResponse: !0,
+        })
+        ._thenUnwrap((Y, z) => dM6.fromResponse(z.response, z.controller));
+    }
+  };
+});
+var Yk, wP7, IR3;
+var p28 = E(() => {
+--
+## Architecture
+
+Everything goes through \`POST /v1/messages\`. Tools and output constraints are features of this single endpoint — not separate APIs.
+
+**User-defined tools** — You define tools (via decorators, Zod schemas, or raw JSON), and the SDK's tool runner handles calling the API, executing your functions, and looping until Claude is done. For full control, you can write the loop manually.
+
+**Server-side tools** — Anthropic-hosted tools that run on Anthropic's infrastructure. Code execution is fully server-side (declare it in \`tools\`, Claude runs code automatically). Computer use can be server-hosted or self-hosted.
+
+**Structured outputs** — Constrains the Messages API response format (\`output_config.format\`) and/or tool parameter validation (\`strict: true\`). The recommended approach is \`client.messages.parse()\` which validates responses against your schema automatically. Note: the old \`output_format\` parameter is deprecated; use \`output_config: {format: {...}}\` on \`messages.create()\`.
+
+**Supporting endpoints** — Batches (\`POST /v1/messages/batches\`), Files (\`POST /v1/files\`), and Token Counting feed into or support Messages API requests.
+
+---
+
+## Current Models (cached: 2026-02-17)
+
+| Model             | Model ID            | Context        | Input $/1M | Output $/1M |
+| ----------------- | ------------------- | -------------- | ---------- | ----------- |
+| Claude Opus 4.6   | \`claude-opus-4-6\`   | 200K (1M beta) | $5.00      | $25.00      |
+| Claude Sonnet 4.6 | \`claude-sonnet-4-6\` | 200K (1M beta) | $3.00      | $15.00      |
+| Claude Haiku 4.5  | \`claude-haiku-4-5\`  | 200K           | $1.00      | $5.00       |
+
+**ALWAYS use \`{{OPUS_ID}}\` unless the user explicitly names a different model.** This is non-negotiable. Do not use \`{{SONNET_ID}}\`, \`{{PREV_SONNET_ID}}\`, or any other model unless the user literally says "use sonnet" or "use haiku". Never downgrade for cost — that's the user's decision, not yours.
+
+**CRITICAL: Use only the exact model ID strings from the table above — they are complete as-is. Do not append date suffixes.** For example, use \`claude-sonnet-4-5\`, never \`claude-sonnet-4-5-20250514\` or any other date-suffixed variant you might recall from training data. If the user requests an older model not in the table (e.g., "opus 4.5", "sonnet 3.7"), read \`shared/models.md\` for the exact ID — do not construct one yourself.
+
+A note: if any of the model strings above look unfamiliar to you, that's to be expected — that just means they were released after your training data cutoff. Rest assured they are real models; we wouldn't mess with you like that.
+
+---
+
+## Thinking & Effort (Quick Reference)
+--
+        delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+        print(f"Retry {attempt + 1}/{max_retries} after {delay:.1f}s")
+        time.sleep(delay)
+
+    raise last_exception
+\`\`\`
+`;
+var ELq = () => {};
+var RLq = `# Message Batches API — Python
+
+The Batches API (\`POST /v1/messages/batches\`) processes Messages API requests asynchronously at 50% of standard prices.
+
+## Key Facts
+
+- Up to 100,000 requests or 256 MB per batch
+- Most batches complete within 1 hour; maximum 24 hours
+- Results available for 29 days after creation
+- 50% cost reduction on all token usage
+- All Messages API features supported (vision, tools, caching, etc.)
+
+---
+
+## Create a Batch
+
+\`\`\`python
+import anthropic
+from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.messages.batch_create_params import Request
+
+client = anthropic.Anthropic()
+
+--
+  system: system,
+});
+
+const estimatedInputCost = countResponse.input_tokens * 0.000005; // $5/1M tokens
+console.log(\`Estimated input cost: $\${estimatedInputCost.toFixed(4)}\`);
+\`\`\`
+`;
+var oLq = () => {};
+var tLq = `# Message Batches API — TypeScript
+
+The Batches API (\`POST /v1/messages/batches\`) processes Messages API requests asynchronously at 50% of standard prices.
+
+## Key Facts
+
+- Up to 100,000 requests or 256 MB per batch
+- Most batches complete within 1 hour; maximum 24 hours
+- Results available for 29 days after creation
+- 50% cost reduction on all token usage
+- All Messages API features supported (vision, tools, caching, etc.)
+
+---
+
+## Create a Batch
+
+\`\`\`typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic();
+
+const messageBatch = await client.messages.batches.create({
+  requests: [

@@ -1,0 +1,7 @@
+"org:create_api_key"
+"user:file_upload"
+"user:inference"
+"user:mcp_servers"
+"user:profile"
+"user:profile user:inference user:sessions:claude_code user:mcp_servers"
+"user:sessions:claude_code"

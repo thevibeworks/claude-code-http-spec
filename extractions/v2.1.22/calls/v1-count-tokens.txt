@@ -1,0 +1,96 @@
+          ]),
+        }),
+        this.create(A, K).then((q) => Np1(q, A))
+      );
+    }
+    stream(A, K) {
+      return nEA.createMessage(this, A, K);
+    }
+    countTokens(A, K) {
+      let { betas: q, ...Y } = A;
+      return this._client.post("/v1/messages/count_tokens?beta=true", {
+        body: Y,
+        ...K,
+        headers: f5([
+          {
+            "anthropic-beta": [
+              ...(q ?? []),
+              "token-counting-2024-11-01",
+            ].toString(),
+          },
+          K?.headers,
+        ]),
+      });
+    }
+    toolRunner(A, K) {
+      return new aEA(this._client, A, K);
+    }
+  };
+  N6A.Batches = sEA;
+  N6A.BetaToolRunner = aEA;
+});
+--
+        body: A,
+        timeout: q ?? 600000,
+        ...K,
+        stream: A.stream ?? !1,
+      });
+    }
+    stream(A, K) {
+      return zkA.createMessage(this, A, K);
+    }
+    countTokens(A, K) {
+      return this._client.post("/v1/messages/count_tokens", { body: A, ...K });
+    }
+  };
+  gR8 = {
+    "claude-1.3": "November 6th, 2024",
+    "claude-1.3-100k": "November 6th, 2024",
+    "claude-instant-1.1": "November 6th, 2024",
+    "claude-instant-1.1-100k": "November 6th, 2024",
+    "claude-instant-1.2": "November 6th, 2024",
+    "claude-3-sonnet-20240229": "July 21st, 2025",
+    "claude-3-opus-20240229": "January 5th, 2026",
+    "claude-2.1": "July 21st, 2025",
+    "claude-2.0": "July 21st, 2025",
+    "claude-3-7-sonnet-latest": "February 19th, 2026",
+    "claude-3-7-sonnet-20250219": "February 19th, 2026",
+  };
+  iN.Batches = wkA;
+});
+var cHA;
+var cp1 = C(() => {
+  Pb();
+--
+        if (!az1(A.body))
+          throw Error(
+            "Expected request body to be an object for post /v1/messages",
+          );
+        let K = A.body.model;
+        A.body.model = void 0;
+        let Y = (A.body.stream ?? !1) ? "streamRawPredict" : "rawPredict";
+        A.path = `/projects/${this.projectId}/locations/${this.region}/publishers/anthropic/models/${K}:${Y}`;
+      }
+      if (
+        A.path === "/v1/messages/count_tokens" ||
+        (A.path == "/v1/messages/count_tokens?beta=true" && A.method === "post")
+      ) {
+        if (!this.projectId)
+          throw Error(
+            "No projectId was given and it could not be resolved from credentials. The client should be instantiated with the `projectId` option or the `ANTHROPIC_VERTEX_PROJECT_ID` environment variable should be set.",
+          );
+        A.path = `/projects/${this.projectId}/locations/${this.region}/publishers/anthropic/models/count-tokens:rawPredict`;
+      }
+      return super.buildRequest(A);
+    }
+  };
+});
+var Zs4 = C(() => {
+  NJ6();
+  NJ6();
+});
+var tz1 = "4.10.1",
+  vJ6 = "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+  Gs4 = "common",
+  TJ6,
+  YhA,

@@ -1,0 +1,63 @@
+  gM6();
+  ha();
+  cM6 = class cM6 extends p$ {
+    constructor() {
+      super(...arguments);
+      this.versions = new Kx6(this._client);
+    }
+    create(A = {}, q) {
+      let { betas: K, ...Y } = A ?? {};
+      return this._client.post(
+        "/v1/skills?beta=true",
+        BM6(
+          {
+            body: Y,
+            ...q,
+            headers: oK([
+              {
+                "anthropic-beta": [
+                  ...(K ?? []),
+                  "skills-2025-10-02",
+                ].toString(),
+              },
+              q?.headers,
+            ]),
+          },
+          this._client,
+          !1,
+        ),
+      );
+    }
+    retrieve(A, q = {}, K) {
+--
+      return this._client.get(oO`/v1/skills/${A}?beta=true`, {
+        ...K,
+        headers: oK([
+          { "anthropic-beta": [...(Y ?? []), "skills-2025-10-02"].toString() },
+          K?.headers,
+        ]),
+      });
+    }
+    list(A = {}, q) {
+      let { betas: K, ...Y } = A ?? {};
+      return this._client.getAPIList("/v1/skills?beta=true", gb6, {
+        query: Y,
+        ...q,
+        headers: oK([
+          { "anthropic-beta": [...(K ?? []), "skills-2025-10-02"].toString() },
+          q?.headers,
+        ]),
+      });
+    }
+    delete(A, q = {}, K) {
+      let { betas: Y } = q ?? {};
+      return this._client.delete(oO`/v1/skills/${A}?beta=true`, {
+        ...K,
+        headers: oK([
+          { "anthropic-beta": [...(Y ?? []), "skills-2025-10-02"].toString() },
+          K?.headers,
+        ]),
+      });
+    }
+  };
+  cM6.Versions = Kx6;

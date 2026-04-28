@@ -1,0 +1,63 @@
+  } catch (A) {
+    _6(A);
+  }
+}
+async function xG1(A) {
+  try {
+    (await bG1(() => {
+      let q = QO();
+      if (q.error) throw Error(`Failed to get auth headers: ${q.error}`);
+      return X8.patch(
+        `${P7().BASE_API_URL}/api/oauth/account/settings`,
+        { grove_enabled: A },
+        { headers: { ...q.headers, "User-Agent": pO() } },
+      );
+    }),
+      eI.cache.clear?.());
+  } catch (q) {
+    _6(q);
+  }
+}
+async function qG6() {
+  if (!vU6()) return !1;
+  let A = L3()?.accountUuid;
+  if (!A) return !1;
+  let K = X1().groveConfigCache?.[A],
+    Y = Date.now();
+  if (!K)
+    return (
+      k(
+        "Grove: No cache, fetching config in background (dialog skipped this session)",
+      ),
+--
+  eI = e1(async () => {
+    if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)
+      return { success: !1 };
+    try {
+      return {
+        success: !0,
+        data: (
+          await bG1(() => {
+            let q = QO();
+            if (q.error) throw Error(`Failed to get auth headers: ${q.error}`);
+            return X8.get(`${P7().BASE_API_URL}/api/oauth/account/settings`, {
+              headers: { ...q.headers, "User-Agent": pO() },
+            });
+          })
+        ).data,
+      };
+    } catch (A) {
+      return (_6(A), eI.cache.clear?.(), { success: !1 });
+    }
+  });
+  Ie = e1(async () => {
+    if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)
+      return { success: !1 };
+    try {
+      let A = await bG1(() => {
+          let _ = QO();
+          if (_.error) throw Error(`Failed to get auth headers: ${_.error}`);
+          return X8.get(`${P7().BASE_API_URL}/api/claude_code_grove`, {
+            headers: { ..._.headers, "User-Agent": Gy() },
+            timeout: 3000,
+          });

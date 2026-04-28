@@ -1,0 +1,47 @@
+  E76();
+});
+async function ryK() {
+  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC)
+    return (k("[clientData] skipped: nonessential traffic disabled"), null);
+  if (!iA() || !XG())
+    return (
+      k("[clientData] skipped: not OAuth subscriber or missing profile scope"),
+      null
+    );
+  let A = `${P7().BASE_API_URL}/api/oauth/claude_cli/client_data`;
+  for (let q = 0; q < 2; q++) {
+    let K = QO();
+    if (K.error) throw Error(`Auth error: ${K.error}`);
+    try {
+      k(`[clientData] fetching (attempt ${q + 1}/2)`);
+      let z =
+        (
+          await X8.get(A, {
+            headers: {
+              "Content-Type": "application/json",
+              "User-Agent": pO(),
+              ...K.headers,
+            },
+            timeout: 5000,
+          })
+        ).data.client_data ?? null;
+      return (
+        k(
+          `[clientData] fetch ok (${z ? Object.keys(z).length + " fields" : "null"})`,
+        ),
+        z
+      );
+    } catch (Y) {
+      let z = sA()?.accessToken;
+      if (q === 0 && X8.isAxiosError(Y) && Y.response?.status === 401 && z) {
+        (k("[clientData] 401 received, refreshing token and retrying"),
+          await DG(z));
+        continue;
+      }
+      throw (
+        k(
+          `[clientData] fetch failed: ${X8.isAxiosError(Y) ? (Y.response?.status ?? Y.code) : "unknown"}`,
+        ),
+        Y
+      );
+    }

@@ -1,0 +1,31 @@
+  backoffRetryTimer = null;
+  attempts = 0;
+  isRetrying = !1;
+  lastExportErrorContext;
+  constructor(A = {}) {
+    let q =
+      A.baseUrl ||
+      (process.env.ANTHROPIC_BASE_URL === "https://api-staging.anthropic.com"
+        ? "https://api-staging.anthropic.com"
+        : "https://api.anthropic.com");
+    ((this.endpoint = `${q}${A.path || "/api/event_logging/batch"}`),
+      (this.timeout = A.timeout || 1e4),
+      (this.maxBatchSize = A.maxBatchSize || 200),
+      (this.skipAuth = A.skipAuth ?? !1),
+      (this.batchDelayMs = A.batchDelayMs || 100),
+      (this.baseBackoffDelayMs = A.baseBackoffDelayMs || 500),
+      (this.maxBackoffDelayMs = A.maxBackoffDelayMs || 30000),
+      (this.maxAttempts = A.maxAttempts ?? 8),
+      (this.isKilled = A.isKilled ?? (() => !1)),
+      this.retryPreviousBatches());
+  }
+  async getQueuedEventCount() {
+    return (await this.loadEventsFromCurrentBatch()).length;
+  }
+  getCurrentBatchFilePath() {
+    return FS1.join(jo6(), `${ovq}${R1()}.${rvq}.json`);
+  }
+  async loadEventsFromFile(A) {
+    try {
+      return await x$6(A);
+    } catch {

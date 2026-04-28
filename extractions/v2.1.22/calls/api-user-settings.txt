@@ -1,0 +1,31 @@
+      !1
+    );
+  }
+}
+function js2() {
+  if (VK() !== "firstParty" || !LJA()) return !1;
+  let A = EK();
+  return Boolean(A?.accessToken && A.scopes?.includes(ch));
+}
+function Ms2() {
+  return `${C7().BASE_API_URL}/api/claude_code/user_settings`;
+}
+function Ps2() {
+  let A = EK();
+  if (A?.accessToken)
+    return {
+      headers: {
+        Authorization: `Bearer ${A.accessToken}`,
+        "anthropic-beta": EE,
+      },
+    };
+  return { headers: {}, error: "No OAuth token available" };
+}
+async function Vs2() {
+  try {
+    await iG();
+    let A = Ps2();
+    if (A.error) return { success: !1, error: A.error, skipRetry: !0 };
+    let K = { ...A.headers, "User-Agent": BH() },
+      q = Ms2(),
+      Y = await t6.get(q, {

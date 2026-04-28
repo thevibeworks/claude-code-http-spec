@@ -1,0 +1,127 @@
+    O.searchParams.append("code_challenge", A),
+    O.searchParams.append("code_challenge_method", "S256"),
+    O.searchParams.append("state", K),
+    H)
+  )
+    O.searchParams.append("orgUUID", H);
+  return O.toString();
+}
+async function jR4(A, K, q, Y, z = !1, w) {
+  let H = {
+    grant_type: "authorization_code",
+    code: A,
+    redirect_uri: z
+      ? C7().MANUAL_REDIRECT_URL
+      : `http://localhost:${Y}/callback`,
+    client_id: C7().CLIENT_ID,
+    code_verifier: q,
+    state: K,
+  };
+  if (w !== void 0) H.expires_in = w;
+  let J = await t6.post(C7().TOKEN_URL, H, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (J.status !== 200)
+    throw Error(
+      J.status === 401
+        ? "Authentication failed: Invalid authorization code"
+        : `Token exchange failed (${J.status}): ${J.statusText}`,
+    );
+  return (n("tengu_oauth_token_exchange_success", {}), J.data);
+}
+--
+        );
+      else return this.getTokenAsync(q);
+    }
+    async getTokenAsync(A) {
+      let K = this.endpoints.oauth2TokenUrl.toString(),
+        q = { "Content-Type": "application/x-www-form-urlencoded" },
+        Y = {
+          client_id: A.client_id || this._clientId,
+          code_verifier: A.codeVerifier,
+          code: A.code,
+          grant_type: "authorization_code",
+          redirect_uri: A.redirect_uri || this.redirectUri,
+        };
+      if (this.clientAuthentication === iSA.ClientSecretBasic) {
+        let H = Buffer.from(`${this._clientId}:${this._clientSecret}`);
+        q.Authorization = `Basic ${H.toString("base64")}`;
+      }
+      if (this.clientAuthentication === iSA.ClientSecretPost)
+        Y.client_secret = this._clientSecret;
+      let z = await this.transporter.request({
+          ...MM.RETRY_CONFIG,
+          method: "POST",
+          url: K,
+          data: $H6.stringify(Y),
+          headers: q,
+        }),
+        w = z.data;
+      if (z.data && z.data.expires_in)
+        ((w.expiry_date = new Date().getTime() + z.data.expires_in * 1000),
+          delete w.expires_in);
+      return (this.emit("tokens", w), { tokens: w, res: z });
+--
+  )
+    J.searchParams.set("state", w);
+  if (z) J.searchParams.set("scope", z);
+  if (z === null || z === void 0 ? void 0 : z.includes("offline_access"))
+    J.searchParams.append("prompt", "consent");
+  if (H) J.searchParams.set("resource", H.href);
+  return { authorizationUrl: J, codeVerifier: X };
+}
+function CWY(A, K, q) {
+  return new URLSearchParams({
+    grant_type: "authorization_code",
+    code: A,
+    code_verifier: K,
+    redirect_uri: String(q),
+  });
+}
+async function JH7(
+  A,
+  {
+    metadata: K,
+    tokenRequestParams: q,
+    clientInformation: Y,
+    addClientAuthentication: z,
+    resource: w,
+    fetchFn: H,
+  },
+) {
+  var J;
+  let O = (K === null || K === void 0 ? void 0 : K.token_endpoint)
+      ? new URL(K.token_endpoint)
+      : new URL("/token", A),
+--
+  get redirectUrl() {
+    return this.redirectUri;
+  }
+  get authorizationUrl() {
+    return this._authorizationUrl;
+  }
+  get clientMetadata() {
+    let A = {
+        client_name: `Claude Code (${this.serverName})`,
+        redirect_uris: [this.redirectUri],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      },
+      K = ij6(this._metadata);
+    if (K)
+      ((A.scope = K),
+        b6(this.serverName, `Using scope from metadata: ${A.scope}`));
+    return A;
+  }
+  setMetadata(A) {
+    this._metadata = A;
+  }
+  async state() {
+    if (!this._state)
+      ((this._state = XCY(32).toString("base64url")),
+        b6(this.serverName, "Generated new OAuth state"));
+    return this._state;
+  }
+  async clientInformation() {
+    let K = jf().read(),

@@ -1,0 +1,31 @@
+        "Content-Type": "application/json",
+        "User-Agent": BH(),
+        ...Y.headers,
+      },
+      w = {
+        vcs_type: "github",
+        vcs_host: K,
+        vcs_username: A,
+        git_user_email: q,
+      },
+      H = "https://api.anthropic.com/api/claude_code/link_vcs_account";
+    await t6.post(H, w, { headers: z, timeout: 5000 });
+  } catch (Y) {}
+}
+var ee7 = C(() => {
+  n3();
+  wZ();
+});
+async function v_2() {
+  try {
+    let A = await L6("gh", ["auth", "status", "--active", "--json", "hosts"], {
+      useCwd: !1,
+      timeout: 5000,
+    });
+    if (A.code !== 0 || !A.stdout.trim()) return null;
+    let q = X6(A.stdout)?.hosts;
+    if (!q || typeof q !== "object") return null;
+    for (let [Y, z] of Object.entries(q)) {
+      if (!Array.isArray(z) || z.length === 0) continue;
+      let w = z[0];
+      if (w?.login) return { username: w.login, hostname: Y };

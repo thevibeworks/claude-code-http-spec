@@ -1,0 +1,31 @@
+  W1();
+  i1();
+  L4();
+  c6();
+  d7();
+  Qs = a1(async () => {
+    try {
+      let A = await $W1(() => {
+          let w = mH();
+          if (w.error) throw Error(`Failed to get auth headers: ${w.error}`);
+          return t6.get(`${C7().BASE_API_URL}/api/claude_code_grove`, {
+            headers: { ...w.headers, "User-Agent": gn() },
+            timeout: 3000,
+          });
+        }),
+        {
+          grove_enabled: K,
+          domain_excluded: q,
+          notice_is_grace_period: Y,
+          notice_reminder_frequency: z,
+        } = A.data;
+      return {
+        success: !0,
+        data: {
+          grove_enabled: K,
+          domain_excluded: q ?? !1,
+          notice_is_grace_period: Y ?? !0,
+          notice_reminder_frequency: z,
+        },
+      };
+    } catch (A) {

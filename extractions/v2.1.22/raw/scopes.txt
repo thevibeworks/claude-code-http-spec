@@ -1,0 +1,5 @@
+"org:create_api_key"
+"user:inference"
+"user:mcp_servers"
+"user:profile"
+"user:sessions:claude_code"

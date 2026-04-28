@@ -1,0 +1,167 @@
+  jY8,
+  LZq = void 0,
+  RZq;
+var Fz = C(() => {
+  l6();
+  ((CZq = [kZq, "user:profile"]),
+    (nh1 = [
+      "user:profile",
+      ch,
+      "user:sessions:claude_code",
+      "user:mcp_servers",
+    ]),
+    (VY8 = Array.from(new Set([...CZq, ...nh1]))),
+    (jY8 = {
+      BASE_API_URL: "https://api.anthropic.com",
+      CONSOLE_AUTHORIZE_URL: "https://platform.claude.com/oauth/authorize",
+      CLAUDE_AI_AUTHORIZE_URL: "https://claude.ai/oauth/authorize",
+      TOKEN_URL: "https://platform.claude.com/v1/oauth/token",
+      API_KEY_URL:
+        "https://api.anthropic.com/api/oauth/claude_cli/create_api_key",
+      ROLES_URL: "https://api.anthropic.com/api/oauth/claude_cli/roles",
+      CONSOLE_SUCCESS_URL:
+        "https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code",
+      CLAUDEAI_SUCCESS_URL:
+        "https://platform.claude.com/oauth/code/success?app=claude-code",
+      MANUAL_REDIRECT_URL: "https://platform.claude.com/oauth/code/callback",
+      CLIENT_ID: "9d1c250a-e61b-44d9-88ed-5944d1962f5e",
+      OAUTH_FILE_SUFFIX: "",
+      MCP_PROXY_URL: "https://mcp-proxy.anthropic.com",
+      MCP_PROXY_PATH: "/v1/mcp/{server_id}",
+    }),
+--
+          n("tengu_claudeai_mcp_eligibility", { state: "disabled_env_var" }),
+          {}
+        );
+      let K = EK();
+      if (!K?.accessToken)
+        return (
+          h("[claudeai-mcp] No access token"),
+          n("tengu_claudeai_mcp_eligibility", { state: "no_oauth_token" }),
+          {}
+        );
+      if (!K.scopes?.includes("user:mcp_servers"))
+        return (
+          h(
+            `[claudeai-mcp] Missing user:mcp_servers scope (scopes=${K.scopes?.join(",") || "none"})`,
+          ),
+          n("tengu_claudeai_mcp_eligibility", { state: "missing_scope" }),
+          {}
+        );
+      let Y = `${C7().BASE_API_URL}/v1/mcp_servers?limit=1000`;
+      h(`[claudeai-mcp] Fetching from ${Y}`);
+      let z = await t6.get(Y, {
+          headers: {
+            Authorization: `Bearer ${K.accessToken}`,
+            "Content-Type": "application/json",
+            "anthropic-beta": WEY,
+            "anthropic-version": "2023-06-01",
+          },
+          timeout: GEY,
+        }),
+        w = {},
+        H = new Set();
+      for (let J of z.data.data) {
+        let O = `claude.ai ${J.display_name}`,
+          X = O,
+          $ = $3(X),
+          _ = 1;
+        while (H.has($)) (_++, (X = `${O} (${_})`), ($ = $3(X)));
+        (H.add($),
+          (w[X] = {
+--
+      j = R;
+    }
+    if (V.length > 0) P = await rzK(T, async () => K, null);
+  } catch {}
+  n("tengu_context_size", {
+    git_status_size: H,
+    claude_md_size: J,
+    total_context_size: O,
+    project_file_count_rounded: G,
+    mcp_tools_count: W,
+    mcp_servers_count: D,
+    mcp_tools_tokens: j,
+    non_mcp_tools_count: M,
+    non_mcp_tools_tokens: P,
+  });
+}
+function izK(A, K, q) {
+  switch (A.name) {
+    case VC: {
+      let Y = MZ(q);
+      if (Y) return { ...K, plan: Y };
+      return K;
+    }
+    case o7.name: {
+      let Y = o7.inputSchema.parse(K),
+        { command: z, timeout: w, description: H } = Y,
+        J = z.replace(`cd ${b1()} && `, "");
+      if (
+        ((J = J.replace(/\\\\;/g, "\\;")),
+        /^echo\s+["']?[^|&;><]*["']?$/i.test(J.trim()))
+      )
+--
+            plugin: 0,
+            claudeai: 0,
+          };
+        for (let V of Object.values(M))
+          if (V.scope === "enterprise") P.enterprise++;
+          else if (V.scope === "user") P.global++;
+          else if (V.scope === "project") P.project++;
+          else if (V.scope === "local") P.user++;
+          else if (V.scope === "dynamic") P.plugin++;
+          else if (V.scope === "claudeai") P.claudeai++;
+        n("tengu_mcp_servers", P);
+      }
+      return (
+        Z(),
+        () => {
+          _ = !0;
+        }
+      );
+    }, [K, A, J, O, Y.authVersion, z]),
+    GP.useEffect(() => {
+      let _ = w.current;
+      return () => {
+        for (let Z of _.values()) clearTimeout(Z);
+        _.clear();
+      };
+    }, []),
+    GP.useEffect(() => {}, [Y.mcp.clients, z]),
+    GP.useEffect(() => q?.updateClients(Y.mcp.clients), [q, Y.mcp.clients]),
+    GP.useEffect(() => q?.updateTools(Y.mcp.tools), [q, Y.mcp.tools]),
+    GP.useEffect(
+      () => q?.updateResources(Y.mcp.resources),
+--
+    };
+    let AA = O8()?.outputStyle ?? pZ,
+      [t, { enabled: ZA }] = await Promise.all([AV1(b1()), bY()]);
+    if (
+      (yield {
+        type: "system",
+        subtype: "init",
+        cwd: q,
+        session_id: F1(),
+        tools: z.map((oA) => oA.name),
+        mcp_servers: w.map((oA) => ({ name: oA.name, status: oA.type })),
+        model: mA,
+        permissionMode: B.toolPermissionContext.mode,
+        slash_commands: Y.map((oA) => oA.name),
+        apiKeySource: Y0().source,
+        betas: nP(),
+        claude_code_version: {
+          ISSUES_EXPLAINER:
+            "report the issue at https://github.com/anthropics/claude-code/issues",
+          PACKAGE_URL: "@anthropic-ai/claude-code",
+          README_URL: "https://code.claude.com/docs/en/overview",
+          VERSION: "2.1.22",
+          FEEDBACK_CHANNEL: "https://github.com/anthropics/claude-code/issues",
+          BUILD_TIME: "2026-01-28T06:33:34Z",
+        }.VERSION,
+        output_style: AA,
+        agents: N.map((oA) => oA.agentType),
+        skills: t.map((oA) => oA.name),
+        plugins: ZA.map((oA) => ({ name: oA.name, path: oA.path })),
+        uuid: JAA(),
+      },

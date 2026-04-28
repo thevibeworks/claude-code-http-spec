@@ -1,0 +1,38 @@
+  return A;
+}
+async function nw4() {
+  try {
+    if (D1().claudeCodeFirstTokenDate !== void 0) return;
+    let K = mH();
+    if (K.error) {
+      KA(Error(`Failed to get auth headers: ${K.error}`));
+      return;
+    }
+    let Y = `${C7().BASE_API_URL}/api/organization/claude_code_first_token_date`,
+      w =
+        (await t6.get(Y, { headers: { ...K.headers, "User-Agent": BH() } }))
+          .data?.first_token_date ?? null;
+    if (w !== null) {
+      let H = new Date(w).getTime();
+      if (isNaN(H)) {
+        KA(Error(`Received invalid first_token_date from API: ${w}`));
+        return;
+      }
+    }
+    D6((H) => ({ ...H, claudeCodeFirstTokenDate: w }));
+  } catch (A) {
+    KA(A instanceof Error ? A : Error(String(A)));
+  }
+}
+function lRA() {
+  if (iRA() || nRA() || c0A())
+    return "Opus 4.5 · Most capable for complex work";
+  return "Sonnet 4.5 · Best for everyday tasks";
+}
+function Oo3(A) {
+  if (A === "opusplan") return "Opus 4.5 in plan mode, else Sonnet 4.5";
+  return qM(jw(A));
+}
+function rw4(A) {
+  if (A === "opusplan") return "Opus Plan";
+  if (E46(A)) return A.charAt(0).toUpperCase() + A.slice(1);

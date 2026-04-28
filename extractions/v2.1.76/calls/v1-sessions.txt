@@ -1,0 +1,538 @@
+  if (A === void 0)
+    throw Error(
+      "Claude Code web sessions require authentication with a Claude.ai account. API key authentication is not sufficient. Please run /login to authenticate, or check your authentication status with /status.",
+    );
+  let q = await mR();
+  if (!q) throw Error("Unable to get organization UUID");
+  return { accessToken: A, orgUUID: q };
+}
+async function tb8() {
+  let { accessToken: A, orgUUID: q } = await k0(),
+    K = `${P7().BASE_API_URL}/v1/sessions`;
+  try {
+    let Y = {
+        ...zj(A),
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": q,
+      },
+      z = await UU4(K, { headers: Y });
+    if (z.status !== 200)
+      throw Error(`Failed to fetch code sessions: ${z.statusText}`);
+    return z.data.data.map((w) => {
+      let O = w.session_context.sources.find(
+          (H) => H.type === "git_repository",
+        ),
+        $ = null;
+      if (O?.url) {
+        let H = m46(O.url);
+        if (H) {
+          let [j, J] = H.split("/");
+          if (j && J)
+            $ = {
+              name: J,
+              owner: { login: j },
+              default_branch: O.revision || void 0,
+            };
+        }
+--
+}
+function zj(A) {
+  return {
+    Authorization: `Bearer ${A}`,
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01",
+  };
+}
+async function jf6(A) {
+  let { accessToken: q, orgUUID: K } = await k0(),
+    Y = `${P7().BASE_API_URL}/v1/sessions/${A}`,
+    z = {
+      ...zj(q),
+      "anthropic-beta": "ccr-byoc-2025-07-29",
+      "x-organization-uuid": K,
+    },
+    _ = await X8.get(Y, {
+      headers: z,
+      timeout: 15000,
+      validateStatus: (w) => w < 500,
+    });
+  if (_.status !== 200) {
+    let O = _.data?.error?.message;
+    if (_.status === 404) throw Error(`Session not found: ${A}`);
+    if (_.status === 401)
+      throw Error("Session expired. Please run /login to sign in again.");
+    throw Error(O || `Failed to fetch session: ${_.status} ${_.statusText}`);
+  }
+  return _.data;
+}
+function mv1(A) {
+  return A.session_context.outcomes?.find((K) => K.type === "git_repository")
+    ?.git_info?.branches[0];
+}
+async function eb8(A, q, K) {
+  try {
+    let { accessToken: Y, orgUUID: z } = await k0(),
+      _ = `${P7().BASE_API_URL}/v1/sessions/${A}/events`,
+      w = {
+        ...zj(Y),
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": z,
+      },
+      $ = {
+        events: [
+          {
+            uuid: K?.uuid ?? pU4(),
+            session_id: A,
+            type: "user",
+            parent_tool_use_id: null,
+            message: { role: "user", content: q },
+          },
+        ],
+      };
+    k(`[sendEventToRemoteSession] Sending event to session ${A}`);
+    let H = await X8.post(_, $, {
+      headers: w,
+      validateStatus: (j) => j < 500,
+      timeout: 30000,
+    });
+    if (H.status === 200 || H.status === 201)
+      return (
+        k(`[sendEventToRemoteSession] Successfully sent event to session ${A}`),
+--
+    session_id: q,
+    type: K === "assistant" ? "assistant" : "user",
+    parent_tool_use_id: null,
+    message: { role: K, content: Y },
+  };
+}
+async function VGY(A, q) {
+  if (q.length === 0) return 0;
+  try {
+    let { accessToken: K, orgUUID: Y } = await k0(),
+      z = `${P7().BASE_API_URL}/v1/sessions/${A}/events`,
+      _ = {
+        ...zj(K),
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": Y,
+      },
+      w = 0;
+    for (let O = 0; O < q.length; O += uv1) {
+      let $ = q.slice(O, O + uv1),
+        H = $.map((J) => NGY(J, A)),
+        j = await X8.post(
+          z,
+          { events: H },
+          { headers: _, validateStatus: (J) => J < 500, timeout: 30000 },
+        );
+      if (j.status !== 200 && j.status !== 201)
+        return (
+          k(
+            `[sendTranscriptToRemoteSession] Batch ${Math.floor(O / uv1) + 1} failed with status ${j.status}: ${B6(j.data)}`,
+          ),
+          -1
+        );
+      ((w += $.length),
+        k(
+          `[sendTranscriptToRemoteSession] Uploaded batch ${Math.floor(O / uv1) + 1} (${w}/${q.length} messages)`,
+        ));
+    }
+    return w;
+  } catch (K) {
+    return (k(`[sendTranscriptToRemoteSession] Error: ${_1(K)}`), -1);
+  }
+}
+async function Ax8(A, q) {
+  try {
+    let { accessToken: K, orgUUID: Y } = await k0(),
+      z = `${P7().BASE_API_URL}/v1/sessions/${A}`,
+      _ = {
+        ...zj(K),
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": Y,
+      };
+    k(`[updateSessionTitle] Updating title for session ${A}: "${q}"`);
+    let w = await X8.patch(
+      z,
+      { title: q },
+      { headers: _, validateStatus: (O) => O < 500 },
+    );
+    if (w.status === 200)
+      return (
+        k(`[updateSessionTitle] Successfully updated title for session ${A}`),
+        !0
+      );
+    return (
+      k(`[updateSessionTitle] Failed with status ${w.status}: ${B6(w.data)}`),
+      !1
+    );
+  } catch (K) {
+    return (k(`[updateSessionTitle] Error: ${_1(K)}`), !1);
+  }
+}
+var QU4,
+--
+      Error(`Failed to fetch session from Sessions API: ${O.message}`)
+    );
+  }
+}
+async function qm8(A) {
+  let q = sA()?.accessToken;
+  if (!q) throw Error("No access token for polling");
+  let K = await mR();
+  if (!K) throw Error("No org UUID for polling");
+  let Y = zj(q),
+    z = `${P7().BASE_API_URL}/v1/sessions/${A}/events`,
+    _ = await X8.get(z, {
+      headers: {
+        ...Y,
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": K,
+      },
+      timeout: 30000,
+    });
+  if (_.status !== 200)
+    throw Error(`Failed to fetch session events: ${_.statusText}`);
+  let w = _.data;
+  if (!w?.data || !Array.isArray(w.data))
+    throw Error("Invalid events response");
+  let O = [];
+  for (let j of w.data)
+    if (j && typeof j === "object" && "type" in j) {
+      if (j.type === "env_manager_log" || j.type === "control_response")
+        continue;
+      if ("session_id" in j) O.push(j);
+    }
+  let $, H;
+  try {
+    let j = await jf6(A);
+    (($ = mv1(j)), (H = j.session_status));
+  } catch {}
+--
+    if (D) {
+      let h = X.environment_id === D;
+      k(
+        h
+          ? `Using configured default environment: ${D}`
+          : `Configured default environment ${D} not found, using first available`,
+      );
+    }
+    let P = X.environment_id;
+    k(`Selected environment: ${P} (${X.name}, ${X.kind})`);
+    let W = `${P7().BASE_API_URL}/v1/sessions`,
+      Z = {
+        ...zj(z),
+        "anthropic-beta": "ccr-byoc-2025-07-29",
+        "x-organization-uuid": _,
+      },
+      G = { sources: O ? [O] : [], outcomes: $ ? [$] : [], model: cK() },
+      f = q
+        ? [
+            {
+              type: "event",
+              data: {
+                uuid: VVY(),
+                session_id: "",
+                type: "user",
+                parent_tool_use_id: null,
+                message: { role: "user", content: q },
+              },
+            },
+          ]
+        : [],
+      v = { title: H, events: f, session_context: G, environment_id: P };
+    k(`Creating session with payload: ${B6(v, null, 2)}`);
+    let N = await X8.post(W, v, { headers: Z, signal: Y });
+    if (!(N.status === 200 || N.status === 201))
+      return (
+--
+    this.orgUuid = q;
+    this.accessToken = K;
+    this.callbacks = Y;
+  }
+  async connect() {
+    if (this.state === "connecting") {
+      k("[SessionsWebSocket] Already connecting");
+      return;
+    }
+    this.state = "connecting";
+    let q = `${P7().BASE_API_URL.replace("https://", "wss://")}/v1/sessions/ws/${this.sessionId}/subscribe?organization_uuid=${this.orgUuid}`;
+    k(`[SessionsWebSocket] Connecting to ${q}`);
+    let K = {
+      Authorization: `Bearer ${this.accessToken}`,
+      "anthropic-version": "2023-06-01",
+    };
+    if (typeof Bun < "u") {
+      let Y = new globalThis.WebSocket(q, {
+        headers: K,
+        proxy: mQ(q),
+        tls: iS() || void 0,
+      });
+      ((this.ws = Y),
+        Y.addEventListener("open", () => {
+          (k(
+            "[SessionsWebSocket] Connection opened, authenticated via headers",
+          ),
+            (this.state = "connected"),
+            (this.reconnectAttempts = 0),
+            this.startPingInterval(),
+            this.callbacks.onConnected?.());
+        }),
+        Y.addEventListener("message", (z) => {
+          let _ = typeof z.data === "string" ? z.data : String(z.data);
+          this.handleMessage(_);
+        }),
+--
+      },
+      environment_id: A,
+      source: "remote-control",
+      ...($ && { permission_mode: $ }),
+    },
+    V = {
+      ...M(Z),
+      "anthropic-beta": "ccr-byoc-2025-07-29",
+      "x-organization-uuid": G,
+    },
+    L = `${w ?? J().BASE_API_URL}/v1/sessions`,
+    h;
+  try {
+    h = await W.post(L, N, {
+      headers: V,
+      signal: _,
+      validateStatus: (I) => I < 500,
+    });
+  } catch (I) {
+    return (k(`[bridge] Session creation request failed: ${_1(I)}`), null);
+  }
+  if (!(h.status === 200 || h.status === 201)) {
+    let I = AR1(h.data);
+    return (
+      k(
+        `[bridge] Session creation failed with status ${h.status}${I ? `: ${I}` : ""}`,
+      ),
+      null
+    );
+  }
+  let u = h.data;
+  if (!u || typeof u !== "object" || !("id" in u) || typeof u.id !== "string")
+    return (k("[bridge] No session ID in response"), null);
+  return u.id;
+}
+async function WtY(A, q) {
+--
+    { default: w } = await Promise.resolve().then(() => (kK(), G$6)),
+    O = q?.getAccessToken?.() ?? K()?.accessToken;
+  if (!O) return (k("[bridge] No access token for session fetch"), null);
+  let $ = await Y();
+  if (!$) return (k("[bridge] No org UUID for session fetch"), null);
+  let H = {
+      ..._(O),
+      "anthropic-beta": "ccr-byoc-2025-07-29",
+      "x-organization-uuid": $,
+    },
+    j = `${q?.baseUrl ?? z().BASE_API_URL}/v1/sessions/${A}`;
+  k(`[bridge] Fetching session ${A}`);
+  let J;
+  try {
+    J = await w.get(j, {
+      headers: H,
+      timeout: 1e4,
+      validateStatus: (M) => M < 500,
+    });
+  } catch (M) {
+    return (k(`[bridge] Session fetch request failed: ${_1(M)}`), null);
+  }
+  if (J.status !== 200) {
+    let M = AR1(J.data);
+    return (
+      k(
+        `[bridge] Session fetch failed with status ${J.status}${M ? `: ${M}` : ""}`,
+      ),
+      null
+    );
+  }
+  return J.data;
+}
+async function Zc8(A, q) {
+  let { getClaudeAIOAuthTokens: K } = await Promise.resolve().then(
+      () => (fA(), S16),
+--
+  let $ = await Y();
+  if (!$) {
+    k("[bridge] No org UUID for session archive");
+    return;
+  }
+  let H = {
+      ..._(O),
+      "anthropic-beta": "ccr-byoc-2025-07-29",
+      "x-organization-uuid": $,
+    },
+    j = `${q?.baseUrl ?? z().BASE_API_URL}/v1/sessions/${A}/archive`;
+  k(`[bridge] Archiving session ${A}`);
+  let J = await w.post(
+    j,
+    {},
+    { headers: H, timeout: 1e4, validateStatus: (M) => M < 500 },
+  );
+  if (J.status === 200) k(`[bridge] Session ${A} archived successfully`);
+  else {
+    let M = AR1(J.data);
+    k(
+      `[bridge] Session archive failed with status ${J.status}${M ? `: ${M}` : ""}`,
+    );
+  }
+}
+async function Gc8(A, q, K) {
+  let { getClaudeAIOAuthTokens: Y } = await Promise.resolve().then(
+      () => (fA(), S16),
+    ),
+    { getOrganizationUUID: z } = await Promise.resolve().then(
+      () => (W0(), SZ6),
+    ),
+    { getOauthConfig: _ } = await Promise.resolve().then(() => (F5(), q$6)),
+    { getOAuthHeaders: w } = await Promise.resolve().then(() => (EZ(), Xc6)),
+    { default: O } = await Promise.resolve().then(() => (kK(), G$6)),
+    $ = K?.getAccessToken?.() ?? Y()?.accessToken;
+--
+  let H = await z();
+  if (!H) {
+    k("[bridge] No org UUID for session title update");
+    return;
+  }
+  let j = {
+      ...w($),
+      "anthropic-beta": "ccr-byoc-2025-07-29",
+      "x-organization-uuid": H,
+    },
+    J = `${K?.baseUrl ?? _().BASE_API_URL}/v1/sessions/${A}`;
+  k(`[bridge] Updating session title: ${A} → ${q}`);
+  try {
+    let M = await O.patch(
+      J,
+      { title: q },
+      { headers: j, timeout: 1e4, validateStatus: (D) => D < 500 },
+    );
+    if (M.status === 200) k("[bridge] Session title updated successfully");
+    else {
+      let D = AR1(M.data);
+      k(
+        `[bridge] Session title update failed with status ${M.status}${D ? `: ${D}` : ""}`,
+      );
+    }
+  } catch (M) {
+    k(`[bridge] Session title update request failed: ${_1(M)}`);
+  }
+}
+function AR1(A) {
+  if (!A || typeof A !== "object") return;
+  if ("message" in A && typeof A.message === "string") return A.message;
+  if (
+    "error" in A &&
+    A.error !== null &&
+    typeof A.error === "object" &&
+--
+            headers: z(H),
+            timeout: 1e4,
+            validateStatus: (j) => j < 500,
+          }),
+        "Deregister",
+      );
+      (Oi($.status, $.data, "Deregister"),
+        q(`[bridge:api] DELETE /v1/environments/bridge/${O} -> ${$.status}`));
+    },
+    async archiveSession(O) {
+      (dZ(O, "sessionId"), q(`[bridge:api] POST /v1/sessions/${O}/archive`));
+      let $ = await w(
+        (H) =>
+          X8.post(
+            `${A.baseUrl}/v1/sessions/${O}/archive`,
+            {},
+            { headers: z(H), timeout: 1e4, validateStatus: (j) => j < 500 },
+          ),
+        "ArchiveSession",
+      );
+      if ($.status === 409) {
+        q(
+          `[bridge:api] POST /v1/sessions/${O}/archive -> 409 (already archived)`,
+        );
+        return;
+      }
+      (Oi($.status, $.data, "ArchiveSession"),
+        q(`[bridge:api] POST /v1/sessions/${O}/archive -> ${$.status}`));
+    },
+    async reconnectSession(O, $) {
+      (dZ(O, "environmentId"),
+        dZ($, "sessionId"),
+        q(
+          `[bridge:api] POST /v1/environments/${O}/bridge/reconnect session_id=${$}`,
+        ));
+      let H = await w(
+        (j) =>
+          X8.post(
+            `${A.baseUrl}/v1/environments/${O}/bridge/reconnect`,
+            { session_id: $ },
+            { headers: z(j), timeout: 1e4, validateStatus: (J) => J < 500 },
+          ),
+        "ReconnectSession",
+      );
+      (Oi(H.status, H.data, "ReconnectSession"),
+        q(`[bridge:api] POST .../bridge/reconnect -> ${H.status}`));
+    },
+    async heartbeatWork(O, $, H) {
+      (dZ(O, "environmentId"),
+        dZ($, "workId"),
+        q(`[bridge:api] POST .../work/${$}/heartbeat`));
+      let j = await X8.post(
+        `${A.baseUrl}/v1/environments/${O}/work/${$}/heartbeat`,
+--
+      return (
+        Oi(j.status, j.data, "Heartbeat"),
+        q(
+          `[bridge:api] POST .../work/${$}/heartbeat -> ${j.status} lease_extended=${j.data.lease_extended} state=${j.data.state}`,
+        ),
+        j.data
+      );
+    },
+    async sendPermissionResponseEvent(O, $, H) {
+      (dZ(O, "sessionId"),
+        q(`[bridge:api] POST /v1/sessions/${O}/events type=${$.type}`));
+      let j = await X8.post(
+        `${A.baseUrl}/v1/sessions/${O}/events`,
+        { events: [$] },
+        {
+          headers: {
+            Authorization: `Bearer ${H}`,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+            "anthropic-beta": qPq,
+          },
+          timeout: 1e4,
+          validateStatus: (J) => J < 500,
+        },
+      );
+      (Oi(j.status, j.data, "SendPermissionResponseEvent"),
+        q(`[bridge:api] POST /v1/sessions/${O}/events -> ${j.status}`),
+        q(`[bridge:api] >>> ${vN6({ events: [$] })}`),
+        q(`[bridge:api] <<< ${vN6(j.data)}`));
+    },
+  };
+}
+function Oi(A, q, K) {
+  if (A === 200 || A === 204) return;
+  let Y = EAz(q),
+    z = kAz(q);
+  switch (A) {
+    case 401:
+      throw new cZ(
+        `${K}: Authentication failed (401)${Y ? `: ${Y}` : ""}. ${NN6}`,
+        401,
+        z,
+      );
+    case 403:
+      throw new cZ(
+        VN6(z)
+          ? "Remote Control session has expired. Please restart with `claude remote-control` or /remote-control."
+          : `${K}: Access denied (403)${Y ? `: ${Y}` : ""}. Check your organization permissions.`,
+        403,
+        z,
+      );
+    case 404:

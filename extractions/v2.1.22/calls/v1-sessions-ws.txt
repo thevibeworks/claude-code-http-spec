@@ -1,0 +1,31 @@
+    this.orgUuid = K;
+    this.accessToken = q;
+    this.callbacks = Y;
+  }
+  connect() {
+    if (this.state === "connecting") {
+      h("[SessionsWebSocket] Already connecting");
+      return;
+    }
+    this.state = "connecting";
+    let K = `${C7().BASE_API_URL.replace("https://", "wss://")}/v1/sessions/ws/${this.sessionId}/subscribe?organization_uuid=${this.orgUuid}`;
+    (h(`[SessionsWebSocket] Connecting to ${K}`),
+      (this.ws = new Lu(K, {
+        agent: Q8A(K),
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "anthropic-version": "2023-06-01",
+        },
+      })),
+      this.ws.on("open", () => {
+        (h("[SessionsWebSocket] Connection opened, authenticated via headers"),
+          (this.state = "connected"),
+          (this.reconnectAttempts = 0),
+          this.startPingInterval(),
+          this.callbacks.onConnected?.());
+      }),
+      this.ws.on("message", (q) => {
+        this.handleMessage(q.toString());
+      }),
+      this.ws.on("error", (q) => {
+        (KA(Error(`[SessionsWebSocket] Error: ${q.message}`)),

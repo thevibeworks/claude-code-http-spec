@@ -1,5 +1,5 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.0.76
+# Extracted from @anthropic-ai/claude-code v2.1.76
 #
 # Validation: Search for URL path strings (stable across builds)
 #   rg '/api/oauth/profile' cli.js
@@ -14,13 +14,17 @@
 ### ============================================================================
 
 @baseUrl = https://api.anthropic.com
-@consoleUrl = https://console.anthropic.com
+@platformUrl = https://platform.claude.com
 @claudeAiUrl = https://claude.ai
+@mcpProxyUrl = https://mcp-proxy.anthropic.com
+@bridgeWsUrl = wss://bridge.claudeusercontent.com
 @version = 2023-06-01
 @oauthBeta = oauth-2025-04-20
+@mcpBeta = mcp-servers-2025-12-04
+@compactBeta = compact-2026-01-12
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
-@stainlessVersion = 0.70.0
-@cliVersion = 2.0.76
+@stainlessVersion = 0.74.0
+@cliVersion = 2.1.76
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
@@ -39,13 +43,13 @@
 ### ----------------------------------------------------------------------------
 # Pattern: rg "CONSOLE_AUTHORIZE_URL|CLAUDE_AI_AUTHORIZE_URL" cli.js
 #
-# Console OAuth:
-#   https://console.anthropic.com/oauth/authorize
+# Platform OAuth (v2.1.22+: console.anthropic.com → platform.claude.com):
+#   https://platform.claude.com/oauth/authorize
 #     ?code=true
 #     &client_id=9d1c250a-e61b-44d9-88ed-5944d1962f5e
 #     &response_type=code
 #     &redirect_uri=http://localhost:{port}/callback
-#     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+#     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers
 #     &code_challenge={base64url(sha256(code_verifier))}
 #     &code_challenge_method=S256
 #     &state={random_state}
@@ -55,10 +59,11 @@
 #   https://claude.ai/oauth/authorize
 #     (same params as above)
 #
-# Scopes (pattern: rg '"user:inference"|"user:profile"|"user:sessions"' cli.js):
+# Scopes (pattern: rg '"user:inference"|"user:profile"|"user:sessions"|"user:mcp_servers"' cli.js):
 #   - user:inference         (required for API access)
 #   - user:profile           (required for profile info)
 #   - user:sessions:claude_code  (required for web sessions)
+#   - user:mcp_servers       (required for MCP server access - NEW in v2.1.x)
 #   - org:create_api_key     (required for API key creation)
 
 ### ----------------------------------------------------------------------------
@@ -67,7 +72,7 @@
 # Pattern: rg "grant_type.*authorization_code" cli.js
 
 # @name tokenExchange
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
@@ -94,7 +99,7 @@ Content-Type: application/json
 # Pattern: rg "grant_type.*refresh_token" cli.js
 
 # @name tokenRefresh
-POST {{consoleUrl}}/v1/oauth/token
+POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
 {
@@ -173,16 +178,6 @@ Authorization: Bearer {{accessToken}}
 # }
 
 ### ----------------------------------------------------------------------------
-### 2.5 Get Client Data
-### ----------------------------------------------------------------------------
-# Pattern: rg "client_data" cli.js
-
-# @name getClientData
-GET {{baseUrl}}/api/oauth/claude_cli/client_data
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-
 ### ============================================================================
 ### SECTION 3: ACCOUNT SETTINGS
 ### ============================================================================
@@ -273,6 +268,59 @@ anthropic-beta: {{oauthBeta}}
 User-Agent: claude-cli/{{cliVersion}} (external, cli)
 If-None-Match: "{{remoteSettingsChecksum}}"
 
+### ----------------------------------------------------------------------------
+### 3.6 Get Policy Limits (First Party / Enterprise)
+### ----------------------------------------------------------------------------
+# Pattern: rg "policy_limits" cli.js
+# Only available for first-party deployments
+
+# @name getPolicyLimits
+GET {{baseUrl}}/api/claude_code/policy_limits
+x-api-key: {{apiKey}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### ----------------------------------------------------------------------------
+### 3.7 Get User Settings (NEW in v2.1.x)
+### ----------------------------------------------------------------------------
+# Pattern: rg "user_settings" cli.js
+# Requires user:inference scope
+
+# @name getUserSettings
+GET {{baseUrl}}/api/claude_code/user_settings
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### 3.8 Get Fast Mode Status (NEW in v2.1.76)
+### ----------------------------------------------------------------------------
+# Pattern: rg "penguin_mode" cli.js
+# "penguin mode" is the internal codename for fast mode
+
+# @name getFastModeStatus
+GET {{baseUrl}}/api/claude_code_penguin_mode
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+
+### Response:
+# { "enabled": true|false }
+
+### ----------------------------------------------------------------------------
+### 3.9 Get Client Data (NEW in v2.1.76)
+### ----------------------------------------------------------------------------
+# Pattern: rg "client_data" cli.js
+# Returns client configuration data for OAuth subscribers
+
+# @name getClientData
+GET {{baseUrl}}/api/oauth/claude_cli/client_data
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# { "client_data": { ... } }
+
 
 ### ============================================================================
 ### SECTION 4: USAGE & BILLING
@@ -313,21 +361,11 @@ User-Agent: claude-code/{{cliVersion}}
 # }
 
 ### ----------------------------------------------------------------------------
-### 4.3 Check Sonnet 1M Access
+### 4.3 Check Sonnet 1M Access (REMOVED in v2.1.63)
 ### ----------------------------------------------------------------------------
 # Pattern: rg "claude_code_sonnet_1m_access" cli.js
-
-# @name checkSonnet1MAccess
-GET {{baseUrl}}/api/organization/{{orgUuid}}/claude_code_sonnet_1m_access
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
-
-### Response:
-# {
-#   "has_access": true,
-#   "has_access_not_as_default": false
-# }
+# NOTE: Endpoint removed in v2.1.63 - no longer present in cli.js
+# Previously: GET /api/organization/{orgId}/claude_code_sonnet_1m_access
 
 ### ----------------------------------------------------------------------------
 ### 4.4 Create Extra Usage Admin Request
@@ -362,6 +400,20 @@ User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
 # [ ... ]
+
+### ----------------------------------------------------------------------------
+### 4.4 Check Admin Request Eligibility (NEW in v2.1.76)
+### ----------------------------------------------------------------------------
+# Pattern: rg "admin_requests/eligibility" cli.js
+
+# @name checkAdminRequestEligibility
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/eligibility?request_type=limit_increase
+Authorization: Bearer {{accessToken}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# { ... }
 
 
 ### ============================================================================
@@ -401,6 +453,7 @@ x-organization-uuid: {{orgUuid}}
 ### 6.1 API Health Check
 ### ----------------------------------------------------------------------------
 # Pattern: rg "api/hello" cli.js
+# v2.1.76: connectivity checks use both BASE_API_URL/api/hello AND origin/v1/oauth/hello
 
 # @name healthCheck
 GET {{baseUrl}}/api/hello
@@ -410,9 +463,10 @@ Cache-Control: no-cache
 ### 6.2 OAuth Health Check
 ### ----------------------------------------------------------------------------
 # Pattern: rg "oauth/hello" cli.js
+# v2.1.76: also used in connectivity probes alongside /api/hello
 
 # @name oauthHealthCheck
-GET {{consoleUrl}}/v1/oauth/hello
+GET {{platformUrl}}/v1/oauth/hello
 User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 ### ----------------------------------------------------------------------------
@@ -433,13 +487,16 @@ HEAD {{baseUrl}}/api/hello
 ### 7.1 Create Message
 ### ----------------------------------------------------------------------------
 # Pattern: rg "post.*v1/messages" cli.js
+# v2.1.63: interleaved-thinking GA, many betas graduated
+# v2.1.76: claude-opus-4-1 added
+# Known models: claude-opus-4-6, claude-sonnet-4-6, claude-opus-4-1, claude-opus-4-1-20250805
 
 # @name createMessage
 POST {{baseUrl}}/v1/messages?beta=true
 Content-Type: application/json
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: interleaved-thinking-2025-05-14,context-1m-2025-08-07
+anthropic-beta: compact-2026-01-12,context-1m-2025-08-07
 X-Stainless-Lang: js
 X-Stainless-Package-Version: {{stainlessVersion}}
 X-Stainless-OS: Linux
@@ -448,7 +505,7 @@ X-Stainless-Runtime: node
 X-Stainless-Runtime-Version: v22.0.0
 
 {
-    "model": "claude-sonnet-4-20250514",
+    "model": "claude-sonnet-4-6",
     "max_tokens": 8192,
     "messages": [
         {
@@ -469,11 +526,11 @@ POST {{baseUrl}}/v1/messages?beta=true
 Content-Type: application/json
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: interleaved-thinking-2025-05-14
+anthropic-beta: compact-2026-01-12
 X-Stainless-Helper-Method: stream
 
 {
-    "model": "claude-sonnet-4-20250514",
+    "model": "claude-sonnet-4-6",
     "max_tokens": 8192,
     "messages": [
         {
@@ -494,10 +551,10 @@ POST {{baseUrl}}/v1/messages/count_tokens?beta=true
 Content-Type: application/json
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: token-counting-2024-11-01
+# token-counting-2024-11-01 graduated to GA in v2.1.63
 
 {
-    "model": "claude-sonnet-4-20250514",
+    "model": "claude-sonnet-4-6",
     "messages": [
         {
             "role": "user",
@@ -538,14 +595,14 @@ POST {{baseUrl}}/v1/messages/batches?beta=true
 Content-Type: application/json
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: message-batches-2024-09-24
+# message-batches-2024-09-24 graduated to GA in v2.1.63
 
 {
     "requests": [
         {
             "custom_id": "req-1",
             "params": {
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": "Hello"}]
             }
@@ -561,7 +618,7 @@ anthropic-beta: message-batches-2024-09-24
 GET {{baseUrl}}/v1/messages/batches/{{batchId}}?beta=true
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: message-batches-2024-09-24
+# message-batches-2024-09-24 graduated to GA in v2.1.63
 
 ### ----------------------------------------------------------------------------
 ### 8.3 List Batches
@@ -571,7 +628,7 @@ anthropic-beta: message-batches-2024-09-24
 GET {{baseUrl}}/v1/messages/batches?beta=true
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: message-batches-2024-09-24
+# message-batches-2024-09-24 graduated to GA in v2.1.63
 
 ### ----------------------------------------------------------------------------
 ### 8.4 Cancel Batch
@@ -581,7 +638,7 @@ anthropic-beta: message-batches-2024-09-24
 POST {{baseUrl}}/v1/messages/batches/{{batchId}}/cancel?beta=true
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: message-batches-2024-09-24
+# message-batches-2024-09-24 graduated to GA in v2.1.63
 
 ### ----------------------------------------------------------------------------
 ### 8.5 Delete Batch
@@ -591,7 +648,7 @@ anthropic-beta: message-batches-2024-09-24
 DELETE {{baseUrl}}/v1/messages/batches/{{batchId}}?beta=true
 x-api-key: {{apiKey}}
 anthropic-version: {{version}}
-anthropic-beta: message-batches-2024-09-24
+# message-batches-2024-09-24 graduated to GA in v2.1.63
 
 
 ### ============================================================================
@@ -849,7 +906,7 @@ x-organization-uuid: {{orgUuid}}
                 }
             }
         ],
-        "model": "claude-sonnet-4-20250514"
+        "model": "claude-sonnet-4-6"
     },
     "environment_id": "{{environmentId}}"
 }
@@ -919,6 +976,21 @@ POST {{baseUrl}}/v1/session_ingress/session/{{sessionId}}
 Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 
+### ----------------------------------------------------------------------------
+### 12.7 Session WebSocket Subscribe (NEW in v2.1.x)
+### ----------------------------------------------------------------------------
+# Pattern: rg 'sessions/ws' cli.js
+# WebSocket connection for real-time session updates
+
+# @name sessionWebSocket
+# Note: This is a WebSocket endpoint, not HTTP
+# URL: wss://api.anthropic.com/v1/sessions/ws/{{sessionId}}/subscribe?organization_uuid={{orgUuid}}
+#
+# Connection via WebSocket:
+# const ws = new WebSocket(
+#   `wss://api.anthropic.com/v1/sessions/ws/${sessionId}/subscribe?organization_uuid=${orgUuid}`
+# );
+
 
 ### ============================================================================
 ### SECTION 13: ENVIRONMENT PROVIDERS
@@ -948,53 +1020,97 @@ x-organization-uuid: {{orgUuid}}
 
 
 ### ============================================================================
-### SECTION 14: GITHUB INTEGRATION
+### SECTION 14: MCP SERVERS (NEW in v2.1.x)
 ### ============================================================================
+# Pattern: rg "mcp_servers|MCP_PROXY" cli.js
 
 ### ----------------------------------------------------------------------------
-### 14.1 Check GitHub App Installation
+### 14.1 List MCP Servers
 ### ----------------------------------------------------------------------------
-# Pattern: rg "code/repos" cli.js
+# Pattern: rg '/v1/mcp_servers' cli.js
+# Requires scope: user:mcp_servers
 
-# @name checkGitHubAppInstalled
-GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/code/repos/{{owner}}/{{repo}}
+# @name listMcpServers
+GET {{baseUrl}}/v1/mcp_servers?limit=1000
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
+anthropic-beta: {{mcpBeta}}
 anthropic-version: {{version}}
-x-organization-uuid: {{orgUuid}}
 
 ### Response:
 # {
-#   "status": {
-#     "app_installed": true
-#   }
+#   "data": [
+#     {
+#       "display_name": "...",
+#       "id": "...",
+#       ...
+#     }
+#   ]
 # }
 
 ### ----------------------------------------------------------------------------
-### 14.2 Link VCS Account
+### 14.2 MCP Server HTTP Proxy
 ### ----------------------------------------------------------------------------
-# Pattern: rg "link_vcs_account" cli.js
+# Pattern: rg 'MCP_PROXY_PATH|MCP_PROXY_URL' cli.js
+# Proxies HTTP requests to MCP servers via Anthropic's proxy
 
-# @name linkVcsAccount
-POST {{baseUrl}}/api/claude_code/link_vcs_account
-Authorization: Bearer {{accessToken}}
+# @name mcpServerProxy
+POST {{mcpProxyUrl}}/v1/mcp/{{serverId}}
 Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
+anthropic-beta: {{mcpBeta}}
+Authorization: Bearer {{accessToken}}
 
 {
-    "vcs_type": "github",
-    "vcs_host": "github.com",
-    "vcs_username": "{{githubUsername}}",
-    "git_user_email": "{{email}}"
+    "method": "POST",
+    "path": "/",
+    "body": {}
+}
+
+
+### ----------------------------------------------------------------------------
+### 14.3 MCP Server via Toolbox (alternate path)
+### ----------------------------------------------------------------------------
+# Pattern: rg 'toolbox/shttp/mcp' cli.js
+# Alternative endpoint path for MCP server proxy
+
+# @name mcpServerToolbox
+POST {{baseUrl}}/v1/toolbox/shttp/mcp/{{serverId}}
+Content-Type: application/json
+anthropic-beta: {{mcpBeta}}
+x-api-key: {{apiKey}}
+
+{
+    "method": "POST",
+    "path": "/",
+    "body": {}
 }
 
 
 ### ============================================================================
-### SECTION 15: METRICS & TELEMETRY
+### SECTION 15: GITHUB INTEGRATION
 ### ============================================================================
 
 ### ----------------------------------------------------------------------------
-### 15.1 Check Metrics Enabled
+### 15.1 Check GitHub App Installation (REMOVED in v2.1.63)
+### ----------------------------------------------------------------------------
+# Pattern: rg "code/repos" cli.js
+# NOTE: Endpoint removed in v2.1.63 - no longer present in cli.js
+# Previously: GET /api/oauth/organizations/{orgId}/code/repos/{owner}/{repo}
+
+### ----------------------------------------------------------------------------
+### 15.2 Link VCS Account (REMOVED in v2.1.76)
+### ----------------------------------------------------------------------------
+# Pattern: rg "link_vcs_account" cli.js
+# NOTE: Endpoint removed in v2.1.76 - no longer present in cli.js
+# Previously: POST /api/claude_code/link_vcs_account
+
+
+### ============================================================================
+### SECTION 16: METRICS & TELEMETRY
+### ============================================================================
+
+### ----------------------------------------------------------------------------
+### 16.1 Check Metrics Enabled
 ### ----------------------------------------------------------------------------
 # Pattern: rg "metrics_enabled" cli.js
 
@@ -1011,7 +1127,7 @@ User-Agent: claude-code/{{cliVersion}}
 # }
 
 ### ----------------------------------------------------------------------------
-### 15.2 Submit Metrics
+### 16.2 Submit Metrics
 ### ----------------------------------------------------------------------------
 # Pattern: rg "api/claude_code/metrics" cli.js
 
@@ -1026,9 +1142,12 @@ User-Agent: claude-code/{{cliVersion}}
 }
 
 ### ----------------------------------------------------------------------------
-### 15.3 Event Logging Batch
+### 16.3 Event Logging Batch (1st-party analytics)
 ### ----------------------------------------------------------------------------
 # Pattern: rg "event_logging/batch" cli.js
+# 1st-party event logging with GrowthBook experiment tracking
+# Config: maxBatchSize=200, timeout=10s, optional skipAuth
+# Auth is optional (skipAuth mode for pre-auth events)
 
 # @name eventLoggingBatch
 POST {{baseUrl}}/api/event_logging/batch
@@ -1040,14 +1159,27 @@ x-service-name: claude-code
     "events": []
 }
 
+###
+
+# @name eventLoggingBatchWithAuth
+POST {{baseUrl}}/api/event_logging/batch
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+x-service-name: claude-code
+
+{
+    "events": []
+}
+
 
 ### ============================================================================
-### SECTION 16: FEEDBACK
+### SECTION 17: FEEDBACK
 ### ============================================================================
 # Pattern: rg "claude_cli_feedback" cli.js
 
 ### ----------------------------------------------------------------------------
-### 16.1 Submit Feedback
+### 17.1 Submit Feedback
 ### ----------------------------------------------------------------------------
 
 # @name submitFeedback
@@ -1067,12 +1199,12 @@ User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 
 ### ============================================================================
-### SECTION 17: DOMAIN INFO (Claude.ai)
+### SECTION 18: DOMAIN INFO (Claude.ai)
 ### ============================================================================
 # Pattern: rg "domain_info" cli.js
 
 ### ----------------------------------------------------------------------------
-### 17.1 Check Domain Fetch Permission
+### 18.1 Check Domain Fetch Permission
 ### ----------------------------------------------------------------------------
 
 # @name checkDomainInfo
@@ -1085,19 +1217,19 @@ GET {{claudeAiUrl}}/api/web/domain_info?domain={{domain}}
 
 
 ### ============================================================================
-### SECTION 18: FEATURE FLAGS (GrowthBook)
+### SECTION 19: FEATURE FLAGS (GrowthBook)
 ### ============================================================================
 # Pattern: rg "api/features|api/eval" cli.js
 
 ### ----------------------------------------------------------------------------
-### 18.1 Fetch Features
+### 19.1 Fetch Features
 ### ----------------------------------------------------------------------------
 
 # @name fetchFeatures
 GET https://cdn.growthbook.io/api/features/{{clientKey}}
 
 ### ----------------------------------------------------------------------------
-### 18.2 Remote Eval
+### 19.2 Remote Eval
 ### ----------------------------------------------------------------------------
 
 # @name remoteEval
@@ -1119,7 +1251,7 @@ Content-Type: application/json
 ### ----------------------------------------------------------------------------
 
 # @name oauthMetadata
-GET {{consoleUrl}}/.well-known/oauth-authorization-server
+GET {{platformUrl}}/.well-known/oauth-authorization-server
 
 ### Response includes:
 # {
@@ -1198,29 +1330,21 @@ DD-API-KEY: pubbc113c03434b701e6e00977875d7382f
 ]
 
 ### ----------------------------------------------------------------------------
-### 22.2 Statsig SDK Exception
+### 22.2 Statsig SDK Exception (REMOVED in v2.1.63)
 ### ----------------------------------------------------------------------------
 # Pattern: rg "statsigapi\.net" cli.js
-
-# @name statsigException
-POST https://statsigapi.net/v1/sdk_exception
-Content-Type: application/json
-
-{}
+# NOTE: Statsig URLs removed from v2.1.63 - no longer hardcoded
+# Previously: POST https://statsigapi.net/v1/sdk_exception
 
 ### ----------------------------------------------------------------------------
-### 22.3 Statsig Config (Feature Flags)
+### 22.3 Statsig Config (Feature Flags) (REMOVED in v2.1.63)
 ### ----------------------------------------------------------------------------
 # Pattern: rg "statsigcdn|featureassets|prodregistryv2" cli.js
-
-# @name statsigInitialize
-GET https://featureassets.org/v1/initialize
-
-# @name statsigConfigSpecs
-GET https://api.statsigcdn.com/v1/download_config_specs
-
-# @name statsigRegistry
-GET https://prodregistryv2.org/v1/rgstr
+# NOTE: Statsig CDN/registry URLs removed from v2.1.63
+# Previously:
+#   GET https://featureassets.org/v1/initialize
+#   GET https://api.statsigcdn.com/v1/download_config_specs
+#   GET https://prodregistryv2.org/v1/rgstr
 
 
 ### ============================================================================
@@ -1292,9 +1416,73 @@ Authorization: Bearer {{sessionToken}}
 
 
 ### ============================================================================
-### SECTION 25: NETWORK CONNECTIVITY CHECK
+### SECTION 25: SHARED SESSION TRANSCRIPTS (NEW in v2.1.63)
+### ============================================================================
+# Pattern: rg "shared_session_transcripts" cli.js
+
+### ----------------------------------------------------------------------------
+### 25.1 Submit Shared Session Transcript
+### ----------------------------------------------------------------------------
+# POST endpoint for sharing session transcripts externally
+
+# @name submitSharedSessionTranscript
+POST {{baseUrl}}/api/claude_code_shared_session_transcripts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+    "transcript": {}
+}
+
+
+### ============================================================================
+### SECTION 26: VOICE / SPEECH-TO-TEXT (NEW in v2.1.63)
+### ============================================================================
+# Pattern: rg "speech_to_text|voice_stream" cli.js
+# WebSocket endpoint for real-time voice input
+
+### ----------------------------------------------------------------------------
+### 26.1 Voice Stream (WebSocket)
+### ----------------------------------------------------------------------------
+# Pattern: rg "voice_stream" cli.js
+# Note: This is a WebSocket endpoint, not standard HTTP
+
+# @name voiceStream
+# WebSocket: ws://{host}/api/ws/speech_to_text/voice_stream
+# Used for voice mode - real-time audio to text transcription
+# Requires local audio device (not available in WSL, containers, or remote)
+
+
+### ============================================================================
+### SECTION 27: REMOTE CONTROL (NEW in v2.1.63)
+### ============================================================================
+# Pattern: rg "bridge\.claudeusercontent|Remote Control" cli.js
+# Allows accessing CLI session from web (claude.ai/code) or Claude app
+
+### ----------------------------------------------------------------------------
+### 27.1 Remote Control WebSocket Bridge
+### ----------------------------------------------------------------------------
+# WebSocket connection to bridge server for remote access
+# Requires claude.ai subscription (login via /login)
+#
+# Production: wss://bridge.claudeusercontent.com
+# Staging:    wss://bridge-staging.claudeusercontent.com
+#
+# Bridge constants:
+#   MAX_LIFETIME: 86400000 (24h)
+#   SESSION_TIMEOUT: 86400000 (24h)
+#
+# @name remoteControlBridge
+# WebSocket: {{bridgeWsUrl}}
+# Auth: Bearer token from claude.ai login
+
+
+### ============================================================================
+### SECTION 28: NETWORK CONNECTIVITY CHECK
 ### ============================================================================
 # Pattern: rg "1\.1\.1\.1|EHOSTUNREACH" cli.js
+# v2.1.76: ANTHROPIC_UNIX_SOCKET env var (Bun-only) routes API calls via Unix socket
 
 ### ----------------------------------------------------------------------------
 ### 25.1 Cloudflare DNS Check (Network Connectivity)
@@ -1305,7 +1493,7 @@ HEAD http://1.1.1.1
 
 
 ### ============================================================================
-### SECTION 26: PLUGIN MARKETPLACE (User-Configured URLs)
+### SECTION 29: PLUGIN MARKETPLACE (User-Configured URLs)
 ### ============================================================================
 # Pattern: rg "Plugin-Manager|\.mcpb" cli.js
 #
@@ -1314,7 +1502,7 @@ HEAD http://1.1.1.1
 # - MCPB bundles: user-specified .mcpb or .dxt files (local or remote)
 
 ### ----------------------------------------------------------------------------
-### 26.1 Fetch Plugin Marketplace (user-provided URL)
+### 29.1 Fetch Plugin Marketplace (user-provided URL)
 ### ----------------------------------------------------------------------------
 
 # @name fetchMarketplace
@@ -1323,7 +1511,7 @@ GET {{marketplaceUrl}}
 User-Agent: Claude-Code-Plugin-Manager
 
 ### ----------------------------------------------------------------------------
-### 26.2 Download MCPB Bundle (user-provided URL)
+### 29.2 Download MCPB Bundle (user-provided URL)
 ### ----------------------------------------------------------------------------
 # URL must end with .mcpb or .dxt
 
@@ -1333,31 +1521,16 @@ GET {{mcpbUrl}}
 
 
 ### ============================================================================
-### SECTION 27: MCP SERVER PROXY (NEW in v2.0.76)
+### SECTION 30: MCP SERVER PROXY (Cross-reference)
 ### ============================================================================
-# Pattern: rg "toolbox/shttp/mcp" cli.js
-
-### ----------------------------------------------------------------------------
-### 27.1 MCP Server HTTP Proxy
-### ----------------------------------------------------------------------------
-# Pattern: rg 'MCP_PROXY_PATH|MCP_PROXY_URL' cli.js -B 5 -A 5
-# This endpoint proxies HTTP requests to MCP servers
-
-# @name mcpServerProxy
-# Note: Actual URL may be localhost:8205 for local MCP proxy
-POST {{mcpProxyUrl}}/v1/toolbox/shttp/mcp/{{serverId}}
-Content-Type: application/json
-anthropic-beta: mcp-servers-2025-12-04
-
-{
-    "method": "POST",
-    "path": "/",
-    "body": {}
-}
+# See Section 14 for MCP Server endpoints:
+#   - 14.1 List MCP Servers
+#   - 14.2 MCP Server HTTP Proxy (via mcp-proxy.anthropic.com)
+#   - 14.3 MCP Server via Toolbox (via api.anthropic.com)
 
 
 ### ============================================================================
-### SECTION 28: AWS SIGNIN (Bedrock OAuth2)
+### SECTION 31: AWS SIGNIN (Bedrock OAuth2)
 ### ============================================================================
 # Pattern: rg "signin\.aws|CreateOAuth2Token" cli.js
 # Used for AWS IAM Identity Center OAuth2 token exchange (Bedrock access)
@@ -1367,7 +1540,7 @@ anthropic-beta: mcp-servers-2025-12-04
 @signinAwsCnUrl = https://{{awsRegion}}.signin.amazonaws.cn
 
 ### ----------------------------------------------------------------------------
-### 28.1 Create OAuth2 Token (Authorization Code Grant)
+### 31.1 Create OAuth2 Token (Authorization Code Grant)
 ### ----------------------------------------------------------------------------
 # Pattern: rg 'CreateOAuth2Token' cli.js -B 10 -A 30
 # Exchange authorization code for tokens
@@ -1394,7 +1567,7 @@ Content-Type: application/json
 # }
 
 ### ----------------------------------------------------------------------------
-### 28.2 Refresh OAuth2 Token
+### 31.2 Refresh OAuth2 Token
 ### ----------------------------------------------------------------------------
 # Pattern: rg 'refreshToken.*grantType|grantType.*refresh' cli.js
 
@@ -1420,47 +1593,100 @@ Content-Type: application/json
 
 
 ### ============================================================================
+### SECTION 32: TEAM MEMORY SYNC (NEW in v2.1.76)
+### ============================================================================
+# Pattern: rg "team_memory" cli.js
+# Used by cowork/agent teams to sync shared memory
+# URL can be overridden via TEAM_MEMORY_SYNC_URL env var
+
+@repoName = owner/repo
+
+### ----------------------------------------------------------------------------
+### 32.1 Get Team Memory
+### ----------------------------------------------------------------------------
+
+# @name getTeamMemory
+GET {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 32.2 Post Team Memory
+### ----------------------------------------------------------------------------
+
+# @name postTeamMemory
+POST {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+    "memory": {}
+}
+
+
+### ============================================================================
 ### APPENDIX A: BETA FLAGS
 ### ============================================================================
-# Pattern: rg "anthropic-beta" cli.js | grep -o '"[a-z-]*-[0-9-]*"' | sort -u
+# Pattern: rg '"[a-z]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o | sort -u
+# Extracted from v2.1.76 beta_flags.txt
 #
-# OAuth:
-#   oauth-2025-04-20
+# All 25 beta flags present in v2.1.76 cli.js
+# (v2.1.63 extraction missed many due to less inclusive regex)
 #
-# Messages:
-#   interleaved-thinking-2025-05-14
-#   context-1m-2025-08-07
-#   context-management-2025-06-27
-#   structured-outputs-2025-09-17
-#   web-search-2025-03-05
-#   tool-examples-2025-10-29
-#
-# Advanced Tool Use (v2.0.69):
+# Tool Use:
 #   advanced-tool-use-2025-11-20
-#
-# NEW in v2.0.76:
-#   fine-grained-tool-streaming-2025-05-14
-#   mcp-servers-2025-12-04
+#   tool-examples-2025-10-29
 #   tool-search-tool-2025-10-19
 #
-# Batches:
-#   message-batches-2024-09-24
+# Context / Compaction:
+#   compact-2026-01-12
+#   context-management-2025-06-27
+#   prompt-caching-scope-2026-01-05   (NEW in v2.1.76)
 #
-# Token counting:
-#   token-counting-2024-11-01
+# Effort:
+#   effort-2025-11-24
+#
+# Environments:
+#   environments-2025-11-01
+#
+# Fast Mode:
+#   fast-mode-2026-02-01              (NEW in v2.1.76)
+#   afk-mode-2026-01-31               (NEW in v2.1.76)
 #
 # Files:
 #   files-api-2025-04-14
 #
+# MCP:
+#   mcp-client-2025-11-20
+#   mcp-servers-2025-12-04
+#
+# Messages:
+#   interleaved-thinking-2025-05-14
+#   message-batches-2024-09-24
+#   redact-thinking-2026-02-12        (NEW in v2.1.76)
+#   token-counting-2024-11-01
+#
+# OAuth:
+#   oauth-2025-04-20
+#
 # Skills:
 #   skills-2025-10-02
 #
-# Claude Code specific:
-#   claude-code-20250219
+# Structured Output:
+#   structured-outputs-2025-11-13
+#   structured-outputs-2025-12-15
 #
-# Cloud Provider specific:
-#   bedrock-2023-05-31    (AWS Bedrock)
-#   vertex-2023-10-16     (Google Vertex AI)
+# Web Search:
+#   web-search-2025-03-05
+#
+# Cloud Provider:
+#   bedrock-2023-05-31               (AWS Bedrock)
+#   ccr-byoc-2025-07-29              (NEW in v2.1.76 - BYOC/bring your own cloud)
+#   vertex-2023-10-16                (Google Vertex AI)
+#
+# NOTE: v2.1.63 extraction only found 7 flags (the regex excluded quoted strings).
+# Many flags marked "GA" in previous SUMMARY were actually still in the codebase.
 
 
 ### ============================================================================
@@ -1479,13 +1705,13 @@ Content-Type: application/json
 #   x-organization-uuid: <org_uuid>
 #
 # User-Agent formats:
-#   claude-cli/2.0.69 (external, cli)                    - for OAuth requests
-#   claude-cli/2.0.69 (external, cli, agent-sdk/x.y.z)   - with SDK version
-#   claude-code/2.0.69                                   - for internal APIs
+#   claude-cli/{version} (external, cli)                  - for OAuth requests
+#   claude-cli/{version} (external, cli, agent-sdk/x.y.z) - with SDK version
+#   claude-code/{version}                                - for internal APIs
 #
 # Stainless SDK headers (auto-generated by SDK):
 #   X-Stainless-Lang: js
-#   X-Stainless-Package-Version: 0.70.0
+#   X-Stainless-Package-Version: 0.74.0   (updated in v2.1.63)
 #   X-Stainless-OS: Linux|MacOS|Windows|...
 #   X-Stainless-Arch: x64|arm64|...
 #   X-Stainless-Runtime: node|deno|edge|browser:...
@@ -1498,46 +1724,76 @@ Content-Type: application/json
 #
 # Caching:
 #   Cache-Control: no-cache (for health checks)
+#
+# Rate Limiting (NEW in v2.1.63 - unified rate limit headers):
+#   anthropic-ratelimit-unified-status
+#   anthropic-ratelimit-unified-reset
+#   anthropic-ratelimit-unified-fallback
+#   anthropic-ratelimit-unified-overage-status
+#   anthropic-ratelimit-unified-overage-reset
+#   anthropic-ratelimit-unified-overage-disabled-reason
+#   anthropic-ratelimit-unified-representative-claim
+#
+# Marketplace/Plugins (NEW in v2.1.63):
+#   anthropic-marketplace
+#   anthropic-plugins
+#   anthropic-dangerous-direct-browser-access
 
 
 ### ============================================================================
 ### APPENDIX C: SCOPES REFERENCE
 ### ============================================================================
-# Pattern: rg '"user:inference"|"user:profile"|"user:sessions"' cli.js
+# Pattern: rg '"user:inference"|"user:profile"|"user:sessions"|"user:mcp_servers"' cli.js
 #
-# Full scopes (Fp0 - for initial authorization):
+# Full scopes (for initial authorization):
 #   org:create_api_key
 #   user:profile
 #   user:inference
 #   user:sessions:claude_code
+#   user:mcp_servers
+#   user:file_upload             (NEW in v2.1.76 - required for Files API uploads)
 #
-# Session scopes (mH1 - for token refresh):
+# Session scopes (for token refresh):
 #   user:profile
 #   user:inference
 #   user:sessions:claude_code
+#   user:mcp_servers
 #
-# Minimal scopes (G64 - for API key creation):
+# Minimal scopes (for API key creation):
 #   org:create_api_key
 #   user:profile
 #
-# Inference scope (vxA):
+# Inference scope:
 #   user:inference
 
 
 ### ============================================================================
 ### APPENDIX D: URL CONSTANTS
 ### ============================================================================
-# Pattern: rg "BASE_API_URL|TOKEN_URL|AUTHORIZE_URL" cli.js
+# Pattern: rg "BASE_API_URL|TOKEN_URL|AUTHORIZE_URL|MCP_PROXY" cli.js
 #
-# Production:
+# Production (v2.1.76 - console.anthropic.com → platform.claude.com since v2.1.22):
 #   BASE_API_URL:           https://api.anthropic.com
-#   CONSOLE_AUTHORIZE_URL:  https://console.anthropic.com/oauth/authorize
+#   CONSOLE_AUTHORIZE_URL:  https://platform.claude.com/oauth/authorize
 #   CLAUDE_AI_AUTHORIZE_URL: https://claude.ai/oauth/authorize
-#   TOKEN_URL:              https://console.anthropic.com/v1/oauth/token
+#   TOKEN_URL:              https://platform.claude.com/v1/oauth/token
 #   API_KEY_URL:            https://api.anthropic.com/api/oauth/claude_cli/create_api_key
 #   ROLES_URL:              https://api.anthropic.com/api/oauth/claude_cli/roles
-#   MANUAL_REDIRECT_URL:    https://console.anthropic.com/oauth/code/callback
+#   MANUAL_REDIRECT_URL:    https://platform.claude.com/oauth/code/callback
+#   CONSOLE_SUCCESS_URL:    https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code
+#   CLAUDEAI_SUCCESS_URL:   https://platform.claude.com/oauth/code/success?app=claude-code
+#   MCP_PROXY_URL:          https://mcp-proxy.anthropic.com
+#   MCP_PROXY_PATH:         /v1/mcp/{server_id}
+#   BRIDGE_WS_URL:          wss://bridge.claudeusercontent.com        (NEW in v2.1.63)
+#   BRIDGE_WS_STAGING:      wss://bridge-staging.claudeusercontent.com
 #   CLIENT_ID:              9d1c250a-e61b-44d9-88ed-5944d1962f5e
+#
+# Web search domain changes (v2.1.76):
+#   ADDED:   modelcontextprotocol.io
+#   REMOVED: npms.io
+#
+# Unix socket (v2.1.76, Bun-only):
+#   ANTHROPIC_UNIX_SOCKET env var routes all API calls via a Unix domain socket
 #
 # Local (development):
 #   BASE_API_URL:           http://localhost:3000
@@ -1548,7 +1804,8 @@ Content-Type: application/json
 ### ============================================================================
 ### APPENDIX E: COMPLETE ENDPOINT INDEX
 ### ============================================================================
-# Total: 75+ unique endpoints across 26 sections
+# Total: 80+ unique endpoints across 32 sections
+# Updated for v2.1.76
 #
 # === ANTHROPIC API (api.anthropic.com) ===
 #
@@ -1557,24 +1814,28 @@ Content-Type: application/json
 #   GET  /api/claude_cli_profile
 #   GET  /api/oauth/claude_cli/roles
 #   POST /api/oauth/claude_cli/create_api_key
-#   GET  /api/oauth/claude_cli/client_data
 #
-# Account:
+# Account & Settings:
 #   GET   /api/oauth/account/settings
 #   PATCH /api/oauth/account/settings
 #   POST  /api/oauth/account/grove_notice_viewed
 #   GET   /api/claude_code_grove
+#   GET   /api/claude_code/settings
+#   GET   /api/claude_code/policy_limits
+#   GET   /api/claude_code/user_settings
 #   GET   /api/oauth/usage
 #   GET   /api/organization/claude_code_first_token_date
-#   GET   /api/organization/{orgId}/claude_code_sonnet_1m_access
+#   POST  /api/claude_code_shared_session_transcripts  (NEW in v2.1.63)
+#   GET   /api/claude_code/team_memory                (NEW in v2.1.76)
+#   POST  /api/claude_code/team_memory                (NEW in v2.1.76)
 #
 # Referrals:
 #   GET  /api/oauth/organizations/{orgId}/referral/eligibility
 #   GET  /api/oauth/organizations/{orgId}/referral/redemptions
 #
 # GitHub Integration:
-#   GET  /api/oauth/organizations/{orgId}/code/repos/{owner}/{repo}
-#   POST /api/claude_code/link_vcs_account
+#   POST /api/claude_code/link_vcs_account          (REMOVED in v2.1.76)
+#   (code/repos endpoint removed in v2.1.63)
 #
 # Metrics:
 #   GET  /api/claude_code/organizations/metrics_enabled
@@ -1634,11 +1895,26 @@ Content-Type: application/json
 #   GET  /v1/sessions/{id}
 #   GET  /v1/sessions/{id}/events
 #   POST /v1/sessions/{id}/events
+#   WSS  /v1/sessions/ws/{id}/subscribe         (WebSocket)
 #   GET  /v1/environment_providers
 #   PUT  /v1/session_ingress/session/{id}
 #   GET  /v1/session_ingress/session/{id}
 #
-# === CONSOLE (console.anthropic.com) ===
+# === MCP SERVERS ===
+#
+#   GET  /v1/mcp_servers                        (requires user:mcp_servers scope)
+#   POST /v1/mcp/{server_id}                    (via mcp-proxy.anthropic.com)
+#   POST /v1/toolbox/shttp/mcp/{server_id}
+#
+# === VOICE / SPEECH (NEW in v2.1.63) ===
+#
+#   WSS  /api/ws/speech_to_text/voice_stream    (WebSocket - voice mode)
+#
+# === REMOTE CONTROL (NEW in v2.1.63) ===
+#
+#   WSS  wss://bridge.claudeusercontent.com     (Remote Control bridge)
+#
+# === PLATFORM (platform.claude.com - was console.anthropic.com) ===
 #
 #   GET  /oauth/authorize
 #   POST /v1/oauth/token
@@ -1667,11 +1943,7 @@ Content-Type: application/json
 # Datadog:
 #   POST https://http-intake.logs.datadoghq.com/api/v2/logs
 #
-# Statsig:
-#   GET  https://featureassets.org/v1/initialize
-#   GET  https://api.statsigcdn.com/v1/download_config_specs
-#   GET  https://prodregistryv2.org/v1/rgstr
-#   POST https://statsigapi.net/v1/sdk_exception
+# Statsig (removed in v2.1.63 - URLs no longer hardcoded)
 #
 # GitHub:
 #   GET https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md

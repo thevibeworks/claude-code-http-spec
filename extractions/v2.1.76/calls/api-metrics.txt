@@ -1,0 +1,31 @@
+  s8();
+  k8();
+  Z2Y = WjA(W2Y, P2Y);
+});
+class yS8 {
+  endpoint;
+  timeout;
+  pendingExports = [];
+  isShutdown = !1;
+  constructor(A = {}) {
+    ((this.endpoint = "https://api.anthropic.com/api/claude_code/metrics"),
+      (this.timeout = A.timeout || 5000));
+  }
+  async export(A, q) {
+    if (this.isShutdown) {
+      q({
+        code: HY6.ExportResultCode.FAILED,
+        error: Error("Exporter has been shutdown"),
+      });
+      return;
+    }
+    let K = this.doExport(A, q);
+    (this.pendingExports.push(K),
+      K.finally(() => {
+        let Y = this.pendingExports.indexOf(K);
+        if (Y > -1) this.pendingExports.splice(Y, 1);
+      }));
+  }
+  async doExport(A, q) {
+    try {
+      if (!(l_() || q7())) {

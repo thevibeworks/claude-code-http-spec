@@ -6,7 +6,7 @@ HTTP API specification for Claude Code CLI, extracted from `@anthropic-ai/claude
 
 ```
 specs/                           # Finalized .http files
-  claude-code-api-complete.http  # Complete API reference (75+ endpoints)
+  claude-code-api-complete.http  # Complete API reference (70+ endpoints)
   claude-oauth-api.http          # OAuth flow reference
 
 extractions/                     # Version-stamped extractions (git tracked)
@@ -22,15 +22,20 @@ WORKFLOW.md                      # Extraction workflow (agent runbook)
 
 ## Version
 
-**v2.0.76** - 75+ endpoints, 31 call contexts extracted
+**v2.1.22** - 70+ endpoints, 36 call contexts extracted
 
-### Changes from v2.0.69
-- NEW beta flags:
-  - `fine-grained-tool-streaming-2025-05-14`
-  - `mcp-servers-2025-12-04`
-  - `tool-search-tool-2025-10-19`
-- NEW endpoint: `/v1/toolbox/shttp/mcp/{server_id}` (MCP HTTP proxy)
-- Stainless SDK: 0.70.0 (unchanged)
+### Changes from v2.0.76
+- OAuth host migration: `console.anthropic.com` → `platform.claude.com`
+- NEW MCP endpoints:
+  - `GET /v1/mcp_servers?limit=1000`
+  - `POST /v1/mcp/{server_id}` (via `https://mcp-proxy.anthropic.com`)
+  - `POST /v1/toolbox/shttp/mcp/{server_id}`
+- NEW first-party endpoints:
+  - `GET /api/claude_code/policy_limits`
+  - `GET /api/claude_code/user_settings`
+- NEW beta flag: `structured-outputs-2025-12-15`
+- NEW WebSocket endpoint (documented as URL only): `wss://api.anthropic.com/v1/sessions/ws/{id}/subscribe`
+- Stainless SDK: `0.70.0` (unchanged)
 
 ### Changes from v2.0.58
 - NEW beta flag: `advanced-tool-use-2025-11-20`
@@ -51,6 +56,7 @@ Every documented endpoint MUST have:
 
 ```bash
 # 1. Fetch & extract package
+rm -rf package
 npm pack @anthropic-ai/claude-code@latest
 tar -xzf anthropic-ai-claude-code-*.tgz
 npx prettier --write package/cli.js
@@ -58,8 +64,12 @@ npx prettier --write package/cli.js
 # 2. Run extraction (outputs to extractions/vX.X.X/)
 # See WORKFLOW.md Step 3
 
-# 3. Compare versions
-diff -r extractions/v2.0.55 extractions/v2.0.58
+# 3. Validate specs
+./scripts/validate-spec.sh package/cli.js specs/claude-code-api-complete.http
+./scripts/validate-spec.sh --subset package/cli.js specs/claude-oauth-api.http
+
+# 4. Compare versions
+diff -r extractions/v2.0.76 extractions/v2.1.22
 ```
 
 ## Workflow

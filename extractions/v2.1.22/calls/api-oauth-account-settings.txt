@@ -1,0 +1,62 @@
+  }
+}
+async function DDA() {
+  try {
+    return {
+      success: !0,
+      data: (
+        await $W1(() => {
+          let K = mH();
+          if (K.error) throw Error(`Failed to get auth headers: ${K.error}`);
+          return t6.get(`${C7().BASE_API_URL}/api/oauth/account/settings`, {
+            headers: { ...K.headers, "User-Agent": BH() },
+          });
+        })
+      ).data,
+    };
+  } catch (A) {
+    return (KA(A), { success: !1 });
+  }
+}
+async function IT6() {
+  try {
+    await $W1(() => {
+      let A = mH();
+      if (A.error) throw Error(`Failed to get auth headers: ${A.error}`);
+      return t6.post(
+        `${C7().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
+        {},
+        { headers: { ...A.headers, "User-Agent": BH() } },
+      );
+    });
+  } catch (A) {
+    KA(A);
+  }
+}
+async function _W1(A) {
+  try {
+    await $W1(() => {
+      let K = mH();
+      if (K.error) throw Error(`Failed to get auth headers: ${K.error}`);
+      return t6.patch(
+        `${C7().BASE_API_URL}/api/oauth/account/settings`,
+        { grove_enabled: A },
+        { headers: { ...K.headers, "User-Agent": BH() } },
+      );
+    });
+  } catch (K) {
+    KA(K);
+  }
+}
+async function jDA() {
+  if (!ZW1()) return !1;
+  let A = x5()?.accountUuid;
+  if (!A) return !1;
+  let q = D1().groveConfigCache?.[A],
+    Y = Date.now();
+  if (!q)
+    return (
+      h(
+        "Grove: No cache, fetching config in background (dialog skipped this session)",
+      ),
+      zh7(A),

@@ -129,5 +129,5 @@ log "Unchanged: $UNCHANGED"
 
 if [ "$ADDED_COUNT" -gt 0 ] || [ "$REMOVED_COUNT" -gt 0 ]; then
   log ""
-  log "Action: Update claude-code-api-complete.http with changes"
+  log "Action: Update specs/claude-code-api-complete.http with changes"
 fi

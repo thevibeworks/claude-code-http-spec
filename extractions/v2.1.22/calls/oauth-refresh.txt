@@ -1,0 +1,223 @@
+  if (J.status !== 200)
+    throw Error(
+      J.status === 401
+        ? "Authentication failed: Invalid authorization code"
+        : `Token exchange failed (${J.status}): ${J.statusText}`,
+    );
+  return (n("tengu_oauth_token_exchange_success", {}), J.data);
+}
+async function s56(A) {
+  let K = {
+    grant_type: "refresh_token",
+    refresh_token: A,
+    client_id: C7().CLIENT_ID,
+    scope: nh1.join(" "),
+  };
+  try {
+    let q = await t6.post(C7().TOKEN_URL, K, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (q.status !== 200) throw Error(`Token refresh failed: ${q.statusText}`);
+    let Y = q.data,
+      { access_token: z, refresh_token: w = A, expires_in: H } = Y,
+      J = Date.now() + H * 1000,
+      O = l31(Y.scope);
+    n("tengu_oauth_token_refresh_success", {});
+    let X = await t56(z);
+    if (D1().oauthAccount) {
+      let _ = {};
+      if (X.displayName !== void 0) _.displayName = X.displayName;
+      if (typeof X.hasExtraUsageEnabled === "boolean")
+        _.hasExtraUsageEnabled = X.hasExtraUsageEnabled;
+--
+      return (this.refreshTokenPromises.set(A, K), K);
+    }
+    async refreshTokenNoCache(A) {
+      var K;
+      if (!A) throw Error("No refresh token is set.");
+      let q = this.endpoints.oauth2TokenUrl.toString(),
+        Y = {
+          refresh_token: A,
+          client_id: this._clientId,
+          client_secret: this._clientSecret,
+          grant_type: "refresh_token",
+        },
+        z;
+      try {
+        z = await this.transporter.request({
+          ...MM.RETRY_CONFIG,
+          method: "POST",
+          url: q,
+          data: $H6.stringify(Y),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+      } catch (H) {
+        if (
+          H instanceof Ia9.GaxiosError &&
+          H.message === "invalid_grant" &&
+          ((K = H.response) === null || K === void 0 ? void 0 : K.data) &&
+          /ReAuth/i.test(H.response.data.error_description)
+        )
+          H.message = JSON.stringify(H.response.data);
+        throw H;
+      }
+--
+    async fetchIdToken(A) {
+      return (
+        await this.transporter.request({
+          ...pz1.RETRY_CONFIG,
+          url: this.endpoints.oauth2TokenUrl,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          method: "POST",
+          data: (0, ls9.stringify)({
+            client_id: this._clientId,
+            client_secret: this._clientSecret,
+            grant_type: "refresh_token",
+            refresh_token: this._refreshToken,
+            target_audience: A,
+          }),
+        })
+      ).data.id_token;
+    }
+    fromJSON(A) {
+      if (!A)
+        throw Error(
+          "Must pass in a JSON object containing the user refresh token",
+        );
+      if (A.type !== "authorized_user")
+        throw Error(
+          'The incoming JSON object does not have the "authorized_user" type',
+        );
+      if (!A.client_id)
+        throw Error(
+          "The incoming JSON object does not contain a client_id field",
+        );
+      if (!A.client_secret)
+--
+  ga4.EXTERNAL_ACCOUNT_AUTHORIZED_USER_TYPE =
+    "external_account_authorized_user";
+  var at9 = "https://sts.{universeDomain}/v1/oauthtoken";
+  class $J6 extends Ba4.OAuthClientAuthHandler {
+    constructor(A, K, q) {
+      super(q);
+      ((this.url = A), (this.transporter = K));
+    }
+    async refreshToken(A, K) {
+      let q = new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: A,
+        }),
+        Y = { "Content-Type": "application/x-www-form-urlencoded", ...K },
+        z = {
+          ...$J6.RETRY_CONFIG,
+          url: this.url,
+          method: "POST",
+          headers: Y,
+          data: q.toString(),
+          responseType: "json",
+        };
+      this.applyClientAuthenticationOptions(z);
+      try {
+        let w = await this.transporter.request(z),
+          H = w.data;
+        return ((H.res = w), H);
+      } catch (w) {
+        if (w instanceof nt9.GaxiosError && w.response)
+          throw (0, Ba4.getErrorFromOAuthErrorResponse)(w.response.data, w);
+        throw w;
+--
+          q
+        );
+      }
+    }
+    async refreshAccessToken(A, K, q, Y, z, w = {}) {
+      if (Y === void 0) return null;
+      OC.info(
+        `IdentityClient: refreshing access token with client ID: ${K}, scopes: ${q} started`,
+      );
+      let H = {
+        grant_type: "refresh_token",
+        client_id: K,
+        refresh_token: Y,
+        scope: q,
+      };
+      if (z !== void 0) H.client_secret = z;
+      let J = new URLSearchParams(H);
+      return LJ.withSpan("IdentityClient.refreshAccessToken", w, async (O) => {
+        try {
+          let X = ZA7(A),
+            $ = ay({
+              url: `${this.authorityHost}/${A}/${X}`,
+              method: "POST",
+              body: J.toString(),
+              abortSignal: w.abortSignal,
+              headers: I7A({
+                Accept: "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+              }),
+              tracingOptions: O.tracingOptions,
+            }),
+--
+  {
+    metadata: K,
+    clientInformation: q,
+    refreshToken: Y,
+    resource: z,
+    addClientAuthentication: w,
+    fetchFn: H,
+  },
+) {
+  let J = new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: Y,
+    }),
+    O = await JH7(A, {
+      metadata: K,
+      tokenRequestParams: J,
+      clientInformation: q,
+      addClientAuthentication: w,
+      resource: z,
+      fetchFn: H,
+    });
+  return { refresh_token: Y, ...O };
+}
+async function LWY(
+  A,
+  K,
+  { metadata: q, resource: Y, authorizationCode: z, fetchFn: w } = {},
+) {
+  let H = A.clientMetadata.scope,
+    J;
+  if (A.prepareTokenRequest) J = await A.prepareTokenRequest(H);
+--
+  get redirectUrl() {
+    return this.redirectUri;
+  }
+  get authorizationUrl() {
+    return this._authorizationUrl;
+  }
+  get clientMetadata() {
+    let A = {
+        client_name: `Claude Code (${this.serverName})`,
+        redirect_uris: [this.redirectUri],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+      },
+      K = ij6(this._metadata);
+    if (K)
+      ((A.scope = K),
+        b6(this.serverName, `Using scope from metadata: ${A.scope}`));
+    return A;
+  }
+  setMetadata(A) {
+    this._metadata = A;
+  }
+  async state() {
+    if (!this._state)
+      ((this._state = XCY(32).toString("base64url")),
+        b6(this.serverName, "Generated new OAuth state"));
+    return this._state;
+  }
+  async clientInformation() {
+    let K = jf().read(),

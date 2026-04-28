@@ -1,0 +1,100 @@
+var cjK = C(() => {
+  lA();
+  BA();
+  pjK();
+  G$();
+  oS = r($A(), 1);
+});
+async function sU2(A = "claude_code_guest_pass") {
+  let { accessToken: K, orgUUID: q } = await Dv(),
+    Y = { ...W_(K), "x-organization-uuid": q },
+    z = `${C7().BASE_API_URL}/api/oauth/organizations/${q}/referral/eligibility`;
+  return (
+    await t6.get(z, { headers: Y, params: { campaign: A }, timeout: 5000 })
+  ).data;
+}
+async function njK(A = "claude_code_guest_pass") {
+  let { accessToken: K, orgUUID: q } = await Dv(),
+    Y = { ...W_(K), "x-organization-uuid": q },
+    z = `${C7().BASE_API_URL}/api/oauth/organizations/${q}/referral/redemptions`;
+  return (
+    await t6.get(z, { headers: Y, params: { campaign: A }, timeout: 1e4 })
+  ).data;
+}
+function rjK() {
+  return !!(x5()?.organizationUuid && O4() && sq() === "max");
+}
+function _v1() {
+  if (!rjK()) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let A = x5()?.organizationUuid;
+  if (!A) return { eligible: !1, needsRefresh: !1, hasCache: !1 };
+  let q = D1().passesEligibilityCache?.[A];
+  if (!q) return { eligible: !1, needsRefresh: !0, hasCache: !1 };
+  let { eligible: Y, timestamp: z } = q,
+    H = Date.now() - z > ijK;
+  return { eligible: Y, needsRefresh: H, hasCache: !0 };
+}
+function aPA() {
+  let A = x5()?.organizationUuid;
+  if (!A) return null;
+  return D1().passesEligibilityCache?.[A]?.referrer_reward ?? null;
+}
+function jdA() {
+  let A = x5()?.organizationUuid;
+  if (!A) return null;
+  return (
+    D1().passesEligibilityCache?.[A]?.referral_code_details?.campaign ?? null
+  );
+}
+async function ljK() {
+  if (DdA) return (h("Passes: Reusing in-flight eligibility fetch"), DdA);
+  let A = x5()?.organizationUuid;
+  if (!A) return null;
+  return (
+    (DdA = (async () => {
+      try {
+        let K = await sU2(),
+          q = { ...K, timestamp: Date.now() };
+        return (
+          D6((Y) => ({
+            ...Y,
+            passesEligibilityCache: { ...Y.passesEligibilityCache, [A]: q },
+          })),
+          h(`Passes eligibility cached for org ${A}: ${K.eligible}`),
+          K
+        );
+      } catch (K) {
+--
+        })();
+    }),
+    vm.useEffect(() => {
+      async function j() {
+        try {
+          let M = await MdA();
+          if (!M || !M.eligible) {
+            (H(!1), q(!1));
+            return;
+          }
+          if ((H(!0), M.referral_code_details?.referral_link))
+            O(M.referral_code_details.referral_link);
+          $(M.referrer_reward);
+          let P = M.referral_code_details?.campaign ?? "claude_code_guest_pass",
+            V;
+          try {
+            V = await njK(P);
+          } catch (R) {
+            (KA(R), H(!1), q(!1));
+            return;
+          }
+          let N = V.redemptions || [],
+            T = V.limit || 3,
+            E = [];
+          for (let R = 0; R < T; R++) {
+            let b = N[R];
+            E.push({ passNumber: R + 1, isAvailable: !b });
+          }
+          (z(E), q(!1));
+        } catch (M) {
+          (KA(M), H(!1), q(!1));
+        }
+      }

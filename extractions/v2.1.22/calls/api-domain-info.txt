@@ -1,0 +1,31 @@
+  } catch {
+    return !1;
+  }
+  if (K.username || K.password) return !1;
+  if (K.hostname.split(".").length < 2) return !1;
+  return !0;
+}
+async function Kv2(A) {
+  try {
+    let K = await t6.get(
+      `https://api.anthropic.com/api/web/domain_info?domain=${encodeURIComponent(A)}`,
+    );
+    if (K.status === 200)
+      return K.data.can_fetch === !0
+        ? { status: "allowed" }
+        : { status: "blocked" };
+    return {
+      status: "check_failed",
+      error: Error(`Domain check returned status ${K.status}`),
+    };
+  } catch (K) {
+    return (KA(K), { status: "check_failed", error: K });
+  }
+}
+function qv2(A, K) {
+  try {
+    let q = new URL(A),
+      Y = new URL(K);
+    if (Y.protocol !== q.protocol) return !1;
+    if (Y.port !== q.port) return !1;
+    if (Y.username || Y.password) return !1;
