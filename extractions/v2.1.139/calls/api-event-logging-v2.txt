@@ -1,0 +1,1 @@
+"https://api-staging.anthropic.com":"https://api.anthropic.com");this.endpoint=`${K}${q.path||"/api/event_logging/v2/batch"}`,this.timeout=q.timeout||1e4,this.maxBatchSize=q.maxBatchSize||200,this.skipAuth=q.skipAuth??!1,this.batchDelayMs=q.batchDelayMs||100,this.baseBackoffDelayMs=q.baseBackoffDelayMs||500,this.ma

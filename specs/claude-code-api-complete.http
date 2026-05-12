@@ -1,5 +1,5 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.1.76
+# Extracted from @anthropic-ai/claude-code v2.1.139
 #
 # Validation: Search for URL path strings (stable across builds)
 #   rg '/api/oauth/profile' cli.js
@@ -24,7 +24,8 @@
 @compactBeta = compact-2026-01-12
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
 @stainlessVersion = 0.74.0
-@cliVersion = 2.1.76
+@managedAgentsBeta = managed-agents-2026-04-01
+@cliVersion = 2.1.139
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
@@ -402,7 +403,7 @@ User-Agent: claude-code/{{cliVersion}}
 # [ ... ]
 
 ### ----------------------------------------------------------------------------
-### 4.4 Check Admin Request Eligibility (NEW in v2.1.76)
+### 4.6 Check Admin Request Eligibility (NEW in v2.1.76)
 ### ----------------------------------------------------------------------------
 # Pattern: rg "admin_requests/eligibility" cli.js
 
@@ -476,6 +477,21 @@ User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 # @name healthCheckHead
 HEAD {{baseUrl}}/api/hello
+
+### ----------------------------------------------------------------------------
+### 6.3 Parameterized Hello (NEW in v2.1.139)
+### ----------------------------------------------------------------------------
+
+# @name healthCheckNamed
+GET {{baseUrl}}/api/hello/:name
+
+### ----------------------------------------------------------------------------
+### 6.4 User Lookup (NEW in v2.1.139)
+### ----------------------------------------------------------------------------
+
+# @name getUserById
+GET {{baseUrl}}/api/users/:id
+Authorization: Bearer {{accessToken}}
 
 
 ### ============================================================================
@@ -1144,13 +1160,14 @@ User-Agent: claude-code/{{cliVersion}}
 ### ----------------------------------------------------------------------------
 ### 16.3 Event Logging Batch (1st-party analytics)
 ### ----------------------------------------------------------------------------
-# Pattern: rg "event_logging/batch" cli.js
+# Pattern: rg "event_logging" cli.js
 # 1st-party event logging with GrowthBook experiment tracking
 # Config: maxBatchSize=200, timeout=10s, optional skipAuth
+# Updated to v2 path in v2.1.139
 # Auth is optional (skipAuth mode for pre-auth events)
 
 # @name eventLoggingBatch
-POST {{baseUrl}}/api/event_logging/batch
+POST {{baseUrl}}/api/event_logging/v2/batch
 Content-Type: application/json
 User-Agent: claude-code/{{cliVersion}}
 x-service-name: claude-code
@@ -1162,7 +1179,7 @@ x-service-name: claude-code
 ###
 
 # @name eventLoggingBatchWithAuth
-POST {{baseUrl}}/api/event_logging/batch
+POST {{baseUrl}}/api/event_logging/v2/batch
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 User-Agent: claude-code/{{cliVersion}}
@@ -1485,7 +1502,7 @@ User-Agent: claude-code/{{cliVersion}}
 # v2.1.76: ANTHROPIC_UNIX_SOCKET env var (Bun-only) routes API calls via Unix socket
 
 ### ----------------------------------------------------------------------------
-### 25.1 Cloudflare DNS Check (Network Connectivity)
+### 28.1 Cloudflare DNS Check (Network Connectivity)
 ### ----------------------------------------------------------------------------
 
 # @name cloudflareCheck
@@ -1581,7 +1598,7 @@ Content-Type: application/json
     "refreshToken": "{{awsRefreshToken}}"
 }
 
-# Response: Same as 28.1
+# Response: Same as 31.1
 
 # Error codes:
 #   AUTHCODE_EXPIRED
@@ -1626,23 +1643,264 @@ User-Agent: claude-code/{{cliVersion}}
 
 
 ### ============================================================================
+### SECTION 33: BILLING & PAYMENT (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'organizations.*orgUUID'
+# These endpoints manage billing, payment, and pro trial features
+
+### ----------------------------------------------------------------------------
+### 33.1 Get Tax Rate
+### ----------------------------------------------------------------------------
+
+# @name getTaxRate
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/billing/tax_rate
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.2 Start Pro Trial
+### ----------------------------------------------------------------------------
+
+# @name startProTrial
+POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/claude_code/pro_trial
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{}
+
+### ----------------------------------------------------------------------------
+### 33.3 Get Auto-Reload Settings
+### ----------------------------------------------------------------------------
+
+# @name getAutoReloadSettings
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/contracts/auto_reload_settings
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.4 Get Prepaid Credits (Contracts)
+### ----------------------------------------------------------------------------
+
+# @name getPrepaidCreditsContracts
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/contracts/prepaid/credits
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.5 Get Overage Spend Limit
+### ----------------------------------------------------------------------------
+
+# @name getOverageSpendLimit
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/overage_spend_limit
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.6 Get Payment Method
+### ----------------------------------------------------------------------------
+
+# @name getPaymentMethod
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/payment_method
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.7 Get Prepaid Bundles
+### ----------------------------------------------------------------------------
+
+# @name getPrepaidBundles
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/prepaid/bundles
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.8 Get Prepaid Credits
+### ----------------------------------------------------------------------------
+
+# @name getPrepaidCredits
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/prepaid/credits
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 33.9 Setup Overage Billing
+### ----------------------------------------------------------------------------
+
+# @name setupOverageBilling
+POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/setup_overage_billing
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{}
+
+
+### ============================================================================
+### SECTION 34: MANAGED AGENTS API (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'v1/agents'
+# All endpoints require anthropic-beta: managed-agents-2026-04-01
+
+### ----------------------------------------------------------------------------
+### 34.1 Create Agent
+### ----------------------------------------------------------------------------
+
+# @name createAgent
+POST {{baseUrl}}/v1/agents?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-beta: {{managedAgentsBeta}}
+
+{}
+
+### ----------------------------------------------------------------------------
+### 34.2 Get Agent
+### ----------------------------------------------------------------------------
+
+# @name getAgent
+GET {{baseUrl}}/v1/agents/{{agentId}}?beta=true
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{managedAgentsBeta}}
+
+### ----------------------------------------------------------------------------
+### 34.3 Update Agent
+### ----------------------------------------------------------------------------
+
+# @name updateAgent
+POST {{baseUrl}}/v1/agents/{{agentId}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-beta: {{managedAgentsBeta}}
+
+{}
+
+### ----------------------------------------------------------------------------
+### 34.4 List Agent Versions
+### ----------------------------------------------------------------------------
+
+# @name listAgentVersions
+GET {{baseUrl}}/v1/agents/{{agentId}}/versions?beta=true
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{managedAgentsBeta}}
+
+
+### ============================================================================
+### SECTION 35: MEMORY STORES API (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'memory_stores'
+# Requires anthropic-beta: managed-agents-2026-04-01
+
+### ----------------------------------------------------------------------------
+### 35.1 Create Memory
+### ----------------------------------------------------------------------------
+
+# @name createMemory
+POST {{baseUrl}}/v1/memory_stores/{{memoryStoreId}}/memories?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-beta: {{managedAgentsBeta}}
+
+{}
+
+### ----------------------------------------------------------------------------
+### 35.2 List Memories
+### ----------------------------------------------------------------------------
+
+# @name listMemories
+GET {{baseUrl}}/v1/memory_stores/{{memoryStoreId}}/memories?beta=true
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{managedAgentsBeta}}
+
+
+### ============================================================================
+### SECTION 36: VAULTS API (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'v1/vaults'
+# Requires anthropic-beta: managed-agents-2026-04-01
+
+### ----------------------------------------------------------------------------
+### 36.1 Create Credential
+### ----------------------------------------------------------------------------
+
+# @name createVaultCredential
+POST {{baseUrl}}/v1/vaults/{{vaultId}}/credentials?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-beta: {{managedAgentsBeta}}
+
+{}
+
+### ----------------------------------------------------------------------------
+### 36.2 List Credentials
+### ----------------------------------------------------------------------------
+
+# @name listVaultCredentials
+GET {{baseUrl}}/v1/vaults/{{vaultId}}/credentials?beta=true
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{managedAgentsBeta}}
+
+
+### ============================================================================
+### SECTION 37: USER PROFILES API (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'user_profiles'
+# Requires anthropic-beta: managed-agents-2026-04-01
+
+# @name listUserProfiles
+GET {{baseUrl}}/v1/user_profiles?beta=true
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{managedAgentsBeta}}
+
+
+### ============================================================================
+### SECTION 38: CODE PROXY ENDPOINTS (NEW in v2.1.139)
+### ============================================================================
+# Pattern: strings binary | grep 'code/egress\|upstreamproxy'
+
+### ----------------------------------------------------------------------------
+### 38.1 Egress Gateway
+### ----------------------------------------------------------------------------
+
+# @name egressGateway
+GET {{baseUrl}}/v1/code/egress/gateway
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 38.2 Upstream Proxy Config
+### ----------------------------------------------------------------------------
+
+# @name upstreamProxy
+GET {{baseUrl}}/v1/code/upstreamproxy
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ============================================================================
 ### APPENDIX A: BETA FLAGS
 ### ============================================================================
-# Pattern: rg '"[a-z]+-[0-9]{4}-[0-9]{2}-[0-9]{2}"' cli.js -o | sort -u
-# Extracted from v2.1.76 beta_flags.txt
+# Pattern: strings binary | grep -oP '[a-z][-a-z]*-20[0-9]{2}-[0-9]{2}-[0-9]{2}' | sort -u
+# Extracted from v2.1.139 binary
 #
-# All 25 beta flags present in v2.1.76 cli.js
-# (v2.1.63 extraction missed many due to less inclusive regex)
+# 37 beta flags in v2.1.139 binary (vs 25 in v2.1.76)
+# (binary extraction yields 39 but 2 are fragments: k-2025-02-19, m-2025-08-07)
 #
 # Tool Use:
 #   advanced-tool-use-2025-11-20
-#   tool-examples-2025-10-29
+#   advisor-tool-2026-03-01            (NEW in v2.1.139)
+#   fine-grained-tool-streaming-2025-05-14
+#   token-efficient-tools-2025-02-19   (NEW in v2.1.139)
 #   tool-search-tool-2025-10-19
 #
 # Context / Compaction:
+#   cache-diagnosis-2026-04-07         (NEW in v2.1.139)
 #   compact-2026-01-12
+#   context-hint-2026-04-09            (NEW in v2.1.139)
 #   context-management-2025-06-27
-#   prompt-caching-scope-2026-01-05   (NEW in v2.1.76)
+#   extended-cache-ttl-2025-04-11      (NEW in v2.1.139)
+#   mid-conversation-system-2026-04-07 (NEW in v2.1.139)
+#   prompt-caching-scope-2026-01-05
 #
 # Effort:
 #   effort-2025-11-24
@@ -1651,11 +1909,16 @@ User-Agent: claude-code/{{cliVersion}}
 #   environments-2025-11-01
 #
 # Fast Mode:
-#   fast-mode-2026-02-01              (NEW in v2.1.76)
-#   afk-mode-2026-01-31               (NEW in v2.1.76)
+#   afk-mode-2026-01-31
+#   fast-mode-2026-02-01
 #
 # Files:
 #   files-api-2025-04-14
+#
+# Managed Agents:
+#   managed-agents-2026-04-01          (NEW in v2.1.139)
+#   task-budgets-2026-03-13            (NEW in v2.1.139)
+#   user-profiles-2026-03-24           (NEW in v2.1.139)
 #
 # MCP:
 #   mcp-client-2025-11-20
@@ -1664,11 +1927,12 @@ User-Agent: claude-code/{{cliVersion}}
 # Messages:
 #   interleaved-thinking-2025-05-14
 #   message-batches-2024-09-24
-#   redact-thinking-2026-02-12        (NEW in v2.1.76)
+#   redact-thinking-2026-02-12
 #   token-counting-2024-11-01
 #
-# OAuth:
+# OAuth / Auth:
 #   oauth-2025-04-20
+#   oidc-federation-2026-04-01         (NEW in v2.1.139)
 #
 # Skills:
 #   skills-2025-10-02
@@ -1681,12 +1945,14 @@ User-Agent: claude-code/{{cliVersion}}
 #   web-search-2025-03-05
 #
 # Cloud Provider:
-#   bedrock-2023-05-31               (AWS Bedrock)
-#   ccr-byoc-2025-07-29              (NEW in v2.1.76 - BYOC/bring your own cloud)
-#   vertex-2023-10-16                (Google Vertex AI)
+#   bedrock-2023-05-31
+#   ccr-byoc-2025-07-29
+#   ccr-triggers-2026-01-30            (NEW in v2.1.139)
+#   nightly-2025-12-10                 (NEW in v2.1.139)
+#   vertex-2023-10-16
 #
-# NOTE: v2.1.63 extraction only found 7 flags (the regex excluded quoted strings).
-# Many flags marked "GA" in previous SUMMARY were actually still in the codebase.
+# Removed since v2.1.76:
+#   tool-examples-2025-10-29           (removed)
 
 
 ### ============================================================================
@@ -1804,8 +2070,8 @@ User-Agent: claude-code/{{cliVersion}}
 ### ============================================================================
 ### APPENDIX E: COMPLETE ENDPOINT INDEX
 ### ============================================================================
-# Total: 80+ unique endpoints across 32 sections
-# Updated for v2.1.76
+# Total: 100+ unique endpoints across 38 sections
+# Updated for v2.1.139
 #
 # === ANTHROPIC API (api.anthropic.com) ===
 #
@@ -1814,6 +2080,7 @@ User-Agent: claude-code/{{cliVersion}}
 #   GET  /api/claude_cli_profile
 #   GET  /api/oauth/claude_cli/roles
 #   POST /api/oauth/claude_cli/create_api_key
+#   GET  /api/oauth/claude_cli/client_data            (NEW in v2.1.76)
 #
 # Account & Settings:
 #   GET   /api/oauth/account/settings
@@ -1823,31 +2090,46 @@ User-Agent: claude-code/{{cliVersion}}
 #   GET   /api/claude_code/settings
 #   GET   /api/claude_code/policy_limits
 #   GET   /api/claude_code/user_settings
+#   GET   /api/claude_code_penguin_mode               (NEW in v2.1.76)
 #   GET   /api/oauth/usage
 #   GET   /api/organization/claude_code_first_token_date
-#   POST  /api/claude_code_shared_session_transcripts  (NEW in v2.1.63)
-#   GET   /api/claude_code/team_memory                (NEW in v2.1.76)
-#   POST  /api/claude_code/team_memory                (NEW in v2.1.76)
+#   POST  /api/claude_code_shared_session_transcripts
+#   GET   /api/claude_code/team_memory
+#   POST  /api/claude_code/team_memory
 #
-# Referrals:
+# Referrals & Admin:
 #   GET  /api/oauth/organizations/{orgId}/referral/eligibility
 #   GET  /api/oauth/organizations/{orgId}/referral/redemptions
+#   POST /api/oauth/organizations/{orgId}/admin_requests
+#   GET  /api/oauth/organizations/{orgId}/admin_requests/me
+#   GET  /api/oauth/organizations/{orgId}/admin_requests/eligibility
 #
-# GitHub Integration:
-#   POST /api/claude_code/link_vcs_account          (REMOVED in v2.1.76)
-#   (code/repos endpoint removed in v2.1.63)
+# Billing & Payment (NEW in v2.1.139):
+#   GET  /api/oauth/organizations/{orgId}/billing/tax_rate
+#   POST /api/oauth/organizations/{orgId}/claude_code/pro_trial
+#   GET  /api/oauth/organizations/{orgId}/contracts/auto_reload_settings
+#   GET  /api/oauth/organizations/{orgId}/contracts/prepaid/credits
+#   GET  /api/oauth/organizations/{orgId}/overage_spend_limit
+#   GET  /api/oauth/organizations/{orgId}/payment_method
+#   GET  /api/oauth/organizations/{orgId}/prepaid/bundles
+#   GET  /api/oauth/organizations/{orgId}/prepaid/credits
+#   POST /api/oauth/organizations/{orgId}/setup_overage_billing
 #
 # Metrics:
 #   GET  /api/claude_code/organizations/metrics_enabled
 #   POST /api/claude_code/metrics
-#   POST /api/event_logging/batch
+#   POST /api/event_logging/v2/batch                  (was /batch, v2 in v2.1.139)
 #
 # Feedback:
 #   POST /api/claude_cli_feedback
 #
 # Health:
 #   GET  /api/hello
+#   GET  /api/hello/:name                             (NEW in v2.1.139)
 #   HEAD /api/hello
+#
+# Users:
+#   GET  /api/users/:id                               (NEW in v2.1.139)
 #
 # === ANTHROPIC API v1 (SDK Endpoints) ===
 #
@@ -1887,6 +2169,27 @@ User-Agent: claude-code/{{cliVersion}}
 #
 # Legacy:
 #   POST /v1/complete
+#
+# Managed Agents (NEW in v2.1.139, beta: managed-agents-2026-04-01):
+#   POST /v1/agents
+#   GET  /v1/agents/{id}
+#   POST /v1/agents/{id}                             (update)
+#   GET  /v1/agents/{id}/versions
+#
+# Memory Stores (NEW in v2.1.139):
+#   POST /v1/memory_stores/{id}/memories
+#   GET  /v1/memory_stores/{id}/memories
+#
+# Vaults (NEW in v2.1.139):
+#   POST /v1/vaults/{id}/credentials
+#   GET  /v1/vaults/{id}/credentials
+#
+# User Profiles (NEW in v2.1.139):
+#   GET  /v1/user_profiles
+#
+# Code Proxy (NEW in v2.1.139):
+#   GET  /v1/code/egress/gateway
+#   GET  /v1/code/upstreamproxy
 #
 # === WEB SESSIONS (api.anthropic.com) ===
 #

@@ -1,0 +1,4 @@
+version: 2.1.139
+build_time: 2026-05-11T17:03:24Z
+git_sha: 208bf4b44f987c4c62618ae20ce1715d53693c62
+source: binary (Bun compiled, linux-arm64)
