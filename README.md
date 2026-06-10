@@ -1,87 +1,131 @@
 # claude-code-http-spec
 
-HTTP API specification for Claude Code CLI, extracted from `@anthropic-ai/claude-code`.
+> A version-tracked record of the HTTP API surface that the published
+> `@anthropic-ai/claude-code` release talks to.
 
-## Structure
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![version](https://img.shields.io/badge/documented-v2.1.170-success)](extractions/v2.1.170/SUMMARY.md)
+[![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg-blue)](scripts/)
 
-```
-specs/                           # Finalized .http files
-  claude-code-api-complete.http  # Complete API reference (70+ endpoints)
-  claude-oauth-api.http          # OAuth flow reference
+This repo documents which API paths, beta flags, headers, OAuth scopes, and
+model identifiers a given Claude Code release references, by reading the
+**stable string literals** that ship inside the public npm package. It is
+release documentation and compatibility tracking: every fact traces back to a
+literal in a specific published version, and the extraction is deterministic
+and re-runnable.
 
-extractions/                     # Version-stamped extractions (git tracked)
-  v2.0.58/
-    MANIFEST.md                  # Extraction manifest
-    raw/                         # Raw grep outputs (urls, headers, etc)
-    calls/                       # Full HTTP call contexts (-B 10 -A 20)
+It does not call any Anthropic endpoint, and it stores no binaries or
+credentials. The output is plain text you can diff across versions.
 
-scripts/                         # Extraction scripts
-archive/                         # Deprecated specs
-WORKFLOW.md                      # Extraction workflow (agent runbook)
-```
+## Currently Documented
 
-## Version
+**v2.1.170** — see [extractions/v2.1.170/SUMMARY.md](extractions/v2.1.170/SUMMARY.md).
+59 API paths, 43 beta flags. 18 paths and 4 beta flags added since v2.1.139.
 
-**v2.1.22** - 70+ endpoints, 36 call contexts extracted
+Since v2.1.117 the release ships as a Bun-compiled binary rather than a
+readable `cli.js`. String literals still live in the binary's constant pool,
+so `strings` + `rg` remains the extraction method for paths, beta flags, model
+IDs, and env-var names.
 
-### Changes from v2.0.76
-- OAuth host migration: `console.anthropic.com` → `platform.claude.com`
-- NEW MCP endpoints:
-  - `GET /v1/mcp_servers?limit=1000`
-  - `POST /v1/mcp/{server_id}` (via `https://mcp-proxy.anthropic.com`)
-  - `POST /v1/toolbox/shttp/mcp/{server_id}`
-- NEW first-party endpoints:
-  - `GET /api/claude_code/policy_limits`
-  - `GET /api/claude_code/user_settings`
-- NEW beta flag: `structured-outputs-2025-12-15`
-- NEW WebSocket endpoint (documented as URL only): `wss://api.anthropic.com/v1/sessions/ws/{id}/subscribe`
-- Stainless SDK: `0.70.0` (unchanged)
+## What It Extracts
 
-### Changes from v2.0.58
-- NEW beta flag: `advanced-tool-use-2025-11-20`
-- NEW endpoint: `POST /v1/token` (CreateOAuth2Token)
-- HTTP client obfuscation: `YQ` → `wQ`
+| Output | File | How |
+|--------|------|-----|
+| API paths | `extractions/v<ver>/raw/paths.txt` | quoted `"/api/..."` / `"/v1/..."` literals |
+| Beta flags | `extractions/v<ver>/raw/beta_flags.txt` | tokens ending in a dated `YYYY-MM-DD` suffix |
+| Call contexts | `extractions/v<ver>/calls/*.txt` | bounded windows around each endpoint literal |
+| Headers / scopes / URLs | `extractions/v<ver>/raw/*.txt` | literal header names, `user:`/`org:` scopes, hardcoded URLs |
+| Finalized reference | `specs/*.http` | curated, runnable HTTP-client requests built from the above |
 
-## Precision Requirements
+## Confidence Model
 
-Every documented endpoint MUST have:
-- HTTP method (GET/POST/PUT/PATCH/DELETE/HEAD)
-- Full URL with query params
-- All headers with exact values
-- Request body JSON (if any)
-- Response shape
-- Verification pattern: `rg '"/api/path"' cli.js`
+What a literal can and cannot prove:
 
-## Quick Start
+- **High confidence (literal present).** The string exists in this exact
+  published version. A documented path/flag/scope is backed by a verifiable
+  `rg` pattern against the release. This is the bar for everything in
+  `raw/` and `specs/`.
+- **Medium confidence (context-inferred).** Method, headers, and request body
+  are read from the bounded text window around the literal (`calls/*.txt`).
+  Minifier variable names in those windows are noise, not facts — they change
+  every build and are never treated as documentation.
+- **Not claimed.** Anything seen only at runtime, anything inferred from logs,
+  and anything that cannot be reproduced with a literal pattern. If it is not
+  in a release string, it is not documented.
 
-```bash
-# 1. Fetch & extract package
-rm -rf package
-npm pack @anthropic-ai/claude-code@latest
-tar -xzf anthropic-ai-claude-code-*.tgz
-npx prettier --write package/cli.js
+Held back on purpose: model codenames that are not yet released are **not**
+published. The validator flags them and they are recorded in
+[FLAGGED.md](FLAGGED.md).
 
-# 2. Run extraction (outputs to extractions/vX.X.X/)
-# See WORKFLOW.md Step 3
-
-# 3. Validate specs
-./scripts/validate-spec.sh package/cli.js specs/claude-code-api-complete.http
-./scripts/validate-spec.sh --subset package/cli.js specs/claude-oauth-api.http
-
-# 4. Compare versions
-diff -r extractions/v2.0.76 extractions/v2.1.22
-```
-
-## Workflow
-
-See `WORKFLOW.md` for full agent-executable runbook.
-
-Core rule: Extract **stable string literals**, not obfuscated variable names.
+## Usage
 
 ```bash
-# Verify endpoint exists
-rg '/api/oauth/profile' package/cli.js
+# 1. Record a release manifest (name/version/sha512/file-list/binary-size).
+#    Downloads the tarballs, hashes them, then discards them. No binary kept.
+scripts/fetch-release.sh latest
 
-# Extract full call context
-rg '/api/oauth/profile' package/cli.js -B 10 -A 20
+# 2. Extract paths + beta flags from the release binary (LC_ALL=C sort -u).
+scripts/extract-binary.sh 2.1.170            # auto-finds ../claude-code-reverse/binary_2.1.170/claude
+scripts/extract-binary.sh -b /path/to/claude 2.1.170
+
+# 3. Compare against the previous documented version.
+scripts/compare-release.sh 2.1.139 2.1.170
+
+# 4. Validate the gates. Must exit 0 before publishing.
+scripts/validate-extraction.sh 2.1.170
 ```
+
+Verify any single documented literal directly against a release:
+
+```bash
+strings binary_2.1.170/claude | rg '/api/oauth/profile'
+```
+
+For older wrapper packages that still shipped a readable `cli.js`, the same
+patterns apply to that file (`rg '/api/oauth/profile' package/cli.js`).
+
+## Validation Gates
+
+`scripts/validate-extraction.sh` is the publish gate. It enforces:
+
+| Gate | Check |
+|------|-------|
+| a | `LC_ALL=C` pinned for `sort` **and** `comm`; raw lists verified C-ordered. An ambient UTF-8 locale makes `comm` fabricate phantom diffs — this is the top footgun. |
+| b | No secrets or home paths: API keys, bearer tokens, refresh tokens, `/Users/`, `/home/`, private-key headers. |
+| c | Unreleased-codename gate: any model codename not on the public allowlist (`opus`, `sonnet`, `haiku`, `fable`) is flagged loudly and fails the run. |
+| d | `SUMMARY.md` counts match the raw file line counts. |
+| e | All raw lists are byte-sorted-unique. |
+| f | File-size / line-length cap (rejects multi-MB bundled lines). |
+
+## Layout
+
+```text
+extractions/v<ver>/
+  MANIFEST.txt        Release metadata + hashes (no binary)
+  SUMMARY.md          Human-readable delta vs previous version
+  raw/                Sorted-unique literal lists (paths, beta flags, ...)
+  calls/              Bounded context windows around each endpoint
+specs/
+  claude-code-api-complete.http   Curated, runnable API reference
+  claude-oauth-api.http           OAuth flow reference
+scripts/
+  fetch-release.sh        Pack + hash a release into a manifest
+  extract-binary.sh       Paths + beta flags via strings/rg
+  compare-release.sh      comm-based added/removed deltas
+  validate-extraction.sh  The publish gate (see above)
+.github/workflows/
+  deterministic-extract.yml   Scheduled + manual: fetch->extract->compare->validate->PR
+WORKFLOW.md           Step-by-step extraction runbook
+FLAGGED.md            Held unreleased model codenames + policy
+archive/              Deprecated docs (not maintained)
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: literals only, pin
+`LC_ALL=C`, never commit the binary, hold unreleased codenames, and make
+`scripts/validate-extraction.sh` pass before publishing.
+
+## License
+
+[MIT](LICENSE)

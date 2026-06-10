@@ -1,0 +1,175 @@
+# Pattern: claude-fable-5|ANTHROPIC_DEFAULT_FABLE_MODEL|DISABLE_PROMPT_CACHING_FABLE|VERTEX_REGION_CLAUDE_FABLE_5|fable-usage-credits|server-side-fallback-2026-06-01|fallback-credit-2026-06-01
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+# REDACTED: one unreleased model codename was replaced with [HELD-CODENAME].
+#   See FLAGGED.md. Unredacted evidence is held under _held/ (gitignored).
+
+--- match 1 ---
+DISABLE_PROMPT_CACHING_FABLE 
+--- match 2 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_NAME 
+--- match 3 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION 
+--- match 4 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 5 ---
+claude-fable-5 
+--- match 6 ---
+claude-fable-5 
+--- match 7 ---
+claude-fable-5 
+--- match 8 ---
+claude-fable-5 
+--- match 9 ---
+claude-fable-5 
+--- match 10 ---
+claude-fable-5 
+--- match 11 ---
+claude-fable-5 
+--- match 12 ---
+claude-fable-5 
+--- match 13 ---
+claude-fable-5 
+--- match 14 ---
+claude-fable-5 
+--- match 15 ---
+claude-fable-5 
+--- match 16 ---
+claude-fable-5 
+--- match 17 ---
+claude-fable-5 
+--- match 18 ---
+claude-fable-5 
+--- match 19 ---
+To enable automatic fallback on this provider, set `ANTHROPIC_DEFAULT_FABLE_MODEL` to your Fable 5 model ID and `ANTHROPIC_DEFAULT_OPUS_MODEL` to your Opus 4.8 model ID. 
+--- match 20 ---
+claude-fable-5 
+--- match 21 ---
+claude-fable-5 
+--- match 22 ---
+claude-fable-5 
+--- match 23 ---
+claude-fable-5 
+--- match 24 ---
+claude-fable-5 
+--- match 25 ---
+claude-fable-5 
+--- match 26 ---
+claude-fable-5 
+--- match 27 ---
+DISABLE_PROMPT_CACHING_FABLE 
+--- match 28 ---
+DISABLE_PROMPT_CACHING_FABLE 
+--- match 29 ---
+claude-fable-5 
+--- match 30 ---
+fable-usage-credits 
+--- match 31 ---
+Model for the current session. Provide an alias for the latest model (e.g. 'fable', 'opus', or 'sonnet') or a model's full name (e.g. 'claude-fable-5'). 
+--- match 32 ---
+claude-fable-5 
+--- match 33 ---
+VERTEX_REGION_CLAUDE_FABLE_5 
+--- match 34 ---
+claude-fable-5 
+--- match 35 ---
+VERTEX_REGION_CLAUDE_FABLE_5 
+--- match 36 ---
+claude-fable-5 
+--- match 37 ---
+us.anthropic.claude-fable-5 
+--- match 38 ---
+anthropic.claude-fable-5 
+--- match 39 ---
+server-side-fallback-2026-06-01 
+--- match 40 ---
+fallback-credit-2026-06-01 
+--- match 41 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 42 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES 
+--- match 43 ---
+claude-fable-5 
+--- match 44 ---
+Model alias (e.g. 'fable', 'opus', 'sonnet', 'haiku') or full model ID (e.g. 'claude-fable-5'). If omitted or 'inherit', uses the main model 
+--- match 45 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 46 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION 
+--- match 47 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_NAME 
+--- match 48 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES 
+--- match 49 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 50 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION 
+--- match 51 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_NAME 
+--- match 52 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES 
+--- match 53 ---
+VERTEX_REGION_CLAUDE_FABLE_5 
+--- match 54 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 55 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION 
+--- match 56 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_NAME 
+--- match 57 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES 
+--- match 58 ---
+VERTEX_REGION_CLAUDE_FABLE_5 
+--- match 59 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 60 ---
+ANTHROPIC_DEFAULT_FABLE_MODEL 
+--- match 61 ---
+claude-fable-5 
+--- match 62 ---
+claude-fable-5 
+--- match 63 ---
+claude-fable-5 
+--- match 64 ---
+os"),Zr8=require("path"),H6=y8(()=>{return(process.env.CLAUDE_CONFIG_DIR??Zr8.join(z0q.homedir(),".claude")).normalize("NFC")},()=>process.env.CLAUDE_CONFIG_DIR);Gr8=y8(()=>$$(process.env.CLAUDE_CODE_SUPERVISED));Oa9=[["claude-fable-5","VERTEX_REGION_CLAUDE_FABLE_5"],["claude-haiku-4-5","VERTEX_REGION_CLAUDE_HAIKU_4_5"],["claude-3-5-haiku","VERTEX_REGION_CLAUDE_3_5_HAIKU"],["claude-3-5-sonnet","VERTEX_REGION_CLAUDE_3_5_SONNET"],["claude-3-7-sonnet","
+--- match 65 ---
+RADE_COMMAND:()=>BW1,DISABLE_UPDATES:()=>mW1,DISABLE_TELEMETRY:()=>uW1,DISABLE_PROMPT_CACHING_SONNET:()=>CW1,DISABLE_PROMPT_CACHING_OPUS:()=>IW1,DISABLE_PROMPT_CACHING_[HELD-CODENAME]:()=>xW1,DISABLE_PROMPT_CACHING_HAIKU:()=>RW1,DISABLE_PROMPT_CACHING_FABLE:()=>bW1,DISABLE_PROMPT_CACHING:()=>SW1,DISABLE_LOGOUT_COMMAND:()=>hW1,DISABLE_LOGIN_COMMAND:()=>EW1,DISABLE_INTERLEAVED_THINKING:()=>yW1,DISABLE_INSTALL_GITHUB_APP_COMMAND:()=>NW1,DISABLE_INSTALLATION_CHECKS:()=>kW1,DIS
+--- match 66 ---
+laude-opus-4-8",vertex:"claude-opus-4-8",foundry:"claude-opus-4-8",anthropicAws:"claude-opus-4-8",mantle:"anthropic.claude-opus-4-8",gateway:"claude-opus-4-8",eagerInputStreaming:{bedrock:!0,vertex:!0}},bcH={firstParty:"claude-fable-5",bedrock:"us.anthropic.claude-fable-5",vertex:"claude-fable-5",foundry:"claude-fable-5",anthropicAws:"claude-fable-5",mantle:"anthropic.claude-fable-5",gateway:"claude-fable-5",eagerInputStreaming:{bedrock:!0,vertex:!0}
+--- match 67 ---
+includes("claude-3-")||$.includes("haiku")||$.includes("sonnet")||$==="claude-opus-4-0"||$==="claude-opus-4-1"||$==="claude-opus-4-5"||$==="claude-opus-4-6"||$==="claude-opus-4-7")return!0;if($==="claude-opus-4-8"||$==="claude-fable-5"||$==="claude-[HELD-CODENAME]-5")return!1;return!wf()}var sY;var tV=V(()=>{od();d8();$6();A8();cq();h7();sY=y8((H)=>{if(!H)return!1;if($$(process.env.CLAUDE_CODE_SIMPLE_SYSTEM_PROMPT))return!0;if(C9(process.env.CLAUDE_CODE_SIMPL
+--- match 68 ---
+includes("claude-3-")||q==="claude-opus-4-0"||q==="claude-opus-4-1"||q==="claude-sonnet-4-0"||q==="claude-sonnet-4-5"||q==="claude-haiku-4-5")return!1;if($$(process.env.CLAUDE_CODE_ALWAYS_ENABLE_EFFORT))return!0;if(q==="claude-fable-5"||q==="claude-[HELD-CODENAME]-5"||q==="claude-opus-4-8"||q==="claude-opus-4-7"||q==="claude-opus-4-6"||q==="claude-sonnet-4-6")return!0;return hS(VM(H))}function QkH(H){let $=Da(H,"max_effort");if($!==void 0)return $;let q=WK(H)
+--- match 69 ---
+ yxK(H){return H.isMainThread&&(H.requestDialog===void 0||H.consumerLacksDialogCapability)&&r1("switchModelsOnFlag",!0).value===!1}function ExK(){if(wf())return;return"To enable automatic fallback on this provider, set `ANTHROPIC_DEFAULT_FABLE_MODEL` to your Fable 5 model ID and `ANTHROPIC_DEFAULT_OPUS_MODEL` to your Opus 4.8 model ID."}function hxK(H){return`${TY(H)} has safety measures that flag messages on most cybersecurity or biology topics. ${GJ$} ${ZJ$}`}fun
+--- match 70 ---
+odels:null}catch{return null}},(H)=>H)});function y_H(){return $$(process.env.CLAUDE_CODE_DISABLE_1M_CONTEXT)}function $D(H){if(y_H())return!1;return/\[1m\]/i.test(H)}function xS(H){if(y_H())return!1;let $=WK(H);if($!=="claude-fable-5"&&$!=="claude-[HELD-CODENAME]-5"&&$!=="claude-opus-4-7"&&$!=="claude-opus-4-8")return!1;let q=VM(H);return q==="firstParty"&&F_()||q==="anthropicAws"||q==="mantle"}function wP$(H){let $=WK(H);return $.includes("claude-3-")||$===
+--- match 71 ---
+t,maxBase64Size:K,targetRawSize:q.targetRawSize??K*3/4}}function Li_(){if(r6()==="firstParty"&&F_()&&M$("tengu_crimson_vector",!1))return cz7;return ZF.maxBase64Size}var Xi_;var vE=V(()=>{Cs();d8();p2$();cq();h7();Xi_={"claude-fable-5":{maxWidth:2000,maxHeight:2000},"claude-[HELD-CODENAME]-5":{maxWidth:2000,maxHeight:2000},"claude-opus-4-7":{maxWidth:2000,maxHeight:2000},"claude-opus-4-8":{maxWidth:2000,maxHeight:2000}}});function fO7(){return RO(w7())}functi
+--- match 72 ---
+.startsWith(q))return!1;let K=$.slice(q.length);return K===""||K===".git"||K.startsWith("/")})}function YWH(){let H=C$();return A_(H)??W6()}function B05(H){return az(H)??H}function yl7(H){if(H.includes("fable-5"))return"claude-fable-5";if(H.includes("[HELD-CODENAME]-5"))return"claude-[HELD-CODENAME]-5";if(H.includes("opus-4-8"))return"claude-opus-4-8";if(H.includes("opus-4-7"))return"claude-opus-4-7";if(H.includes("opus-4-6"))return"claude-opus-4-6";if(H.includes("opu
+--- match 73 ---
+l names to explicitly disallow for this agent"),prompt:N.string().describe("The agent's system prompt"),model:N.string().optional().describe("Model alias (e.g. 'fable', 'opus', 'sonnet', 'haiku') or full model ID (e.g. 'claude-fable-5'). If omitted or 'inherit', uses the main model"),mcpServers:N.array(Qv5()).optional(),criticalSystemReminder_EXPERIMENTAL:N.string().optional().describe("Experimental: Critical reminder added to system prompt"),skills:
+--- match 74 ---
+IP_FOUNDRY_AUTH","CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH","CLAUDE_CODE_SKIP_MANTLE_AUTH","CLAUDE_CODE_HOST_AUTH_ENV_VAR","CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH","CLAUDE_CODE_HOST_AUTH_REFRESH_TIMEOUT_MS","ANTHROPIC_MODEL","ANTHROPIC_DEFAULT_FABLE_MODEL","ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION","ANTHROPIC_DEFAULT_FABLE_MODEL_NAME","ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES","ANTHROPIC_DEFAULT_HAIKU_MODEL","ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION","ANTHR
+--- match 75 ---
+stParty"})}function ni5(H){if(!H)return;let $=Date.parse(H);if(Number.isNaN($))return;return new Date($).toLocaleDateString("en-US",{month:"short",day:"numeric"})}function NA4(){let H=TA4.c(7),$=M2H(),q=U7($),K=WK(q)==="claude-fable-5",_;if(H[0]===Symbol.for("react.memo_cache_sentinel"))_=r6(),H[0]=_;else _=H[0];let f=_==="firstParty",A,z;if(H[1]===Symbol.for("react.memo_cache_sentinel")){let D=oy$().planLimitsEndDate;A=D!==void 0&&Date.now()>=Date.p
+--- match 76 ---
+S_BEARER_TOKEN_BEDROCK:void 0,AWS_ACCESS_KEY_ID:void 0,AWS_SECRET_ACCESS_KEY:void 0,AWS_SESSION_TOKEN:void 0,ANTHROPIC_DEFAULT_SONNET_MODEL:void 0,ANTHROPIC_DEFAULT_OPUS_MODEL:void 0,ANTHROPIC_DEFAULT_HAIKU_MODEL:void 0,ANTHROPIC_DEFAULT_FABLE_MODEL:void 0,ANTHROPIC_SMALL_FAST_MODEL:void 0};switch(H.authMethod){case"profile":$.AWS_PROFILE=H.awsProfile;break;case"bearer":$.AWS_BEARER_TOKEN_BEDROCK=H.bearerToken;break;case"accessKey":if($.AWS_ACCESS_KEY_ID=H.accessKe
+--- match 77 ---
+sonnet","opus","haiku","fable"],AE8={sonnet:"Sonnet",opus:"Opus",haiku:"Haiku",fable:"Fable"},t4f={sonnet:"ANTHROPIC_DEFAULT_SONNET_MODEL",opus:"ANTHROPIC_DEFAULT_OPUS_MODEL",haiku:"ANTHROPIC_DEFAULT_HAIKU_MODEL",fable:"ANTHROPIC_DEFAULT_FABLE_MODEL"};gG4={auth:"auth failed",permission:"no InvokeModel permission",model:"not enabled in this account",network:"unreachable",other:"request failed"}});function d_(H){let $=lG4.c(10),{message:q,bold:K,dimColor:_,subtitle:f
+--- match 78 ---
+ription(H){let $=d$q(H);return $?`Searching for ${$}`:"Searching the web"},isEnabled(){let H=r6();if(H==="firstParty"||H==="anthropicAws")return!0;if(H==="gateway")return!1;if(H==="vertex"){let $=w7();return $.includes("claude-fable-5")||$.includes("claude-opus-4")||$.includes("claude-sonnet-4")||$.includes("claude-haiku-4")}if(H==="foundry")return!0;return!1},get inputSchema(){return EAf()},get outputSchema(){return SAf()},isConcurrencySafe(){return
+--- match 79 ---
+arm:_$($)});return $})});function Gq9(H){return Qxf.filter(($)=>$.isActive(H))}function Lq9(){return["DISABLE_PROMPT_CACHING","DISABLE_PROMPT_CACHING_HAIKU","DISABLE_PROMPT_CACHING_OPUS","DISABLE_PROMPT_CACHING_SONNET","DISABLE_PROMPT_CACHING_FABLE"].filter((H)=>$$(process.env[H]))}function gxf(H,$){switch(H){case"error":case"warning":case"info":case"announcement":return!0}}function dxf(H){return H.priority??0}function Wq9(H){if(H.tier==="announcement"){let q=dxf(
+--- match 80 ---
+`)}function SMq(H){let $=WK(H);if($==="claude-fable-5"||$==="claude-[HELD-CODENAME]-5")return"January 2026";if($==="claude-opus-4-8")return"January 2026";else if($==="claude-opus-4-7")return"January 2026";else if($==="claude-sonnet-4-6")return"August 2025";else if($==="claude-opus-4-6")return"May 2025";else if($==="claude-opus-4-5")return"May 2025";else if($==="claude-haiku-4-5")return"February 2025";else if($==="claude-opus-4-0"||$==="claude-opus-4-1"||$==="
+--- match 81 ---
+();OzH();cC8();fO();qh$();A8();tV();WkH();dG();d8();QW();TLH();gH();BR$();YW$();IiH();a2H();yuH();CY();Yo$();yBH=require("os"),NX9=require("path"),Ktf=(WR(),b6(_AH)).BRIEF_PROACTIVE_SECTION,kX9=(FB(),b6(xe)),i0H={fable:"claude-fable-5",opus:"claude-opus-4-8",sonnet:"claude-sonnet-4-6",haiku:"claude-haiku-4-5-20251001"};EMq=y8(()=>{let H=z$.CLAUDE_CODE_OWNERSHIP_FRAME,$=H||M$("tengu_walnut_prism",!1);if($)k(`ownership_frame_arm_active source=${H?"env"
+--- match 82 ---
+AIKU)){let $=uW();if($!==w7()&&H===$)return!1}if($$(process.env.DISABLE_PROMPT_CACHING_SONNET)){let $=hN();if(H===$)return!1}if($$(process.env.DISABLE_PROMPT_CACHING_OPUS)){let $=HT();if(H===$)return!1}if($$(process.env.DISABLE_PROMPT_CACHING_FABLE)){if(MkH(H)||h8H(H))return!1}if(z$.DISABLE_PROMPT_CACHING_[HELD-CODENAME]){if(h68(H))return!1}return!0}function Bt({scope:H,ttl:$}={}){return{type:"ephemeral",...$&&{ttl:$},...H==="global"&&{scope:H}}}function CIH(H){if($$(proce
+--- match 83 ---
+;WR9();GR9();VR9();NR9();yR9();hR9();RR9();CR9();xR9();mR9();pR9();FR9();gR9();cR9();nR9();rR9();aR9();tR9();HI9();qI9();_I9();AI9();YI9();wI9();jI9();JI9();LI9();WI9();GI9();VI9();NI9();yI9();hI9();RI9();mXq={FABLE_ID:"claude-fable-5",FABLE_NAME:"Claude Fable 5",OPUS_ID:"claude-opus-4-8",OPUS_NAME:"Claude Opus 4.8",SONNET_ID:"claude-sonnet-4-6",SONNET_NAME:"Claude Sonnet 4.6",HAIKU_ID:"claude-haiku-4-5",HAIKU_NAME:"Claude Haiku 4.5",PREV_SONNET_ID:"
+--- match 84 ---
+===Symbol.for("react.memo_cache_sentinel"))J=SS(),$[10]=J;else J=$[10];let X=J,L=D==="team"||D==="enterprise",[P,W]=TTH.useState(!1),Z,G;if($[11]!==q||$[12]!==H)Z=()=>{if(!TlH(H))return;let h=()=>{q({kind:"warning",key:"fable-usage-credits",text:"Fable 5 is now consuming usage credits instead of your plan limits. Update Claude Code to the latest version to learn more",color:"error",priority:"immediate"})};return hL8.add(h),()=>{hL8.delete(h)}},G=[H,q],$[1
+--- match 85 ---
+ed user message and exit (requires --resume)").hideHelp()).option("--model <model>","Model for the current session. Provide an alias for the latest model (e.g. 'fable', 'opus', or 'sonnet') or a model's full name (e.g. 'claude-fable-5').").addOption(new N1("--effort <level>",`Effort level for the current session (${eV.join(", ")})`).argParser((f)=>{let{level:A,warning:z}=UbK(f);if(z!==void 0)process.stderr.write(`Warning: ${z} 

@@ -1,0 +1,9 @@
+# Pattern: /api/claude_cli_feedback
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/claude_cli_feedback 
+--- match 2 ---
+ terminal reports landing in the same claude_cli_feedback table. Defaults to 'sdk'.")}).describe("@internal Submits a /feedback report (description + current session transcript + sanitized error log) to api.anthropic.com/api/claude_cli_feedback using the CLI's auth and redaction. Runs the same getFeedbackUnavailableReason() policy checks as the terminal /feedback command \u2014 when feedback is disabled (3P provider, org policy, env kill-switch) the response c
+--- match 3 ---
+r($))}}async function c4q(H,$){if(S4())return{success:!1};let q=0;try{let K=Q4$(H,i4q,r4q);if(q=K.length,q>l4q)return{success:!1,payloadTooLarge:!0,failureReason:"payload_too_large_precheck"};let _=await JT(()=>d7.post("/api/claude_cli_feedback",K,{headers:{"Content-Type":"application/json"},timeout:30000,signal:$}));if(!_.ok)switch(_.reason){case"essential-traffic-only":return{success:!1};case"data-residency":return{success:!1,failureReason:"data_residency"};

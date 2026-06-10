@@ -1,0 +1,118 @@
+name: deterministic-extract
+
+# Fetch the latest Claude Code release, extract stable string literals, compare
+# against the previously documented version, validate the gates, and open a PR
+# in THIS repo with the raw artifacts + SUMMARY.
+#
+# Boundaries (by design):
+#   - Opens a same-repo PR only. Never pushes to any other remote.
+#   - Adds NO secrets. Uses the built-in GITHUB_TOKEN with least privilege.
+#   - Never commits the binary or unpacked package (.gitignore enforces this;
+#     the job also deletes them before the PR step).
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. Deterministic, low-frequency.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "npm version or dist-tag to document"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: write        # create the branch/commit for the PR
+  pull-requests: write   # open the PR
+
+concurrency:
+  group: deterministic-extract
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    env:
+      LC_ALL: C
+      REQ_VERSION: ${{ github.event.inputs.version || 'latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Fetch release manifest (no binary committed)
+        run: |
+          set -eu
+          scripts/fetch-release.sh "$REQ_VERSION"
+
+      - name: Resolve concrete version
+        id: ver
+        run: |
+          set -eu
+          if printf '%s' "$REQ_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            V="$REQ_VERSION"
+          else
+            V=$(npm view @anthropic-ai/claude-code-linux-x64@"$REQ_VERSION" version)
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          PREV=$(ls -1 extractions | sed -n 's/^v//p' \
+                 | grep -vx "$V" \
+                 | LC_ALL=C sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Pack platform binary into a temp dir (discarded after extract)
+        id: bin
+        run: |
+          set -eu
+          V="${{ steps.ver.outputs.version }}"
+          WORK="$(mktemp -d)"
+          ( cd "$WORK" && npm pack @anthropic-ai/claude-code-linux-x64@"$V" --silent )
+          tar -xzf "$WORK"/*.tgz -C "$WORK"
+          echo "binary=$WORK/package/claude" >> "$GITHUB_OUTPUT"
+          echo "work=$WORK" >> "$GITHUB_OUTPUT"
+
+      - name: Extract paths + beta flags
+        run: |
+          set -eu
+          scripts/extract-binary.sh -b "${{ steps.bin.outputs.binary }}" "${{ steps.ver.outputs.version }}"
+
+      - name: Discard binary and packed tarballs (never committed)
+        if: always()
+        run: rm -rf "${{ steps.bin.outputs.work }}"
+
+      - name: Compare against previous documented version
+        if: steps.ver.outputs.previous != ''
+        run: |
+          set -eu
+          scripts/compare-release.sh "${{ steps.ver.outputs.previous }}" "${{ steps.ver.outputs.version }}" \
+            | tee "extractions/v${{ steps.ver.outputs.version }}/COMPARE.txt"
+
+      - name: Validate extraction gates
+        run: |
+          set -eu
+          scripts/validate-extraction.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Open same-repo PR with artifacts
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: extract/v${{ steps.ver.outputs.version }}
+          title: "extract: document v${{ steps.ver.outputs.version }}"
+          commit-message: "extract: document v${{ steps.ver.outputs.version }}"
+          add-paths: |
+            extractions/**
+          body: |
+            Deterministic extraction for `v${{ steps.ver.outputs.version }}`
+            (compared against `v${{ steps.ver.outputs.previous }}`).
+
+            All `scripts/validate-extraction.sh` gates passed. The binary and
+            unpacked package were not committed (manifest + hashes only).
+
+            Review `extractions/v${{ steps.ver.outputs.version }}/SUMMARY.md`
+            and `COMPARE.txt`. If a new model codename was held, see
+            `FLAGGED.md`.

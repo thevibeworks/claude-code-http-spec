@@ -1,0 +1,7 @@
+# Pattern: /v1/ultrareview/preflight
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/ultrareview/preflight 
+--- match 2 ---
+ked",blocked:{message:H,action_url:null,reason:$}}}async function QK9(){let H=process.env.CLAUDE_CODE_ULTRAREVIEW_PREFLIGHT_FIXTURE;if(H){let $=FK9().safeParse(d$(H));return $.success?$.data:null}try{let $=await d7.get("/v1/ultrareview/preflight",{auth:"teleport-org",timeout:5000});if(!$.ok)switch($.reason){case"essential-traffic-only":return vAq("Ultrareview runs in Claude Code on the web and is unavailable when essential-traffic-only mode is active.","zdr");c

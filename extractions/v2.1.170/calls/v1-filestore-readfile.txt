@@ -1,0 +1,7 @@
+# Pattern: /v1/filestore/fs/readFile
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/filestore/fs/readFile 
+--- match 2 ---
+ind:M,status:j,message:D}=Fg9("list",w);return d("tengu_stage_file_completed",{ok:!1,duration_ms:_()}),C8("warn","stage_file_list_failed",{kind:M,status:j,duration_ms:_()}),{ok:!1,error:D}}let z;try{let w=await d7.post("/v1/filestore/fs/readFile",{filesystem_id:A,path:H.mount_path},{auth:"none",host:"api",headers:{Authorization:`Bearer ${f}`},responseType:"arraybuffer",timeout:Ug9,maxContentLength:fJA});if(!w.ok)return d("tengu_stage_file_completed",{ok:!1,gate

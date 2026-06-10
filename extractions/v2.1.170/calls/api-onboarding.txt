@@ -1,0 +1,19 @@
+# Pattern: /api/organizations/:orgUUID/claude_code/onboarding
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/organizations/:orgUUID/claude_code/onboarding 
+--- match 2 ---
+/api/organizations/:orgUUID/claude_code/onboarding/ 
+--- match 3 ---
+/api/organizations/:orgUUID/claude_code/onboarding/ 
+--- match 4 ---
+/api/organizations/:orgUUID/claude_code/onboarding 
+--- match 5 ---
+eturn!1;return M$("tengu_flint_harbor_share",!1)}function GS8(H){if(!H.ok)throw Error(H.reason==="no-auth"?H.detail:`Onboarding guide unavailable: ${H.reason}`);return H.data}async function YS4(H,$){let q=await d7.post("/api/organizations/:orgUUID/claude_code/onboarding",{content:H,name:$},ZS8),K=GS8(q);return d("tengu_team_onboarding_share_created",{}),K}async function Y8q(H,$){let q=await d7.put(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURIComponent(H)}`,{content:$}
+--- match 6 ---
+unction YS4(H,$){let q=await d7.post("/api/organizations/:orgUUID/claude_code/onboarding",{content:H,name:$},ZS8),K=GS8(q);return d("tengu_team_onboarding_share_created",{}),K}async function Y8q(H,$){let q=await d7.put(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURIComponent(H)}`,{content:$},ZS8),K=GS8(q);return d("tengu_team_onboarding_share_updated",{}),K}async function OS4(H){let $=await d7.delete(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURICompone
+--- match 7 ---
+et q=await d7.put(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURIComponent(H)}`,{content:$},ZS8),K=GS8(q);return d("tengu_team_onboarding_share_updated",{}),K}async function OS4(H){let $=await d7.delete(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURIComponent(H)}`,ZS8);GS8($),d("tengu_team_onboarding_share_deleted",{})}async function O8q(){let H=await d7.get("/api/organizations/:orgUUID/claude_code/onboarding",ZS8);return GS8(H).guides}var JYf=1e4,ZS8;va
+--- match 8 ---
+}async function OS4(H){let $=await d7.delete(`/api/organizations/:orgUUID/claude_code/onboarding/${encodeURIComponent(H)}`,ZS8);GS8($),d("tengu_team_onboarding_share_deleted",{})}async function O8q(){let H=await d7.get("/api/organizations/:orgUUID/claude_code/onboarding",ZS8);return GS8(H).guides}var JYf=1e4,ZS8;var TS8=V(()=>{J_();Wq();cf();d8();v$();zJ();ZS8={auth:"teleport-org",timeout:JYf,headers:{"anthropic-beta":pV}}});var iR$="ShareOnboardingGuide",w8q=`Upload the ONBOARDING.md 

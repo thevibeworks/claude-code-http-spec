@@ -1,0 +1,7 @@
+# Pattern: /api/claude_code/organizations/metrics_enabled
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/claude_code/organizations/metrics_enabled 
+--- match 2 ---
+et q of H)console.dir(this._exportInfo(q),{depth:3});if($)return $({code:Yk$.ExportResultCode.SUCCESS})}}var Yk$;var _H4=V(()=>{Yk$=m(EO(),1)});var fH4=V(()=>{KH4();qd6();_H4()});async function iS5(){let H=await d7.get("/api/claude_code/organizations/metrics_enabled",{auth:"async",timeout:5000,bypassEssentialTrafficOnly:!0});if(!H.ok)throw Error(H.reason==="no-auth"?`Auth error: ${H.detail}`:`metrics_enabled unavailable: ${H.reason}`);return H.data}async function rS5(){try{let H=aw

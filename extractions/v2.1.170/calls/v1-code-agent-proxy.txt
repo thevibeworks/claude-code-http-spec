@@ -1,0 +1,9 @@
+# Pattern: /v1/code/agent-proxy
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/code/agent-proxy 
+--- match 2 ---
+/v1/code/agent-proxy 
+--- match 3 ---
+ypi.org","files.pythonhosted.org","index.crates.io","proxy.golang.org"],Ejq=[...H29,"10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","100.64.0.0/10","fc00::/7"].join(","),c$A=H29.join(","),wV={enabled:!1,noProxy:Ejq};a$A=["/v1/code/agent-proxy","/v1/code/egress/gateway","/v1/code/upstreamproxy"]});var _29={};j$(_29,{showInvalidConfigDialog:()=>$8A});function e$A(H){let $=K29.c(19),{filePath:q,errorDescription:K,onExit:_,onReset:f}=H,A;if($[0]!==_||$[1]!==f)A=

@@ -1,0 +1,31 @@
+# Pattern: /v1/code/triggers
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/code/triggers 
+--- match 2 ---
+/v1/code/triggers 
+--- match 3 ---
+/v1/code/triggers/ 
+--- match 4 ---
+`):"No scheduled jobs."}},renderToolUseMessage:bE4,renderToolResultMessage:xE4})});async function gE4(){let H=await d7.get("/v1/code/triggers",{auth:"teleport-org",headers:{"anthropic-beta":t$q}});if(!H.ok)throw Error(H.reason==="no-auth"?H.detail:`triggers unavailable: ${H.reason}`);return H.data.data??[]}var t$q="ccr-triggers-2026-01-30";var e$q=V(()=>{zJ()});var KuH="RemoteTrigger",dE4="Manage scheduled remote Claude Code agents (routines) via the cl
+--- match 5 ---
+- list: GET /v1/code/triggers 
+--- match 6 ---
+- get: GET /v1/code/triggers/{trigger_id} 
+--- match 7 ---
+- create: POST /v1/code/triggers (requires body) 
+--- match 8 ---
+- update: POST /v1/code/triggers/{trigger_id} (requires body, partial update) 
+--- match 9 ---
+- run: POST /v1/code/triggers/{trigger_id}/run (optional body) 
+--- match 10 ---
+eturn`RemoteTrigger ${H.action}${H.trigger_id?` ${H.trigger_id}`:""}`},async description(){return dE4},async prompt(){return cE4},async call(H,$){let{action:K,trigger_id:_,body:f}=H,A,z,Y;switch(K){case"list":z="get",A="/v1/code/triggers";break;case"get":if(!_)throw Error("get requires trigger_id");z="get",A=`/v1/code/triggers/${_}`;break;case"create":if(!f)throw Error("create requires body");z="post",A="/v1/code/triggers",Y=f;break;case"update":if(!_)t
+--- match 11 ---
+return dE4},async prompt(){return cE4},async call(H,$){let{action:K,trigger_id:_,body:f}=H,A,z,Y;switch(K){case"list":z="get",A="/v1/code/triggers";break;case"get":if(!_)throw Error("get requires trigger_id");z="get",A=`/v1/code/triggers/${_}`;break;case"create":if(!f)throw Error("create requires body");z="post",A="/v1/code/triggers",Y=f;break;case"update":if(!_)throw Error("update requires trigger_id");if(!f)throw Error("update requires body");z="post"
+--- match 12 ---
+switch(K){case"list":z="get",A="/v1/code/triggers";break;case"get":if(!_)throw Error("get requires trigger_id");z="get",A=`/v1/code/triggers/${_}`;break;case"create":if(!f)throw Error("create requires body");z="post",A="/v1/code/triggers",Y=f;break;case"update":if(!_)throw Error("update requires trigger_id");if(!f)throw Error("update requires body");z="post",A=`/v1/code/triggers/${_}`,Y=f;break;case"run":{if(!_)throw Error("run requires trigger_id");z="
+--- match 13 ---
+}`;break;case"create":if(!f)throw Error("create requires body");z="post",A="/v1/code/triggers",Y=f;break;case"update":if(!_)throw Error("update requires trigger_id");if(!f)throw Error("update requires body");z="post",A=`/v1/code/triggers/${_}`,Y=f;break;case"run":{if(!_)throw Error("run requires trigger_id");z="post",A=`/v1/code/triggers/${_}/run`;let{trigger_id:j,...D}=f??{};Y=D;break}}let O={auth:"teleport-org",headers:{"anthropic-beta":t$q},timeout:2
+--- match 14 ---
+ak;case"update":if(!_)throw Error("update requires trigger_id");if(!f)throw Error("update requires body");z="post",A=`/v1/code/triggers/${_}`,Y=f;break;case"run":{if(!_)throw Error("run requires trigger_id");z="post",A=`/v1/code/triggers/${_}/run`;let{trigger_id:j,...D}=f??{};Y=D;break}}let O={auth:"teleport-org",headers:{"anthropic-beta":t$q},timeout:20000,signal:$.abortController.signal,validateStatus:()=>!0},w=z==="get"?await d7.get(A,O):await d7.pos

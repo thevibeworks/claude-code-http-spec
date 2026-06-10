@@ -1,0 +1,7 @@
+# Pattern: /api/claude_code_shared_session_transcripts
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/claude_code_shared_session_transcripts 
+--- match 2 ---
+if(J.success)return RH("feedback_transcript_share"),{success:!0,bundlePath:J.zipPath};return xH("feedback_transcript_share","bundle_write_failed"),{success:!1,errorCode:"bundle_write_failed"}}let j=await JT(()=>d7.post("/api/claude_code_shared_session_transcripts",M,{timeout:30000,headers:{"Content-Type":"application/json","User-Agent":Wa()}}));if(!j.ok)switch(j.reason){case"essential-traffic-only":return xH("feedback_transcript_share","essential_traffic_only"),{success:!1,error

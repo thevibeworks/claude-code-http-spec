@@ -1,0 +1,20 @@
+# AI curation workflow -- STUB, INTENTIONALLY DISABLED.
+#
+# This file ends in `.disabled` so GitHub Actions does not run it. It is a
+# placeholder for a future step that would turn the deterministic raw
+# extraction (paths, beta flags, contexts) into curated, human-readable spec
+# prose -- e.g. drafting `.http` sections or SUMMARY narrative from the raw
+# literals.
+#
+# It is NOT implemented on purpose. The deterministic pipeline
+# (fetch -> extract -> compare -> validate) must remain the source of truth and
+# must never depend on a model's output to decide what is published. Any AI step
+# added here must:
+#   - run only after `scripts/validate-extraction.sh` has passed,
+#   - treat raw/*.txt as read-only ground truth,
+#   - never relax the FLAGGED.md / unreleased-codename gate,
+#   - open a clearly-labeled PR for human review, adding no secrets beyond an
+#     explicitly configured, least-privilege token.
+#
+# To enable later: implement the job, rename to `ai-curation.yml`, and document
+# the model/token requirements in CONTRIBUTING.md first.

@@ -1,0 +1,109 @@
+# Pattern: /v1/code/
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/code/sessions 
+--- match 2 ---
+/v1/code/sessions/ 
+--- match 3 ---
+/v1/code/sessions/ 
+--- match 4 ---
+/v1/code/sessions/ 
+--- match 5 ---
+/v1/code/sessions/ 
+--- match 6 ---
+/v1/code/sessions/ 
+--- match 7 ---
+/v1/code/sessions/ 
+--- match 8 ---
+/v1/code/sessions/ 
+--- match 9 ---
+/v1/code/github/ 
+--- match 10 ---
+/v1/code/slack/ 
+--- match 11 ---
+/v1/code/sessions/ 
+--- match 12 ---
+/v1/code/sessions/ 
+--- match 13 ---
+/v1/code/sessions/ 
+--- match 14 ---
+/v1/code/triggers 
+--- match 15 ---
+/v1/code/sessions/ 
+--- match 16 ---
+/v1/code/github/import-token 
+--- match 17 ---
+/v1/code/sessions/ 
+--- match 18 ---
+/v1/code/sessions 
+--- match 19 ---
+/v1/code/sessions/ 
+--- match 20 ---
+/v1/code/sessions/ 
+--- match 21 ---
+/v1/code/ 
+--- match 22 ---
+/v1/code/ 
+--- match 23 ---
+/v1/code/triggers 
+--- match 24 ---
+/v1/code/triggers/ 
+--- match 25 ---
+/v1/code/sessions/ 
+--- match 26 ---
+/v1/code/sessions/ 
+--- match 27 ---
+/v1/code/agent-proxy 
+--- match 28 ---
+/v1/code/egress/gateway 
+--- match 29 ---
+/v1/code/upstreamproxy 
+--- match 30 ---
+/v1/code/agent-proxy 
+--- match 31 ---
+/v1/code/egress/gateway 
+--- match 32 ---
+/v1/code/upstreamproxy 
+--- match 33 ---
+et $=await hC();if(!$)throw Error("Unable to get organization UUID");return{accessToken:H,orgUUID:$}}async function nj6(){return Q4("teleport_sessions_list",async()=>{let{accessToken:H}=await xC(),$=`${oK().BASE_API_URL}/v1/code/sessions`;try{let q=await lK8($,{headers:qD(H)});if(q.status!==200)throw Error(`Failed to fetch code sessions: ${q.statusText}`);return q.data.data.map((_)=>{let f=_.config?.sources?.find((z)=>z.type==="git_repository"),
+--- match 34 ---
+;CO();d3();QA();Ac();Zl();L6();yu();q8();Jm6();L8();v$();e0$();Rn();PO8();VMH();Pk();In=require("fs/promises"),RAH=require("path");cm7=["/v2/session_ingress/shttp/mcp/","/v2/session_ingress/mcp/ws/","/v2/ccr-sessions/","/v1/code/"],OX5=process.env.SESSION_INGRESS_URL??process.env.ANTHROPIC_BASE_URL;wX5=new Set(Dm6);XX5=new Set(["dynamic","agent","claudeai"]);Fm7={stdio:Dw$,sse:G76,http:Mo$,"streamable-http":Mo$,ws:T76,sdk:V76,"claudeai-proxy":N7
+--- match 35 ---
+hD4(){if(r6()!=="firstParty")return!1;if(!z$.CLAUDE_CODE_WEBFETCH_USE_CCR_PROXY)return!1;return N$().startsWith("session_")}function $Hf(){return`${(z$.ANTHROPIC_BASE_URL||"https://api.anthropic.com").replace(/\/+$/,"")}/v1/code/sessions/${encodeURIComponent(N$())}/worker/web-fetch`}async function SD4(H,$){let q=nlH(),K;try{K=await Yq.post($Hf(),{url:H},{signal:$,timeout:40000,maxContentLength:12582912,headers:{...q,"Content-Type":"application/j
+--- match 36 ---
+bled:$,replBridgeOutboundOnly:$}}var xv=V(()=>{P$();J_();d8();Wq();$6();gH();jq();A8();h7();cf();I0()});function sk8(H,$,q,K){if(!K)return{url:`${H}/v1/sessions/${$}/events`,body:{events:q}};let _=b0$($);return{url:`${H}/v1/code/sessions/${encodeURIComponent(_)}/events`,body:{events:q.map((f)=>({payload:typeof f.uuid==="string"&&f.uuid?f:{...f,uuid:LW4.randomUUID()}}))}}}var LW4;var $t6=V(()=>{LW4=require("crypto")});function dqf(H){return H.rep
+--- match 37 ---
+\s*:\\s*"([^"]*)"`,"g")});async function YS$(H,$,q,K,_,f,A){let z=H==="subscribe"?"bridge_pr_subscribe":"bridge_pr_unsubscribe",Y=f();if(!Y)return k(`[bridge] No access token for ${H}-pr`),xH(z,"no_token"),!1;let O=`${_}/v1/code/github/${H}-pr`,w={session_id:RT($),repo:q,pr_number:K},M;try{M=await Yq.post(O,w,{headers:ZW4(Y,{trustedDeviceToken:await A?.()}),timeout:1e4,validateStatus:(D)=>D<500})}catch(D){return k(`[bridge] ${H}-pr request faile
+--- match 38 ---
+H,$=null,q){if(!s_())throw Error("Cloud sessions are only available on the first-party Anthropic API provider.");await $3();let K=Ly8();if(!K)throw Error("No access token for polling");let _=qD(K),f=`${oK().BASE_API_URL}/v1/code/sessions/${H}/events`,A=50,z=[],Y=$;for(let j=0;j<A;j++){let D=await lK8(f,{headers:_,params:{sort_order:"asc",...Y&&{cursor:Y}},timeout:30000});if(D.status!==200)throw Error(`Failed to fetch session events: ${D.statusTe
+--- match 39 ---
+: ${f.message}`,A?"network_error":"exception"),null}}async function xB(H,$=1e4){if(!s_())return k(`[archiveRemoteSession] ${H} skipped: non-first-party provider`),!1;let q=Ly8();if(!q)return!1;let K=`${oK().BASE_API_URL}/v1/code/sessions/${H}/archive`;try{let _=await Yq.post(K,{},{headers:qD(q),timeout:$,validateStatus:(f)=>f<500});if(_.status===200||_.status===409)return k(`[archiveRemoteSession] archived ${H}`),!0;return k(`[archiveRemoteSessi
+--- match 40 ---
+`):"No scheduled jobs."}},renderToolUseMessage:bE4,renderToolResultMessage:xE4})});async function gE4(){let H=await d7.get("/v1/code/triggers",{auth:"teleport-org",headers:{"anthropic-beta":t$q}});if(!H.ok)throw Error(H.reason==="no-auth"?H.detail:`triggers unavailable: ${H.reason}`);return H.data.data??[]}var t$q="ccr-triggers-2026-01-30";var e$q=V(()=>{zJ()});var KuH="RemoteTrigger",dE4="Manage scheduled remote Claude Code agents (routines) vi
+--- match 41 ---
+- list: GET /v1/code/triggers 
+--- match 42 ---
+- get: GET /v1/code/triggers/{trigger_id} 
+--- match 43 ---
+- create: POST /v1/code/triggers (requires body) 
+--- match 44 ---
+- update: POST /v1/code/triggers/{trigger_id} (requires body, partial update) 
+--- match 45 ---
+- run: POST /v1/code/triggers/{trigger_id}/run (optional body) 
+--- match 46 ---
+eturn`RemoteTrigger ${H.action}${H.trigger_id?` ${H.trigger_id}`:""}`},async description(){return dE4},async prompt(){return cE4},async call(H,$){let{action:K,trigger_id:_,body:f}=H,A,z,Y;switch(K){case"list":z="get",A="/v1/code/triggers";break;case"get":if(!_)throw Error("get requires trigger_id");z="get",A=`/v1/code/triggers/${_}`;break;case"create":if(!f)throw Error("create requires body");z="post",A="/v1/code/triggers",Y=f;break;case"update"
+--- match 47 ---
+callbacks=K;this.onAuth401=_}async connect(){if(this.state==="connecting"||this.state==="connected"){k("[SessionsV2Client] Already connecting/connected");return}this.state="connecting";let H=new URL(`${oK().BASE_API_URL}/v1/code/sessions/${this.sessionId}/events/stream`);if(this.lastSequenceNum>0)H.searchParams.set("from_sequence_num",String(this.lastSequenceNum));let $={...this.authHeaders(),Accept:"text/event-stream"};if(this.lastSequenceNum>0
+--- match 48 ---
+${K}://${f}/${_}/session_ingress/ws/${$}`}function sOq(H,$){if(H===$)return!0;let q=H.slice(H.lastIndexOf("_")+1),K=$.slice($.lastIndexOf("_")+1);return q.length>=4&&q===K}function Fu$(H,$){return`${H.replace(/\/+$/,"")}/v1/code/sessions/${$}`}async function Wp8(H,$){let q=await Yq.post(`${H}/worker/register`,{},{headers:{Authorization:`Bearer ${$}`,"Content-Type":"application/json","anthropic-version":"2023-06-01"},timeout:1e4}),K=q.data?.worke
+--- match 49 ---
+token"],{stdout:"ignore",stderr:"ignore",timeout:5000,reject:!1});return $===0?"authenticated":"not_authenticated"}catch{return"not_installed"}}var h3q=V(()=>{PS();d0()});async function VM9(H){let $;try{$=await d7.post("/v1/code/github/import-token",{token:H.reveal()},{headers:{"anthropic-beta":Kw6.header},auth:"teleport-org",timeout:15000,validateStatus:()=>!0})}catch(q){if(XM(q))return k(`import-token network error: ${q.code??"unknown"}`,{leve
+--- match 50 ---
+ypi.org","files.pythonhosted.org","index.crates.io","proxy.golang.org"],Ejq=[...H29,"10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","100.64.0.0/10","fc00::/7"].join(","),c$A=H29.join(","),wV={enabled:!1,noProxy:Ejq};a$A=["/v1/code/agent-proxy","/v1/code/egress/gateway","/v1/code/upstreamproxy"]});var _29={};j$(_29,{showInvalidConfigDialog:()=>$8A});function e$A(H){let $=K29.c(19),{filePath:q,errorDescription:K,onExit:_,onReset:f}=H,A;if($[0]!==_||
+--- match 51 ---
+K={sessionId:H,baseUrl:$,getAuthHeaders:q},_=null,f=0,A=()=>{if(YVH()===!1){k("[presence] pulse skipped (terminal blurred)");return}let O=Date.now();if(O-f<jZ9)return;f=O,_??=new Date(O).toISOString();let w=`${K.baseUrl}/v1/code/sessions/${K.sessionId}/client/presence`;k(`[presence] pulse \u2192 ${w}`),Yq.post(w,{client_id:h8A,connected_at:_},{headers:{...K.getAuthHeaders(),"anthropic-version":"2023-06-01","anthropic-client-platform":r2()},timeo
+--- match 52 ---
+)=>{ajq();sjq();gH();G$();bC();gIH();Zp8()});function hZ9(H){return{Authorization:`Bearer ${H}`,"Content-Type":"application/json","anthropic-version":n8A,"User-Agent":TO()}}async function ejq(H,$,q,K,_,f,A,z){let Y=`${H}/v1/code/sessions`,O={cwd:A??C$(),...z&&{model:z}};if(f){let{buildGitSessionContext:j}=await Promise.resolve().then(() => Ju4),{sources:D,outcomes:J}=await j(f.gitRepoUrl,f.branch,f.defaultBranch);if(D.length>0||J.length>0)O.sour
+--- match 53 ---
+Q8=30000,e4A=60000,H9A="https://claude.ai/settings/usage",l_$="fotw-claim";var wv9=V(()=>{X2$();dxH();_q();EZH();VJq=m(WH(),1)});async function vJq(H){let{accessToken:$}=await xC();return{sessionUrl:`${oK().BASE_API_URL}/v1/code/sessions/${H}`,headers:qD($)}}async function jv9(H,$,q){let K=await Yq.get(`${H.sessionUrl}/events`,{headers:H.headers,params:$,timeout:15000,validateStatus:()=>!0}).catch(()=>null);if(!K||K.status!==200)return k(`[${q}]

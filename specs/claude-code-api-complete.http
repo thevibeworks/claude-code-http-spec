@@ -1,12 +1,13 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.1.139
+# Extracted from @anthropic-ai/claude-code v2.1.170
 #
 # Validation: Search for URL path strings (stable across builds)
-#   rg '/api/oauth/profile' cli.js
-#   rg '"/v1/messages"' cli.js
-#   rg 'api\.anthropic\.com' cli.js
+#   strings binary_2.1.170/claude | rg '/api/oauth/profile'
+#   strings binary_2.1.170/claude | rg '"/v1/messages"'
+#   strings binary_2.1.170/claude | rg 'api\.anthropic\.com'
+# (Older wrapper packages shipped a readable cli.js; the same patterns apply
+#  to that file: rg '/api/oauth/profile' package/cli.js)
 #
-# See: references/API-EXTRACTION-PIPELINE.md for full methodology
 # See: WORKFLOW.md for extraction workflow with HTTP precision requirements
 
 ### ============================================================================
@@ -25,7 +26,7 @@
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
 @stainlessVersion = 0.74.0
 @managedAgentsBeta = managed-agents-2026-04-01
-@cliVersion = 2.1.139
+@cliVersion = 2.1.170
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
@@ -1873,6 +1874,198 @@ User-Agent: claude-code/{{cliVersion}}
 
 # @name upstreamProxy
 GET {{baseUrl}}/v1/code/upstreamproxy
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ============================================================================
+### SECTION 39: NEW IN v2.1.170
+### ============================================================================
+# Source: extractions/v2.1.170/raw/paths.txt (18 added vs v2.1.139, 0 removed)
+# Verify any one: strings binary_2.1.170/claude | rg '<path>'
+#
+# Confidence: the PATH literals below are byte-verified against the release.
+# The HTTP METHOD on each request is inferred from the call context in
+# extractions/v2.1.170/calls/*.txt, not from a standalone literal; treat the
+# method as best-effort until confirmed against the call window.
+
+### ----------------------------------------------------------------------------
+### 39.1 CLI Feedback
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_cli_feedback'
+
+# @name claudeCliFeedback
+POST {{baseUrl}}/api/claude_cli_feedback
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.2 Notification Preferences
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_code/notification/preferences'
+
+# @name notificationPreferences
+GET {{baseUrl}}/api/claude_code/notification/preferences
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.3 Org Metrics Enabled
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_code/organizations/metrics_enabled'
+
+# @name orgMetricsEnabled
+GET {{baseUrl}}/api/claude_code/organizations/metrics_enabled
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.4 Claude Code Skills
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_code/skills'
+
+# @name claudeCodeSkills
+GET {{baseUrl}}/api/claude_code/skills
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.5 Shared Session Transcripts
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_code_shared_session_transcripts'
+
+# @name sharedSessionTranscripts
+POST {{baseUrl}}/api/claude_code_shared_session_transcripts
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.6 Admin Requests
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/oauth/organizations/:orgUUID/admin_requests'
+
+# @name adminRequests
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.7 Overage Credit Grant
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/oauth/organizations/:orgUUID/overage_credit_grant'
+
+# @name overageCreditGrant
+POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/overage_credit_grant
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.8 List Plugins
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/oauth/organizations/:orgUUID/plugins/list-plugins'
+
+# @name listPlugins
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/plugins/list-plugins?enabled_only=true&compact=true
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.9 List Skills
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/oauth/organizations/:orgUUID/skills/list-skills'
+
+# @name listSkills
+GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/skills/list-skills?include_wiggle_skills=true
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.10 Sync GitHub Auth
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/oauth/organizations/:orgUUID/sync/github/auth'
+
+# @name syncGithubAuth
+POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/sync/github/auth
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.11 First Token Date (org)
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/organization/claude_code_first_token_date'
+
+# @name orgFirstTokenDate
+GET {{baseUrl}}/api/organization/claude_code_first_token_date
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.12 Onboarding
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/organizations/:orgUUID/claude_code/onboarding'
+
+# @name onboarding
+GET {{baseUrl}}/api/organizations/{{orgUuid}}/claude_code/onboarding
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.13 Code (root)
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/code/'
+
+# @name v1Code
+GET {{baseUrl}}/v1/code/
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.14 Agent Proxy
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/code/agent-proxy'
+
+# @name agentProxy
+POST {{baseUrl}}/v1/code/agent-proxy
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.15 GitHub Import Token
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/code/github/import-token'
+
+# @name githubImportToken
+POST {{baseUrl}}/v1/code/github/import-token
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.16 Code Triggers
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/code/triggers'
+
+# @name codeTriggers
+GET {{baseUrl}}/v1/code/triggers
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.17 Filestore Read File
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/filestore/fs/readFile'
+
+# @name filestoreReadFile
+POST {{baseUrl}}/v1/filestore/fs/readFile
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 39.18 Ultrareview Preflight
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/ultrareview/preflight'
+
+# @name ultrareviewPreflight
+POST {{baseUrl}}/v1/ultrareview/preflight
 Authorization: Bearer {{accessToken}}
 User-Agent: claude-code/{{cliVersion}}
 

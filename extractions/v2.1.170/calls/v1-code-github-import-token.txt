@@ -1,0 +1,7 @@
+# Pattern: /v1/code/github/import-token
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/v1/code/github/import-token 
+--- match 2 ---
+token"],{stdout:"ignore",stderr:"ignore",timeout:5000,reject:!1});return $===0?"authenticated":"not_authenticated"}catch{return"not_installed"}}var h3q=V(()=>{PS();d0()});async function VM9(H){let $;try{$=await d7.post("/v1/code/github/import-token",{token:H.reveal()},{headers:{"anthropic-beta":Kw6.header},auth:"teleport-org",timeout:15000,validateStatus:()=>!0})}catch(q){if(XM(q))return k(`import-token network error: ${q.code??"unknown"}`,{level:"error"}),{ok:!1,

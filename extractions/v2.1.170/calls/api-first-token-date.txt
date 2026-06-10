@@ -1,0 +1,7 @@
+# Pattern: /api/organization/claude_code_first_token_date
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/organization/claude_code_first_token_date 
+--- match 2 ---
+id:T8.string(),display_name:T8.string().nullish(),description:T8.string().nullish()}))}))});async function yA4(){try{if(S$().claudeCodeFirstTokenDate!==void 0){RH("api_first_token_date_fetch");return}let $=await d7.get("/api/organization/claude_code_first_token_date",{auth:"async",timeout:1e4});if(!$.ok){if($.reason==="no-auth")k(`Failed to get auth headers for first-token-date fetch: ${$.detail}`,{level:"error"}),xH("api_first_token_date_fetch","request_failed");return}let q=$.dat

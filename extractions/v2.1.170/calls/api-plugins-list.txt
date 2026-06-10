@@ -1,0 +1,7 @@
+# Pattern: /api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=true
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=true 
+--- match 2 ---
+ction pDA(H){try{let $=RQ9().safeParse(d$(H.toString("utf8",0,2048)));if($.success)return $.data.error.type??"error_envelope_no_type"}catch{}return"non_json_body"}var SQ9,IDA=1e4,CDA=60000,bDA=500,xDA=268435456,RQ9,uDA="/api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=true";var xQ9=V(()=>{DP();oz();G$();q8();zJ();SQ9=require("fs/promises"),RQ9=yH(()=>T8.object({error:T8.object({type:T8.string().optional()})}))});function cp$(){return $$(process.env.CLAUDE_CODE_SYNC_PLUGINS)}function lp$()

@@ -15,7 +15,7 @@
 @platformUrl = https://platform.claude.com
 @claudeAiUrl = https://claude.ai
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
-@cliVersion = 2.1.22
+@cliVersion = 2.1.170
 
 # PKCE: base64url(crypto.randomBytes(32)) - no padding, URL-safe
 @codeVerifier = {{$randomInt 1000000000 9999999999}}abc

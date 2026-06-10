@@ -1,0 +1,15 @@
+# Pattern: /api/oauth/organizations/:orgUUID/admin_requests
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/oauth/organizations/:orgUUID/admin_requests 
+--- match 2 ---
+/api/oauth/organizations/:orgUUID/admin_requests/me? 
+--- match 3 ---
+/api/oauth/organizations/:orgUUID/admin_requests/eligibility?request_type= 
+--- match 4 ---
+S$();W7();Pj();YX();FG();_h();cH();fK();d8();BR();mWH();Wq();m9();gH();Hq();ne6();Pa();c04=m(H$(),1),ke=m(WH(),1),l04=m(WH(),1)});async function i04(H){return Q4("api_admin_request_create",async()=>{let $=await d7.post("/api/oauth/organizations/:orgUUID/admin_requests",H,{auth:"teleport-org"});if(!$.ok)throw Error($.reason==="no-auth"?$.detail:`admin_requests: ${$.reason}`);return $.data})}async function r04(H,$){return Q4("api_admin_request_list",async()=>{let q=new URLSearchParams(
+--- match 5 ---
+l:`admin_requests: ${$.reason}`);return $.data})}async function r04(H,$){return Q4("api_admin_request_list",async()=>{let q=new URLSearchParams({request_type:H});for(let _ of $)q.append("statuses",_);let K=await d7.get(`/api/oauth/organizations/:orgUUID/admin_requests/me?${q}`,{auth:"teleport-org"});if(!K.ok)throw Error(K.reason==="no-auth"?K.detail:`admin_requests/me: ${K.reason}`);return K.data})}async function o04(H){return Q4("api_admin_request_eligibility",async()=>{let $=await 
+--- match 6 ---
+`,{auth:"teleport-org"});if(!K.ok)throw Error(K.reason==="no-auth"?K.detail:`admin_requests/me: ${K.reason}`);return K.data})}async function o04(H){return Q4("api_admin_request_eligibility",async()=>{let $=await d7.get(`/api/oauth/organizations/:orgUUID/admin_requests/eligibility?request_type=${H}`,{auth:"teleport-org"});if(!$.ok)throw Error($.reason==="no-auth"?$.detail:`admin_requests/eligibility: ${$.reason}`);return $.data})}var a04=V(()=>{L8();zJ()});async function yZH(){return 

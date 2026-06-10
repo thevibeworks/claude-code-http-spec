@@ -1,0 +1,7 @@
+# Pattern: /api/claude_code/skills
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/claude_code/skills 
+--- match 2 ---
+)}),()=>{q=!0}},[]),H}var $u8,jhf,Jhf;var Kt4=V(()=>{F7();gH();d8();zJ();$u8=m(WH(),1),jhf=new Set(["good","warn","poor"]);Jhf=y8(async()=>{if(!M$("tengu_skills_dashboard_enabled",!1))return null;try{let H=await d7.get("/api/claude_code/skills",{auth:"async",timeout:5000,validateStatus:()=>!0});if(!H.ok)return k(`Skill health fetch skipped: ${H.reason}`),null;if(H.status>=400)return k(`Skill health fetch skipped: status ${H.status}`),null;let $=H.data?.skills

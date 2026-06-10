@@ -1,0 +1,7 @@
+# Pattern: /api/oauth/organizations/:orgUUID/skills/list-skills?include_wiggle_skills=true
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/oauth/organizations/:orgUUID/skills/list-skills?include_wiggle_skills=true 
+--- match 2 ---
+",{kind:K}),!1}}function VDA(H){try{let $=GDA().safeParse(d$(H.toString("utf8",0,2048)));if($.success)return $.data.error.type??"error_envelope_no_type"}catch{}return"non_json_body"}var DQ9,WDA=30000,ZDA=300000,GDA,TDA="/api/oauth/organizations/:orgUUID/skills/list-skills?include_wiggle_skills=true";var LQ9=V(()=>{DP();oz();G$();q8();zJ();DQ9=require("fs/promises"),GDA=yH(()=>T8.object({error:T8.object({type:T8.string().optional()})}))});function ZQ9(){let H=z$.CLAUDE_CODE_SYNC_SKILLS_WAIT_TIMEOUT_MS;return H&&H>0

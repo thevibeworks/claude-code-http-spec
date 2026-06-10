@@ -1,0 +1,7 @@
+# Pattern: /api/claude_code/notification/preferences
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/claude_code/notification/preferences 
+--- match 2 ---
+_,server_code_requires_action:f,seeded:Object.keys(z).length>0}),Object.keys(z).length===0){RH("notif_prefs_hydrate");return}e6("userSettings",z),ql4.emit(),RH("notif_prefs_hydrate")}var $l4=1e4,Pb$,ql4,Kl4,_l4,fl4,zl4="/api/claude_code/notification/preferences";var c9q=V(()=>{Wq();$6();oz();G$();L6();R3();L8();v$();zJ();Hl4();Pb$=WT(void 0),ql4=H4(),Kl4=Pb$.getState,_l4=Pb$.subscribe,fl4=ql4.subscribe});function JTf(H){if(H.ctrl&&(H.key==="k"||H.key==="u"||H.key==="w"))return

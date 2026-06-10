@@ -1,12 +1,27 @@
-# Extraction output
+# Unpacked npm packages (large; never committed)
+package/
+package-*/
 extraction/
 
-# npm package artifacts
-package/
+# Release tarballs and platform binaries (large; never committed)
 *.tgz
 anthropic-ai-claude-code-*.tgz
+binary_*/
+claude
+*.wasm
+*.node
 
-# Editor
+# Transient compare/validate scratch files
+*.added
+*.removed
+/tmp-extract/
+
+# Held evidence for flagged unreleased model codenames.
+# Preserved on disk for the maintainer's per-codename call; never published.
+# See FLAGGED.md.
+extractions/*/_held/
+
+# Editor / OS
 *.swp
 *~
 .DS_Store

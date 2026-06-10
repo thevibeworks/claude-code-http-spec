@@ -1,0 +1,7 @@
+# Pattern: /api/oauth/organizations/:orgUUID/sync/github/auth
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/oauth/organizations/:orgUUID/sync/github/auth 
+--- match 2 ---
+n"}};return k(`import-token returned ${$.status}`,{level:"error"}),{ok:!1,error:{kind:"server",status:$.status}}}async function vM9(){try{return await xC(),!0}catch{return!1}}async function NM9(){try{let H=await d7.get("/api/oauth/organizations/:orgUUID/sync/github/auth",{auth:"teleport-org",timeout:1e4,validateStatus:()=>!0});if(!H.ok||H.status!==200||!H.data?.is_authenticated)return null;let $=H.data.auth_source;return $==="oauth"||$==="cli_import"?$:null}catch{return null}}function 

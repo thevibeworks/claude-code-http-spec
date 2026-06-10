@@ -1,0 +1,11 @@
+# Pattern: /api/oauth/organizations/:orgUUID/overage_credit_grant
+# Source: strings binary_2.1.170/claude, bounded to 220 chars around each match
+
+--- match 1 ---
+/api/oauth/organizations/:orgUUID/overage_credit_grant?campaign= 
+--- match 2 ---
+/api/oauth/organizations/:orgUUID/overage_credit_grant 
+--- match 3 ---
+`,{level:"warn"}),null}).finally(()=>{aHq=null}),aHq}async function E5f(){let H=TR$();if(!H||H.audience!=="claimant")return null;let{campaign:$,orgId:q}=H;if(Jh8(q,$.feature)!==null)return null;let K;try{K=await d7.get(`/api/oauth/organizations/:orgUUID/overage_credit_grant?campaign=${fN4}`,{auth:"teleport-org",timeout:1e4,validateStatus:(_)=>_<500})}catch(_){return t$("api_fotw_eligibility_fetch","request_failed"),k(`FotW eligibility fetch failed: ${_}`,{level:"warn"}),null}if(!K.ok||K.st
+--- match 4 ---
+ull;if(Date.now()-K.timestamp>AN4)return null;return K.info}async function zN4(H){if(!Ph8(H))return{outcome:"skipped"};let $=TR$();if(!$)return{outcome:"skipped"};let{campaign:q,orgId:K}=$,_=gxH(),f;try{f=await d7.post("/api/oauth/organizations/:orgUUID/overage_credit_grant",{campaign:fN4,feature:q.feature,enable_overages:!0},{auth:"teleport-org",timeout:60000,validateStatus:(A)=>A<500})}catch(A){return xH("api_fotw_claim","request_failed"),k(`FotW claim failed: ${A}`,{level:"warn"}),{outc

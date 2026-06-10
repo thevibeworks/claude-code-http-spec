@@ -1,0 +1,4 @@
+version: 2.1.170
+source: binary (Bun compiled, linux-x64)
+npm_package: @anthropic-ai/claude-code-linux-x64@2.1.170
+integrity: sha512-SSQ6TsGbZJSC1s6R5pxlTZPq1bilSpoTR8JANOq8ALUkbRVhgVSl0PiSSNSnc3zNdDCA1iA3ywLmAuISuhlvKA==
