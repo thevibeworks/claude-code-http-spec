@@ -1,0 +1,7 @@
+# Pattern: /api/frame/track
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+t] deploy/complete  [artifact] deploy/complete failed:  claude-vscode epitaxy_pane desktop_pane terminal_link /api/frame/track4 required [artifact] /track skipped:  [artifact] /track  [artifact] /track failed:  artifact_publish no-auth 
+--- match 2 ---
+axy_pane";if(A9())return"desktop_pane";return"terminal_link"}async function wXn(e,t){try{let n=await ks.post("/api/frame/track",{event_name:e,...t.slug&&{slug:t.slug},...t.via&&{via:t.via},...t.mode&&{mode:t.mode}},{host:"frame",auth:"r

@@ -1,0 +1,7 @@
+# Pattern: /api/frame/deploy/complete
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+dition). Re-run publish to mint a fresh version. number upload  x-goog-content-length-range x-goog-generation /api/frame/deploy/complete required [artifact] deploy/complete skipped:  [artifact] deploy/complete  [artifact] deploy/complete failed: 
+--- match 2 ---
+ce of GCS",precondition:!1,intercepted:!0};return null}async function Dyl(e,t,n,r,o){try{let s=await ks.post("/api/frame/deploy/complete",{slug:e,version:t,ok:n,...o,...QRo()&&r&&{publish_context:r}},{host:"frame",auth:"required",refreshOAuth:!0,

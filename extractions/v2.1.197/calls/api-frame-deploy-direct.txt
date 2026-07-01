@@ -1,0 +1,7 @@
+# Pattern: /api/frame/deploy/direct
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+from null or undefined value deploy_incomplete deploy returned incomplete response mcp_rejected request_error /api/frame/deploy/direct required /code/artifact/ object conflict string string object reason Cannot destructure property 'slug' from 
+--- match 2 ---
+ction Pyl(e,t,n,r,o,s){let i={page_bytes:s.pageBytes,lane:$e(s.lane)};try{let a=async(m)=>{let g=()=>ks.post("/api/frame/deploy/direct",{...$yl(t),...Oyl(),...Nyl(),...m&&n&&{mcp:n},...o&&{baseVersion:o},content:e},{host:"frame",auth:"required"

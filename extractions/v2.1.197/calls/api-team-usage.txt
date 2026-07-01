@@ -1,0 +1,7 @@
+# Pattern: /api/claude_code/discovery/team_usage
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+ude remote-control` to try again team-lead claude-swarm swarm-view claude-hidden CLAUDE_CODE_TEAMMATE_COMMAND /api/claude_code/discovery/team_usage team-discovery.json classify_result 59cf53e54c78 emit_context_tip rate_tip_reception resetInstance createInst
+--- match 2 ---
+(e)}`),null}}function zel(){vtf().then((e)=>{Vel=e}).catch(()=>{})}function Kel(){return Vel}var hyt,rwo,btf="/api/claude_code/discovery/team_usage",Stf="team-discovery.json",Etf=86400000,Vel,vtf;var Yel=E(()=>{ro();je();mn();yt();BG();Qt();Fn();wy();jc();h

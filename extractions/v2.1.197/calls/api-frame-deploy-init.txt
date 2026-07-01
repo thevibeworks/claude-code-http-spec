@@ -1,0 +1,7 @@
+# Pattern: /api/frame/deploy/init
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+on conflict putURL putHeaders shared intercepted put_ms put_status precondition e2e_ms is_redeploy mcpDropped /api/frame/deploy/init required text/html; charset=utf-8 public, max-age=31536000, immutable upload 412: this version was already wr
+--- match 2 ---
+eBytes:h,lane:"inline",isRedeploy:u,hasMcp:d});let b={page_bytes:h,lane:Ve("signed")};try{let _=($)=>ks.post("/api/frame/deploy/init",{...$yl(m),...Oyl(),...Nyl(),...$&&l&&{mcp:l},...f&&{baseVersion:f}},{host:"frame",auth:"required",refreshOA

@@ -1,0 +1,5 @@
+# Pattern: /v1/code/sessions and /v1/sessions
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+ilter((t)=>t.type==="text"&&typeof t.text==="string").map((t)=>t.text).join(" ")}function col(e,t,n){return{url:`${Ns().BASE_API_URL}${e==="v1alpha2"?"/v1/code/sessions":"/v1/sessions"}`,headers:{...uH(t),"x-organization-uuid":n,...e==="v1"&&{"anthropic-beta":P0n}}}}function uol(e,t){return e==="v1alpha2"?t?.session:

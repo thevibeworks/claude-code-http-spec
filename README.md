@@ -22,6 +22,13 @@ credentials. The output is plain text you can diff across versions.
 **v2.1.197** — see [extractions/v2.1.197/SUMMARY.md](extractions/v2.1.197/SUMMARY.md).
 69 API paths, 45 beta flags. 12 paths and 3 beta flags added since v2.1.170.
 
+The binary also embeds a complete, verbatim self-hosted gateway protocol
+specification (`CLAUDE_CODE_USE_GATEWAY`) — not inferred, the literal ~9.6KB
+Markdown doc the CLI ships internally. Recovered whole to
+[extractions/v2.1.197/GATEWAY-PROTOCOL.md](extractions/v2.1.197/GATEWAY-PROTOCOL.md),
+with a runnable request set at
+[specs/claude-code-gateway.http](specs/claude-code-gateway.http).
+
 Since v2.1.117 the release ships as a Bun-compiled binary rather than a
 readable `cli.js`. String literals still live in the binary's constant pool,
 so `strings` + `rg` remains the extraction method for paths, beta flags, model

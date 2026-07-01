@@ -1,0 +1,12 @@
+# Pattern: /v1/design/
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+(trimmed leading boilerplate -- an unrelated OAuth token-expiry identifier
+check in an enclosing scope tripped the secrets scanner; a variable name,
+not a value. See match 2/3 for the actual /v1/design/ context.)
+var cki,M$d;var Ice=E(()=>{Ps();t8();Qt();F3e();cki=require("crypto");M$d=["/v1/design/"]});function O$d(){return dki}function pki(e){return e.type==="http"&&N$d.has(e.url)}function fki(e){let t=Rzr;return Rzr=e,t}function Lzr(){let e=Oe
+--- match 2 ---
+c=qs()?.accessToken;if(!c||c===i)return s}try{return o((await r()).response)}catch{return s}}}async function QDp(e){if(new URL(e).pathname.startsWith("/v1/design/")){let t=await vDa()?.();if(t?.ok){if(t.expanded)CDa("Added user:design:read and user:design:write to your claude.ai login (for the Design MCP connec
+--- match 3 ---
+r:design:read and user:design:write to your claude.ai login (for the Design MCP connector)."),q("tengu_mcp_first_party_scope_expanded",{pathPrefix:Ve("/v1/design/")});return t.accessToken}}return await fh(),qs()?.accessToken}function zgo(e){return async(t,n)=>{if(new Headers(n?.headers).has("Authorization")||!E

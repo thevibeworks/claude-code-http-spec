@@ -1,10 +1,10 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.1.170
+# Extracted from @anthropic-ai/claude-code v2.1.197
 #
 # Validation: Search for URL path strings (stable across builds)
-#   strings binary_2.1.170/claude | rg '/api/oauth/profile'
-#   strings binary_2.1.170/claude | rg '"/v1/messages"'
-#   strings binary_2.1.170/claude | rg 'api\.anthropic\.com'
+#   strings binary_2.1.197/claude | rg '/api/oauth/profile'
+#   strings binary_2.1.197/claude | rg '"/v1/messages"'
+#   strings binary_2.1.197/claude | rg 'api\.anthropic\.com'
 # (Older wrapper packages shipped a readable cli.js; the same patterns apply
 #  to that file: rg '/api/oauth/profile' package/cli.js)
 #
@@ -26,7 +26,7 @@
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
 @stainlessVersion = 0.74.0
 @managedAgentsBeta = managed-agents-2026-04-01
-@cliVersion = 2.1.170
+@cliVersion = 2.1.197
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
@@ -1855,12 +1855,21 @@ anthropic-beta: {{managedAgentsBeta}}
 
 
 ### ============================================================================
-### SECTION 38: CODE PROXY ENDPOINTS (NEW in v2.1.139)
+### SECTION 38: CODE PROXY ENDPOINTS (NEW in v2.1.139, REMOVED in v2.1.197)
 ### ============================================================================
 # Pattern: strings binary | grep 'code/egress\|upstreamproxy'
+#
+# REMOVED in v2.1.197 (see extractions/v2.1.197/COMPARE.txt): neither path is
+# present in the v2.1.197 binary. The matching env vars CCR_EGRESS_GATEWAY_ENABLED
+# and CCR_UPSTREAM_PROXY_ENABLED were also removed in the same release (see
+# claude-code-envs v2.1.197), while CLAUDE_CODE_USE_GATEWAY and
+# CLAUDE_GATEWAY_ALLOW_LOOPBACK were added -- reads as this CCR-specific
+# gateway/proxy pair being retired in favor of the general-purpose gateway
+# protocol in SECTION 40 below, not an unrelated coincidence. Kept here for
+# historical reference; do not target these paths on v2.1.197+.
 
 ### ----------------------------------------------------------------------------
-### 38.1 Egress Gateway
+### 38.1 Egress Gateway (v2.1.139-v2.1.170 only)
 ### ----------------------------------------------------------------------------
 
 # @name egressGateway
@@ -1869,7 +1878,7 @@ Authorization: Bearer {{accessToken}}
 User-Agent: claude-code/{{cliVersion}}
 
 ### ----------------------------------------------------------------------------
-### 38.2 Upstream Proxy Config
+### 38.2 Upstream Proxy Config (v2.1.139-v2.1.170 only)
 ### ----------------------------------------------------------------------------
 
 # @name upstreamProxy
@@ -2068,6 +2077,188 @@ User-Agent: claude-code/{{cliVersion}}
 POST {{baseUrl}}/v1/ultrareview/preflight
 Authorization: Bearer {{accessToken}}
 User-Agent: claude-code/{{cliVersion}}
+
+
+### ============================================================================
+### SECTION 40: NEW IN v2.1.197
+### ============================================================================
+# Source: extractions/v2.1.197/raw/paths.txt (12 added vs v2.1.170, 2 removed
+# -- see SECTION 38 above for the removed pair)
+# Verify any one: strings binary_2.1.197/claude | rg '<path>'
+# Call-context windows: extractions/v2.1.197/calls/*.txt
+#
+# Confidence: the PATH literals below are byte-verified against the release.
+# HTTP methods marked "confirmed" are read directly off a `ks.post(...)` /
+# `d7.get(...)` call site in the matching calls/*.txt window. Methods marked
+# "inferred" have no verb literal in the captured window -- REST convention
+# only, not a byte-verified fact. /v1/messages, /v1/models, /managed/settings,
+# and /v1/{metrics,logs,traces} are also new as a *gateway-routed* surface
+# this release; see SECTION 41 and extractions/v2.1.197/GATEWAY-PROTOCOL.md
+# for the full protocol (that document is the actual source of truth for
+# those five paths' methods -- it's a verbatim embedded spec, not inference).
+
+### ----------------------------------------------------------------------------
+### 40.1 Team Usage Discovery
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/claude_code/discovery/team_usage'
+# Method confirmed: d7.get(...). Cached locally to team-discovery.json with
+# an 86400000ms (24h) TTL per the call context.
+
+# @name teamUsageDiscovery
+GET {{baseUrl}}/api/claude_code/discovery/team_usage
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+### ----------------------------------------------------------------------------
+### 40.2 Frame Deploy: Init
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/frame/deploy/init'
+# Method confirmed: ks.post(..., {host:"frame", auth:"required"}). Part of
+# the artifact/web-hosting ("frame") subsystem behind claude.ai/code/artifact/.
+# host:"frame" is a routing alias in this client -- its resolved base URL is
+# not a literal in this binary, so {{baseUrl}} below is a placeholder, not a
+# verified target.
+
+# @name frameDeployInit
+POST {{baseUrl}}/api/frame/deploy/init
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "pageBytes": 0,
+  "lane": "inline"
+}
+
+### ----------------------------------------------------------------------------
+### 40.3 Frame Deploy: Direct
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/frame/deploy/direct'
+# Method confirmed: ks.post(..., {host:"frame", auth:"required"}).
+
+# @name frameDeployDirect
+POST {{baseUrl}}/api/frame/deploy/direct
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "content": ""
+}
+
+### ----------------------------------------------------------------------------
+### 40.4 Frame Deploy: Complete
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/frame/deploy/complete'
+# Method confirmed: ks.post(..., {host:"frame", auth:"required"}). Called
+# after a GCS-style signed-upload flow (x-goog-content-length-range /
+# x-goog-generation headers appear in the same call window).
+
+# @name frameDeployComplete
+POST {{baseUrl}}/api/frame/deploy/complete
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "slug": "",
+  "version": "",
+  "ok": true
+}
+
+### ----------------------------------------------------------------------------
+### 40.5 Frame Track (telemetry)
+### ----------------------------------------------------------------------------
+# Verify: rg '"/api/frame/track'
+# Method confirmed: ks.post(..., {host:"frame", auth:"required"}). Event
+# telemetry for the frame/artifact subsystem, not app-wide analytics.
+
+# @name frameTrack
+POST {{baseUrl}}/api/frame/track
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "event_name": ""
+}
+
+### ----------------------------------------------------------------------------
+### 40.6 Sessions (Managed Agents, v1)
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/code/sessions":"/v1/sessions"' (both literals share one
+# call site, selected by an "v1alpha2" vs other version-string branch)
+# Method inferred (create): per the Claude API's Managed Agents surface,
+# POST creates a session, GET /v1/sessions/{id} retrieves one. /v1/sessions
+# without /code/ is the v1-stable path; /v1/code/sessions is the older
+# v1alpha2 path kept for compatibility.
+
+# @name createSession
+POST {{baseUrl}}/v1/sessions
+Authorization: Bearer {{accessToken}}
+anthropic-beta: managed-agents-2026-04-01
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "agent": "agent_id_here",
+  "environment_id": "env_id_here"
+}
+
+###
+
+### ----------------------------------------------------------------------------
+### 40.7 Design MCP Connector Scope Check
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/design/"'
+# NOT a single endpoint call -- this is a URL-prefix check
+# (`pathname.startsWith("/v1/design/")`) used to decide when to request the
+# user:design:read / user:design:write OAuth scopes for the Design MCP
+# connector during token refresh. Documented here as a routing fact, not as
+# a runnable request; the underlying MCP calls are Design's own API, not
+# Anthropic's.
+
+### ----------------------------------------------------------------------------
+### 40.8 Organization Spend Limits
+### ----------------------------------------------------------------------------
+# Verify: rg '"/v1/organizations/spend_limits'
+# Method inferred: a Zod schema keyed to scope (user / rbac_group /
+# organization) and period (daily / weekly / monthly) sits alongside this
+# literal, consistent with a create/update body -- GET for listing is
+# REST convention, not a byte-verified fact for this path.
+
+# @name listSpendLimits
+GET {{baseUrl}}/v1/organizations/spend_limits
+Authorization: Bearer {{accessToken}}
+User-Agent: claude-code/{{cliVersion}}
+
+###
+
+# @name createSpendLimit
+POST {{baseUrl}}/v1/organizations/spend_limits
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+User-Agent: claude-code/{{cliVersion}}
+
+{
+  "scope": {"type": "organization"},
+  "amount": 10000,
+  "currency": "USD",
+  "period": "monthly"
+}
+
+
+### ============================================================================
+### SECTION 41: SELF-HOSTED GATEWAY PROTOCOL (NEW in v2.1.197)
+### ============================================================================
+# CLAUDE_CODE_USE_GATEWAY / CLAUDE_GATEWAY_ALLOW_LOOPBACK. See the dedicated
+# spec at specs/claude-code-gateway.http for the full runnable request set
+# (discovery, device auth, token exchange, messages proxy, managed settings,
+# model discovery, OTLP telemetry) -- every request there traces back to a
+# ~9.6KB Markdown protocol document embedded VERBATIM as a string literal in
+# this binary (extractions/v2.1.197/GATEWAY-PROTOCOL.md is the exact text,
+# byte-recovered via `strings`, not paraphrased). That document is a stronger
+# source than any inferred call-context window: it IS the spec.
 
 
 ### ============================================================================

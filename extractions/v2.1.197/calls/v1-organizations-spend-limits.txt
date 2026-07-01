@@ -1,0 +1,5 @@
+# Pattern: /v1/organizations/spend_limits
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+:"spend_limit",id:e.id,created_at:e.created_at,updated_at:e.updated_at,scope:e.scope,amount:e.amount,currency:e.currency,period:e.period}}var y8c,QBe="/v1/organizations/spend_limits",$2m;var b8c=E(()=>{pb();hee();Qts();n_r();g8c();y8c=require("crypto");$2m=ve(()=>at.object({scope:at.discriminatedUnion("type",[at.object({type:at.l

@@ -1,0 +1,238 @@
+# Claude Code self-hosted gateway protocol (CLAUDE_CODE_USE_GATEWAY)
+# Compatible with: VS Code REST Client, JetBrains HTTP Client
+#
+# New in v2.1.197. This is the wire contract for an organization's own
+# Claude Code gateway -- a self-hosted proxy the CLI can be pointed at instead
+# of talking to api.anthropic.com directly. The full protocol document is
+# embedded verbatim as a string literal in the release binary and is
+# reproduced at extractions/v2.1.197/GATEWAY-PROTOCOL.md -- every request
+# below traces back to that literal, not to inference about behavior.
+#
+# Search patterns for binary validation:
+#   strings binary_2.1.197/claude | rg '# Claude Code gateway protocol' -A 5
+#   strings binary_2.1.197/claude | rg 'CLAUDE_CODE_USE_GATEWAY|CLAUDE_GATEWAY_ALLOW_LOOPBACK'
+#   strings binary_2.1.197/claude | rg 'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY'
+#   strings binary_2.1.197/claude | rg '"/v1/metrics":"metrics","/v1/logs":"logs","/v1/traces":"traces"'
+#
+# A developer points the CLI at a gateway via `/login` with the gateway's
+# base URL. Every path below is relative to that base URL; the client does
+# not follow cross-origin redirects, and pins the gateway's TLS leaf
+# certificate fingerprint per-hostname after first-connect user confirmation.
+
+### ============================================================================
+### VARIABLES
+### ============================================================================
+
+@gatewayBase = https://gw.corp.example.com
+@deviceCode = YOUR_DEVICE_CODE_HERE
+@accessToken = YOUR_ACCESS_TOKEN_HERE
+@refreshToken = YOUR_REFRESH_TOKEN_HERE
+@cliVersion = 2.1.197
+
+### ============================================================================
+### 1. DISCOVERY (required, unauthenticated)
+### ============================================================================
+# RFC 8414 authorization server metadata. The client reads only
+# device_authorization_endpoint and token_endpoint; both must be same-origin
+# with {gatewayBase}. authorization_endpoint is intentionally absent (there is
+# no browser-redirect grant in this protocol, only device flow).
+
+# @name gateway_discovery
+GET {{gatewayBase}}/.well-known/oauth-authorization-server
+
+###
+
+### ============================================================================
+### 2. DEVICE AUTHORIZATION (required, unauthenticated)
+### ============================================================================
+# RFC 8628 §3.2. Response shape:
+#   { "device_code", "user_code", "verification_uri",
+#     "verification_uri_complete", "expires_in", "interval" }
+# The client opens verification_uri_complete in the user's browser and polls
+# token_endpoint every `interval` seconds. device_code should be >=256 bits,
+# opaque, single-use; user_code should use a base-20 charset (RFC 8628 §6.1).
+
+# @name gateway_device_authorization
+POST {{gatewayBase}}/oauth/device_authorization
+Content-Type: application/x-www-form-urlencoded
+
+client_id=claude-code
+
+###
+
+### ============================================================================
+### 3. TOKEN -- device grant (required, unauthenticated)
+### ============================================================================
+# Poll until one of: 200 (login complete), 400 authorization_pending (keep
+# polling), 400/429 slow_down (add 5s to poll interval), 400 access_denied or
+# expired_token (stop).
+
+# @name gateway_token_device_grant
+POST {{gatewayBase}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code={{deviceCode}}&client_id=claude-code
+
+###
+
+### ============================================================================
+### 4. TOKEN -- refresh grant (required, unauthenticated)
+### ============================================================================
+# Client calls this silently before expires_in elapses. A 401 invalid_grant
+# response is the deprovisioning hook -- it forces the user back through the
+# device flow.
+
+# @name gateway_token_refresh
+POST {{gatewayBase}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token={{refreshToken}}&client_id=claude-code
+
+###
+
+### ============================================================================
+### 5. MESSAGES -- required (bearer)
+### ============================================================================
+# Proxy target: the standard Anthropic Messages API, unchanged. The gateway
+# operator enforces a model allowlist here (400 invalid_request_error for a
+# denied model), must not buffer SSE on stream:true, and may reject
+# chunked-without-Content-Length (411) and cap body size (413). The client
+# always sets Content-Length and does not assume server-side tools exist.
+# Also sends x-app and x-stainless-* headers -- pass through or drop, but
+# never reject the request because of them.
+
+# @name gateway_messages
+POST {{gatewayBase}}/v1/messages
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: 2023-06-01
+
+{
+  "model": "claude-opus-4-8",
+  "max_tokens": 1024,
+  "messages": [{"role": "user", "content": "Hello"}]
+}
+
+###
+
+# @name gateway_count_tokens
+POST {{gatewayBase}}/v1/messages/count_tokens
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: 2023-06-01
+
+{
+  "model": "claude-opus-4-8",
+  "messages": [{"role": "user", "content": "Hello"}]
+}
+
+###
+
+### ============================================================================
+### 6. MANAGED SETTINGS -- optional (bearer)
+### ============================================================================
+# The authenticated user's Claude Code managed-settings.json. Client polls
+# about once an hour; gateway should support ETag/If-None-Match -> 304 to
+# keep that cheap. 404 = "no managed policy"; 200 {} = "empty policy" -- these
+# are NOT the same response. Flagged in the source as "the endpoint most
+# likely to change." CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY can be pushed
+# to the client via this response's `env` block.
+
+# @name gateway_managed_settings
+GET {{gatewayBase}}/managed/settings
+Authorization: Bearer {{accessToken}}
+If-None-Match: "etag-from-previous-response"
+
+###
+
+### ============================================================================
+### 7. MODELS -- optional (bearer)
+### ============================================================================
+# Only called when CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY is set on the
+# client (pushable via the managed/settings env block above). Response shape:
+# {"data":[{"id","display_name"},...]} using Anthropic-style IDs
+# (claude-{family}-{major}-{minor}) -- the client's model-family logic keys
+# on that shape. 404 = fall back to the client's built-in model list.
+
+# @name gateway_models
+GET {{gatewayBase}}/v1/models
+Authorization: Bearer {{accessToken}}
+
+###
+
+### ============================================================================
+### 8. TELEMETRY -- optional (bearer, OTLP/HTTP)
+### ============================================================================
+# When connected to a gateway the client sends telemetry to these three fixed
+# paths and ignores OTEL_EXPORTER_OTLP_* env vars entirely. Body is OTLP
+# protobuf or JSON. Return 200 whether you forward or discard the payload --
+# a 404 makes the client's exporter log an error on every flush.
+
+# @name gateway_telemetry_metrics
+POST {{gatewayBase}}/v1/metrics
+Authorization: Bearer {{accessToken}}
+Content-Type: application/x-protobuf
+
+###
+
+# @name gateway_telemetry_logs
+POST {{gatewayBase}}/v1/logs
+Authorization: Bearer {{accessToken}}
+Content-Type: application/x-protobuf
+
+###
+
+# @name gateway_telemetry_traces
+POST {{gatewayBase}}/v1/traces
+Authorization: Bearer {{accessToken}}
+Content-Type: application/x-protobuf
+
+###
+
+### ============================================================================
+### ERROR ENVELOPE REFERENCE
+### ============================================================================
+# OAuth endpoints (discovery, device auth, token): RFC 6749/8628 shape --
+#   {"error": "...", "error_description": "..."}
+#
+# Bearer-authenticated endpoints (messages, managed/settings, models,
+# telemetry): Anthropic envelope --
+#   {"type": "error", "error": {"type": "authentication_error", "message": "..."}}
+#
+# | HTTP | error.type              | Use for                                        |
+# |------|--------------------------|-------------------------------------------------|
+# | 400  | invalid_request_error   | Denied model, malformed body, policy violation |
+# | 401  | authentication_error   | Missing/expired/invalid bearer -> re-login     |
+# | 403  | permission_error       | Authenticated but not allowed                  |
+# | 413  | request_too_large      | Body over the gateway's cap                    |
+# | 429  | rate_limit_error       | Throttling; include Retry-After                |
+# | 501  | not_supported          | Endpoint not available on this backend         |
+# | 529  | overloaded_error       | Upstream at capacity; client backs off/retries |
+# | 5xx  | api_error              | Anything else                                  |
+
+### ============================================================================
+### PROXYING TO BEDROCK / VERTEX / FOUNDRY (translation notes, not requests)
+### ============================================================================
+# Proxying straight to api.anthropic.com is pass-through. Proxying to a cloud
+# provider's Claude endpoint needs translation at the gateway:
+#   - Model IDs: client sends Anthropic-style IDs (claude-sonnet-4-5) ->
+#     translate to Bedrock model ID / inference-profile ARN, or Vertex
+#     @-versioned ID -- or advertise upstream-native IDs from GET /v1/models.
+#   - anthropic-beta: Bedrock rejects some betas in the HEADER; move them
+#     into the request body as "anthropic_beta": [...]. Vertex and Foundry
+#     accept the header as-is.
+#   - Streaming: Bedrock's native stream is an AWS binary event-stream, not
+#     SSE -- decode and re-emit as Anthropic-shaped text/event-stream.
+#   - count_tokens: Bedrock has no count-tokens API -- return
+#     501 not_supported; the client falls back to a Haiku max_tokens:1 probe.
+#   - Headers: forward content-type, accept, accept-encoding,
+#     anthropic-version, anthropic-beta, user-agent, x-stainless-*; strip the
+#     client's Authorization and apply the upstream's own credentials. Strip
+#     hop-by-hop response headers (content-encoding, content-length,
+#     transfer-encoding, connection).
+#   - Errors: upstream error messages can carry cloud account IDs/ARNs/
+#     project IDs -- log them for the operator, return a generic message to
+#     the client, but keep error.type so client retry logic still works.
+#
+# References: RFC 6749 (OAuth 2.0), RFC 8414 (AS metadata), RFC 8628 (device
+# grant), Anthropic Messages API, Claude Code settings reference, OTLP spec.

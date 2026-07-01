@@ -1,0 +1,5 @@
+# Pattern: /v1/metrics, /v1/logs, /v1/traces (gateway telemetry routing table)
+# Source: strings binary_2.1.197/claude, bounded context around each match
+
+--- match 1 ---
+ed; skipping 30s`);else hu("warn",`otel forward to ${lns(u)} failed: ${lns(l.reason)}`);o_r.set(u,d)}})}finally{r_r--}}var cns,Z2m=128,r_r=0,ejm=0,tjm=5,njm=30000,o_r;var P8c=E(()=>{hee();mCt();cns={"/v1/metrics":"metrics","/v1/logs":"logs","/v1/traces":"traces"},o_r=new Map});var M8c=`# Claude Code gateway protocol This is the wire contract the Claude Code CLI uses to talk to this gateway: sign-in, inference, managed

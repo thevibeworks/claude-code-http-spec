@@ -74,11 +74,38 @@ via `strings`), plus its provider config surface:
 - `VERTEX_REGION_CLAUDE_5_SONNET` (new this release — see
   `claude-code-envs` v2.1.197 for the full env-var side of this)
 
-## Not Done This Pass
+## Self-Hosted Gateway Protocol (major find, new in v2.1.197)
 
-`calls/*.txt` (bounded context windows) and `specs/*.http` (the curated
-runnable reference) were **not** updated for the 12 new / 2 removed paths or
-3 new / 1 removed beta flags above — both are substantial hand-curation work
-(confirming method/headers/body per endpoint) beyond what a `strings`-only
-pass can responsibly assert. `raw/` + this SUMMARY are the verified-literal
-layer; the curated layer is a follow-up.
+The binary embeds a complete, verbatim ~9.6KB Markdown protocol
+specification (`# Claude Code gateway protocol`) — not paraphrased, not
+inferred, the literal document the CLI would show a developer building a
+self-hosted gateway. Extracted whole to `GATEWAY-PROTOCOL.md` in this
+directory. It documents the wire contract behind `CLAUDE_CODE_USE_GATEWAY` /
+`CLAUDE_GATEWAY_ALLOW_LOOPBACK` (see `claude-code-envs` v2.1.197): RFC 8628
+device-flow OAuth, `/v1/messages` proxying with model-allowlist enforcement,
+`/managed/settings` policy delivery (polled hourly, ETag-cacheable),
+`/v1/models` discovery (gated on `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY`),
+`/v1/{metrics,logs,traces}` OTLP telemetry, plus explicit translation notes
+for proxying to Bedrock/Vertex/Foundry instead of `api.anthropic.com`
+pass-through. This is the actual source of truth for those five paths —
+stronger than any call-context inference, since it's the spec itself.
+
+Runnable requests derived from it: `specs/claude-code-gateway.http`.
+
+## Curated Layer (`calls/*.txt`, `specs/*.http`)
+
+Bounded call-context windows built for all 9 non-gateway new paths (the
+gateway-routed ones are covered by the protocol doc above instead):
+`api-team-usage.txt`, `api-frame-deploy-{init,direct,complete}.txt`,
+`api-frame-track.txt`, `v1-sessions.txt`, `v1-design.txt`,
+`v1-organizations-spend-limits.txt`, `v1-metrics-logs-traces.txt`.
+
+Added to `specs/claude-code-api-complete.http`: SECTION 40 (the 9 paths
+above, methods marked confirmed/inferred per the call-context confidence
+policy) and SECTION 41 (pointer to the gateway spec). SECTION 38 (the
+now-removed `/v1/code/egress/gateway` and `/v1/code/upstreamproxy`) is
+annotated as removed rather than deleted, for historical reference.
+
+`/v1/design/` is documented as a routing fact (a URL-prefix check gating an
+OAuth scope request), not a runnable request — it isn't a single endpoint
+call in the captured window.
