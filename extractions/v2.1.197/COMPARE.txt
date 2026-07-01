@@ -1,0 +1,30 @@
+## paths: 69 total, 12 added, 2 removed (v2.1.170 -> v2.1.197)
+
+### Added
+- "/api/claude_code/discovery/team_usage
+- "/api/frame/deploy/complete
+- "/api/frame/deploy/direct
+- "/api/frame/deploy/init
+- "/api/frame/track
+- "/v1/code/sessions
+- "/v1/design/
+- "/v1/logs
+- "/v1/metrics
+- "/v1/organizations/spend_limits
+- "/v1/sessions
+- "/v1/traces
+
+### Removed
+- "/v1/code/egress/gateway
+- "/v1/code/upstreamproxy
+
+## beta_flags: 45 total, 3 added, 1 removed (v2.1.170 -> v2.1.197)
+
+### Added
+- code-execution-2025-08-25
+- computer-use-2025-11-24
+- server-side-fallback-2026-06-09
+
+### Removed
+- nightly-2025-12-10
+

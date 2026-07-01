@@ -4,7 +4,7 @@
 > `@anthropic-ai/claude-code` release talks to.
 
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/documented-v2.1.170-success)](extractions/v2.1.170/SUMMARY.md)
+[![version](https://img.shields.io/badge/documented-v2.1.197-success)](extractions/v2.1.197/SUMMARY.md)
 [![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg-blue)](scripts/)
 
 This repo documents which API paths, beta flags, headers, OAuth scopes, and
@@ -19,8 +19,8 @@ credentials. The output is plain text you can diff across versions.
 
 ## Currently Documented
 
-**v2.1.170** — see [extractions/v2.1.170/SUMMARY.md](extractions/v2.1.170/SUMMARY.md).
-59 API paths, 43 beta flags. 18 paths and 4 beta flags added since v2.1.139.
+**v2.1.197** — see [extractions/v2.1.197/SUMMARY.md](extractions/v2.1.197/SUMMARY.md).
+69 API paths, 45 beta flags. 12 paths and 3 beta flags added since v2.1.170.
 
 Since v2.1.117 the release ships as a Bun-compiled binary rather than a
 readable `cli.js`. String literals still live in the binary's constant pool,
