@@ -79,13 +79,23 @@ sha512_of() {
   fi
 }
 
-# Pull a package tarball into $WORK, return its filename via stdout.
+# Pull a package tarball into $WORK, return its path via stdout.
+#
+# npm >= 10 prints the tarball name on stdout even under --silent, so that
+# line has to be consumed here - left unconsumed it merges with this
+# function's own output and the caller gets a two-line "filename". Deriving
+# the path from npm's answer also beats globbing $WORK: emit_pkg packs every
+# package into the same dir, so a glob sees the earlier tarballs too.
 pack() {
   pkg="$1"
   ver="$2"
-  ( cd "$WORK" && npm pack "${pkg}@${ver}" --silent ) \
+  name=$( cd "$WORK" && npm pack "${pkg}@${ver}" --silent | tr -d '\r' \
+            | grep -E '\.tgz$' | tail -1 ) \
     || die "npm pack ${pkg}@${ver} failed"
-  ls -1 "$WORK"/*.tgz | tail -1
+  [ -n "$name" ] || die "npm pack ${pkg}@${ver} printed no tarball name"
+  name="${name##*/}"
+  [ -f "$WORK/$name" ] || die "npm pack ${pkg}@${ver} left no $name in $WORK"
+  printf '%s/%s\n' "$WORK" "$name"
 }
 
 emit_pkg() {
