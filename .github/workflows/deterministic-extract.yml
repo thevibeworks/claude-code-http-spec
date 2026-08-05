@@ -24,6 +24,7 @@ on:
 permissions:
   contents: write        # create the branch/commit for the PR
   pull-requests: write   # open the PR
+  issues: write          # ci-alert.sh tracking issue (one, auto-closed)
 
 concurrency:
   group: deterministic-extract
@@ -116,3 +117,16 @@ jobs:
             Review `extractions/v${{ steps.ver.outputs.version }}/SUMMARY.md`
             and `COMPARE.txt`. If a new model codename was held, see
             `FLAGGED.md`.
+
+      # Tripwire: this workflow was red for eight straight weeks with no signal.
+      - name: Alert on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci-alert.sh open "${{ github.run_id }}"
+
+      - name: Clear alert on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci-alert.sh close
