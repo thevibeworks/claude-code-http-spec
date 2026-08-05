@@ -93,6 +93,11 @@ jobs:
           scripts/compare-release.sh "${{ steps.ver.outputs.previous }}" "${{ steps.ver.outputs.version }}" \
             | tee "extractions/v${{ steps.ver.outputs.version }}/COMPARE.txt"
 
+      - name: Write SUMMARY scaffold
+        run: |
+          scripts/summary-scaffold.sh "${{ steps.ver.outputs.version }}" \
+            "${{ steps.ver.outputs.previous }}"
+
       - name: Validate extraction gates
         run: |
           set -eu
@@ -114,9 +119,11 @@ jobs:
             All `scripts/validate-extraction.sh` gates passed. The binary and
             unpacked package were not committed (manifest + hashes only).
 
-            Review `extractions/v${{ steps.ver.outputs.version }}/SUMMARY.md`
-            and `COMPARE.txt`. If a new model codename was held, see
-            `FLAGGED.md`.
+            `SUMMARY.md` is generated as a scaffold: its counts come from
+            `COMPARE.txt` and are gate-checked against the raw files, while the
+            `Architecture Note` and per-section notes are marked `TODO(review)`
+            and want a human pass before merge. See `COMPARE.txt` for the full
+            lists. If a new model codename was held, see `FLAGGED.md`.
 
       # Tripwire: this workflow was red for eight straight weeks with no signal.
       - name: Alert on failure
