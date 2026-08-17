@@ -1,0 +1,32 @@
+## paths: 98 total, 15 added, 0 removed (v2.1.222 -> v2.1.233)
+
+### Added
+- "/api/desktop/
+- "/api/directory/
+- "/api/event_logging/
+- "/api/frame/db/agent
+- "/api/oauth/organizations/:orgUUID/plugin_ratings
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances/outcome
+- "/api/organizations/:orgUUID/cowork/remote_devices
+- "/v1/code/scm-connectors/{provider}/{id}/tunnel
+- "/v1/code/webhook-triggers
+- "/v1/deployment_runs?beta=true
+- "/v1/deployments?beta=true
+- "/v1/dreams?beta=true
+- "/v1/tunnels?beta=true
+- "/v1/ultrareview/quota
+
+### Removed
+None.
+
+## beta_flags: 53 total, 3 added, 0 removed (v2.1.222 -> v2.1.233)
+
+### Added
+- agent-memory-2026-07-22
+- dreaming-2026-04-21
+- mcp-tunnels-2026-06-22
+
+### Removed
+None.
+
