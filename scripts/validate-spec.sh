@@ -18,23 +18,34 @@ USAGE:
   $prog [--subset] <cli.js> [http-spec]
 
 ARGUMENTS:
-  cli.js     Path to formatted cli.js
+  cli.js     Path to formatted cli.js, or a printable dump of a release binary
   http-spec  Path to .http file (default: specs/claude-code-api-complete.http)
 
 OPTIONS:
-  --subset   Only validate that spec endpoints exist in code (ignore extra endpoints in code).
+  --subset       Only validate that spec endpoints exist in code (ignore extra endpoints in code).
+  --routes FILE  Union in the call-site route table from extract-routes.py.
 
 EXAMPLES:
   $prog package/cli.js
   $prog --subset package/cli.js specs/claude-oauth-api.http
+  $prog --routes extractions/v2.1.234/raw/routes.tsv \\
+        extractions/v2.1.234/literals.txt specs/claude-code-api-complete.http
 EOF
 }
 
 MODE="complete"
-if [ "${1:-}" = "--subset" ]; then
-  MODE="subset"
-  shift
-fi
+ROUTES=""
+while [ $# -gt 0 ]; do
+  case "${1:-}" in
+    --subset) MODE="subset"; shift ;;
+    # Call-site route table from scripts/extract-routes.py. The literal scan
+    # below only sees whole paths that survive in the constant pool; a path
+    # assembled from a template (`/v1/environments/${id}/work/${w}/ack`) never
+    # does. Unioning the route table in stops those from reading as phantoms.
+    --routes) ROUTES="$2"; shift 2 ;;
+    *) break ;;
+  esac
+done
 
 [ $# -ge 1 ] || { usage; exit 2; }
 [ "$1" = "-h" ] || [ "$1" = "--help" ] && { usage; exit 0; }
@@ -59,6 +70,11 @@ log "Endpoints in spec: $SPEC_COUNT"
 SPEC_PATHS=$(mktemp)
 SPEC_RAW=$(mktemp)
 grep -oE '^(GET|POST|PUT|PATCH|DELETE|HEAD) \{\{[^}]+\}\}/[^ ]+' "$HTTP_SPEC" > "$SPEC_RAW" 2>/dev/null || true
+# `# PATH-ONLY {{baseUrl}}/path` declares a path that exists in the binary but
+# whose call site we could not read a method from. It counts as documented; it
+# deliberately claims nothing about method, headers or body.
+grep -oE '^# PATH-ONLY \{\{[^}]+\}\}/[^ ]+' "$HTTP_SPEC" \
+  | sed 's/^# PATH-ONLY /GET /' >> "$SPEC_RAW" 2>/dev/null || true
 sed 's/^[A-Z][A-Z]* {{[^}]*}}//' "$SPEC_RAW" \
   | sed 's/\?.*//' \
   | sed 's/{{[^}]*}}/.*/g' \
@@ -98,14 +114,33 @@ rg -o '/v1/mcp_servers\\?limit=1000' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || tru
 rg -o '/v1/mcp/\\{server_id\\}' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
 rg -o '/v1/oauth/hello' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
 
-sed -e 's/\"//g' -e "s/'//g" -e 's/`//g' -e 's/[),;]$//' -e 's/\?.*//' -e 's/\${[^}]*}/.*/g' "$CODE_RAW" \
+# OAuth file endpoints build their host from a helper call (`${ubY()}/api/...`,
+# `${qPz()}/api/...`) rather than from `BASE_API_URL}`, so the interpolation
+# rules above miss them. Match the path fragment directly.
+rg -o '/api/oauth/file_upload' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+rg -o '/api/oauth/files/\$\{[^}]*\}/content' "$CLI_JS" >> "$CODE_RAW" 2>/dev/null || true
+
+# Trim each capture at the first character that cannot appear in a URL path.
+# Written for prettified cli.js, this pipeline now also runs against a compiled
+# binary, where a capture can run straight into adjacent code or data
+# (`/api/hello,{headers:{`). Cutting on the delimiter set makes both inputs
+# behave the same.
+if [ -n "$ROUTES" ]; then
+  [ -f "$ROUTES" ] || die "routes file not found: $ROUTES"
+  # columns: method<TAB>path<TAB>beta<TAB>auth<TAB>timeout<TAB>source
+  awk -F'\t' 'NR>1 && $2 ~ /^\// {print $2}' "$ROUTES" >> "$CODE_RAW"
+fi
+
+sed -e 's/\"//g' -e "s/'//g" -e 's/`//g' -e 's/[),;]$//' -e 's/\?.*//' -e 's/\${[^}]*}/.*/g' -e 's/{param}/.*/g' -e 's/{[a-z_][a-z0-9_]*}/.*/g' "$CODE_RAW" \
+  | sed -e 's/[,;(){}<>|^\\].*$//' -e 's/[[:space:]].*$//' -e 's|/*$||' \
+  | grep -E '^/[A-Za-z0-9._:/*-]*$' \
   | sed 's|^/\.well-known/oauth-authorization-server\..*|/.well-known/oauth-authorization-server|' \
   | sort -u > "$CODE_PATHS"
 
 # Scope CODE_PATHS to endpoints we actually spec in this repo.
 # Avoid false positives from bundled deps with generic `/v1/*` paths (e.g. Segment, AWS, Google libs).
 CODE_PATHS_SCOPED=$(mktemp)
-grep -E '^/api/(oauth|claude_code|claude_cli|organization|web|event_logging|hello)|^/oauth/|^/v1/(messages|files|models|skills|sessions|session_ingress|environment_providers|oauth|toolbox|complete|mcp|mcp_servers|token)|^/\.well-known/oauth-authorization-server' "$CODE_PATHS" \
+grep -E '^/api/(auth|oauth|claude_code|claude_cli|organization|organizations|users|web|event_logging|hello|frame|desktop|directory|eval)|^/oauth/|^/mcp-registry/|^/worker/|^/v1/(messages|files|models|skills|sessions|session_ingress|environment_providers|environments|oauth|toolbox|complete|mcp|mcp_servers|token|code|agents|vaults|user_profiles|memory_stores|organizations|ultrareview|deployments|deployment_runs|dreams|tunnels|design)|^/\.well-known/oauth-authorization-server' "$CODE_PATHS" \
   > "$CODE_PATHS_SCOPED" || true
 
 CODE_COUNT=$(wc -l < "$CODE_PATHS_SCOPED" | tr -d ' ')

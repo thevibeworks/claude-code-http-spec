@@ -1,14 +1,69 @@
 # Claude Code CLI - Complete API Reference
-# Extracted from @anthropic-ai/claude-code v2.1.197
+# Extracted from @anthropic-ai/claude-code v2.1.234
 #
-# Validation: Search for URL path strings (stable across builds)
-#   strings binary_2.1.197/claude | rg '/api/oauth/profile'
-#   strings binary_2.1.197/claude | rg '"/v1/messages"'
-#   strings binary_2.1.197/claude | rg 'api\.anthropic\.com'
-# (Older wrapper packages shipped a readable cli.js; the same patterns apply
-#  to that file: rg '/api/oauth/profile' package/cli.js)
+# Validation: search the release binary for the path literal.
+#   scripts/extract-binary.sh 2.1.234           # paths + beta flags
+#   scripts/extract-routes.py <binary> --all -  # method + path + beta + auth
+#   scripts/extract-calls.py  <binary> out/     # byte window around a call site
+# (Older wrapper packages shipped a readable cli.js; the same string patterns
+#  apply to that file: rg '/api/oauth/profile' package/cli.js)
 #
-# See: WORKFLOW.md for extraction workflow with HTTP precision requirements
+# See: WORKFLOW.md for the extraction workflow and precision requirements
+#
+# PROVENANCE (corrected at v2.1.234)
+#
+# Earlier revisions of this file warned that "header sets, request bodies and
+# timeouts are NOT recoverable from a Bun binary" and carried them forward from
+# v2.1.76, the last release with a readable bundle. That warning was wrong.
+# The compiled binary embeds the entire minified JavaScript bundle as printable
+# text -- one enormous line, which is why `rg -A/-B` context appeared to return
+# nothing useful. Cut a byte window instead and the call site is right there:
+#
+#   fs.get("/v1/ultrareview/quota", {auth: "teleport-org", timeout: 3000})
+#
+# So from v2.1.234 on, methods, header sets, auth modes, timeouts and request
+# bodies are read from the binary being documented, not carried forward.
+# scripts/extract-routes.py does this mechanically for every call site.
+#
+# AUTH MODES
+#
+# axios call sites name their auth mode; the mode decides the entire header
+# set. Verified in extractions/v2.1.234/calls/auth-modes.txt.
+#
+#   base builder (all modes below that use it):
+#     Authorization: Bearer <token>
+#     Content-Type: application/json
+#     anthropic-version: 2023-06-01
+#     anthropic-client-platform: <platform>
+#
+#   auth: "teleport-org"      base builder + x-organization-uuid: <orgUUID>.
+#                             ALSO substitutes the literal ":orgUUID" in the
+#                             path with the real org UUID -- that is why paths
+#                             in the binary contain ":orgUUID" verbatim.
+#   auth: "session-jwt"       Authorization: Bearer <session access token>. No
+#                             other headers.
+#   auth: "claude-ai-oauth"   Authorization: Bearer <oauth token>
+#                             anthropic-beta: oauth-2025-04-20
+#   auth: "none"              no auth headers.
+#   auth: "async" / unset     resolved OAuth headers:
+#                             Authorization: Bearer <oauth token>
+#                             anthropic-beta: oauth-2025-04-20
+#                             (or x-api-key when authenticated by API key)
+#
+# Two pre-flight refusals apply to every axios call before a request is made:
+#   - essential-traffic-only mode blocks it unless the call sets
+#     bypassEssentialTrafficOnly
+#   - a non-first-party provider blocks it with reason "data-residency"
+#
+# Stainless SDK resources (/v1/*) take auth from the client rather than per
+# call, and pin their own anthropic-beta flag per resource; those flags are in
+# extractions/v2.1.234/raw/sdk_routes.tsv.
+#
+# ROUTE INDEX
+#
+# extractions/v2.1.234/raw/routes.tsv is the machine-readable index of all 236
+# call sites: method, path, beta flag, auth mode, timeout, source. Sections
+# below carry the prose and bodies; the TSV is the completeness check.
 
 ### ============================================================================
 ### VARIABLES
@@ -26,13 +81,16 @@
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
 @stainlessVersion = 0.74.0
 @managedAgentsBeta = managed-agents-2026-04-01
-@cliVersion = 2.1.197
+@cliVersion = 2.1.234
 
 # Auth tokens (set these)
 @accessToken = YOUR_ACCESS_TOKEN
+@sessionToken = YOUR_SESSION_ACCESS_TOKEN
+@clientPlatform = cli
 @apiKey = YOUR_API_KEY
 @orgUuid = YOUR_ORG_UUID
 @remoteSettingsChecksum = sha256:YOUR_CHECKSUM
+@fileUuid = YOUR_FILE_UUID
 
 
 ### ============================================================================
@@ -51,22 +109,28 @@
 #     &client_id=9d1c250a-e61b-44d9-88ed-5944d1962f5e
 #     &response_type=code
 #     &redirect_uri=http://localhost:{port}/callback
-#     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers
+#     &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload
 #     &code_challenge={base64url(sha256(code_verifier))}
 #     &code_challenge_method=S256
 #     &state={random_state}
 #     [&orgUUID={org_uuid}]
+#     [&login_hint={email}]      # from `claude auth login --email`
+#     [&login_method=sso]        # from `claude auth login --sso`
 #
 # Claude.ai OAuth:
 #   https://claude.ai/oauth/authorize
 #     (same params as above)
 #
-# Scopes (pattern: rg '"user:inference"|"user:profile"|"user:sessions"|"user:mcp_servers"' cli.js):
-#   - user:inference         (required for API access)
+# Scopes (pattern: rg '"user:inference"|"user:profile"|"user:sessions"|"user:mcp_servers"|"user:file_upload"' cli.js):
+#   - user:inference         (required for API access; also marks the token
+#                             as a Claude.ai subscription token)
 #   - user:profile           (required for profile info)
 #   - user:sessions:claude_code  (required for web sessions)
 #   - user:mcp_servers       (required for MCP server access - NEW in v2.1.x)
+#   - user:file_upload       (required for OAuth file transfer - NEW in v2.1.x)
 #   - org:create_api_key     (required for API key creation)
+#
+# `claude setup-token` requests user:inference ONLY.
 
 ### ----------------------------------------------------------------------------
 ### 1.2 Token Exchange
@@ -108,8 +172,15 @@ Content-Type: application/json
     "grant_type": "refresh_token",
     "refresh_token": "{{refreshToken}}",
     "client_id": "{{clientId}}",
-    "scope": "user:profile user:inference user:sessions:claude_code"
+    "scope": "user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload"
 }
+
+# The client always sends `scope` on refresh. When the stored token carries
+# user:inference it sends the full 5-scope session set shown above,
+# regardless of what was originally granted; otherwise it echoes the
+# token's own recorded scopes.
+# Refresh fires 5 minutes before expiry and is serialized across processes
+# by a lock file (5 retries, 1-2s jittered backoff).
 
 
 ### ============================================================================
@@ -126,18 +197,28 @@ GET {{baseUrl}}/api/oauth/profile
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-### Response:
+### Response (corrected v2.1.76 - fields are NESTED under account/organization):
 # {
-#   "account_uuid": "...",
-#   "display_name": "...",
-#   "email_address": "...",
-#   "has_extra_usage_enabled": true,
+#   "account": {
+#     "uuid":         "...",
+#     "email":        "...",
+#     "display_name": "... | null",
+#     "created_at":   "ISO-8601"
+#   },
 #   "organization": {
-#     "uuid": "...",
-#     "name": "...",
-#     "organization_type": "claude_max|claude_pro|claude_enterprise|free"
+#     "uuid":                    "...",
+#     "organization_type":       "claude_max|claude_pro|claude_enterprise|claude_team",
+#     "rate_limit_tier":         "... | null",
+#     "has_extra_usage_enabled": true|false|null,
+#     "billing_type":            "stripe_subscription|stripe_subscription_contracted|apple_subscription|google_play_subscription|null",
+#     "subscription_created_at": "ISO-8601 | null"
 #   }
 # }
+#
+# The profile does NOT return an organization name - that comes from 2.3.
+# Note the field-name split: this endpoint uses account.email, while the
+# token-exchange response uses account.email_address.
+# Timeout 10000 ms. Errors are swallowed (returns undefined).
 
 ### ----------------------------------------------------------------------------
 ### 2.2 CLI Profile (with API key)
@@ -171,6 +252,9 @@ Authorization: Bearer {{accessToken}}
 # Pattern: rg "API_KEY_URL|create_api_key" cli.js
 
 # @name createApiKey
+# Authorization is the ONLY header. The body is null - no Content-Type is
+# set and no JSON is sent. Requires org:create_api_key.
+# Called only on the console login branch (token WITHOUT user:inference).
 POST {{baseUrl}}/api/oauth/claude_cli/create_api_key
 Authorization: Bearer {{accessToken}}
 
@@ -178,6 +262,56 @@ Authorization: Bearer {{accessToken}}
 # {
 #   "raw_key": "sk-ant-..."
 # }
+
+### ----------------------------------------------------------------------------
+### 2.5 OAuth File Upload
+### ----------------------------------------------------------------------------
+# Pattern: rg 'api/oauth/file_upload' cli.js
+#
+# Host is ANTHROPIC_BASE_URL || BASE_API_URL. Timeout 30000 ms.
+# Success is strictly HTTP 201. Max 31457280 bytes (30 MiB), checked before
+# reading; oversized files are silently skipped. Multipart is hand-built
+# (not FormData), one part named "file", boundary ----FormBoundary<uuid>.
+# No anthropic-beta, no anthropic-version. All HTTP errors swallowed.
+# Requires the user:file_upload scope (server-enforced; never checked
+# client-side). Trigger: SendUserMessage/Brief tool attachments.
+
+# @name oauthFileUpload
+POST {{baseUrl}}/api/oauth/file_upload
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----FormBoundary00000000-0000-0000-0000-000000000000
+
+# The client also sets Content-Length explicitly to the assembled buffer's
+# byte length. HTTP clients compute this themselves, so it is omitted here.
+------FormBoundary00000000-0000-0000-0000-000000000000
+Content-Disposition: form-data; name="file"; filename="screenshot.png"
+Content-Type: image/png
+
+< ./screenshot.png
+------FormBoundary00000000-0000-0000-0000-000000000000--
+
+### Response:
+# { "file_uuid": "..." }   // the only field read
+
+### ----------------------------------------------------------------------------
+### 2.6 OAuth File Download
+### ----------------------------------------------------------------------------
+# Pattern: rg 'api/oauth/files' cli.js
+#
+# Host is BASE_API_URL only - ANTHROPIC_BASE_URL is IGNORED here, unlike
+# the upload above. Timeout 30000 ms. Success is strictly HTTP 200.
+# Read as an arraybuffer; no response header is inspected. No size limit,
+# no retry. Trigger: inbound Remote Control message carrying
+# file_attachments: [{ file_uuid, file_name }].
+#
+# NOT the public Files API - that is /v1/files/{id}/content, which sends
+# anthropic-version and anthropic-beta: files-api-2025-04-14.
+
+# @name oauthFileDownload
+GET {{baseUrl}}/api/oauth/files/{{fileUuid}}/content
+Authorization: Bearer {{accessToken}}
+
+### Response: raw bytes
 
 ### ----------------------------------------------------------------------------
 ### ============================================================================
@@ -192,7 +326,13 @@ Authorization: Bearer {{accessToken}}
 # @name getAccountSettings
 GET {{baseUrl}}/api/oauth/account/settings
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 User-Agent: claude-code/{{cliVersion}}
+
+### Response:
+# { "grove_enabled": true|false|null, "grove_notice_viewed_at": "ISO-8601|null" }
+# grove_enabled === null means the user has not chosen yet.
+# A 401 on any of 3.1-3.3 triggers one token refresh, then a replay.
 
 ### ----------------------------------------------------------------------------
 ### 3.2 Update Account Settings (Grove)
@@ -202,6 +342,7 @@ User-Agent: claude-code/{{cliVersion}}
 # @name updateAccountSettings
 PATCH {{baseUrl}}/api/oauth/account/settings
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 User-Agent: claude-code/{{cliVersion}}
 Content-Type: application/json
 
@@ -217,6 +358,7 @@ Content-Type: application/json
 # @name markGroveNoticeViewed
 POST {{baseUrl}}/api/oauth/account/grove_notice_viewed
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 User-Agent: claude-code/{{cliVersion}}
 Content-Type: application/json
 
@@ -288,10 +430,13 @@ User-Agent: claude-cli/{{cliVersion}} (external, cli)
 # Requires user:inference scope
 
 # @name getUserSettings
-GET {{baseUrl}}/api/claude_code/user_settings
-Authorization: Bearer {{accessToken}}
-anthropic-beta: {{oauthBeta}}
-User-Agent: claude-cli/{{cliVersion}} (external, cli)
+# REMOVED IN v2.1.234 -- the path literal `user_settings` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/api/claude_code/user_settings
+# Authorization: Bearer {{accessToken}}
+# anthropic-beta: {{oauthBeta}}
+# User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 
 ### ----------------------------------------------------------------------------
@@ -315,10 +460,13 @@ anthropic-beta: {{oauthBeta}}
 # Returns client configuration data for OAuth subscribers
 
 # @name getClientData
-GET {{baseUrl}}/api/oauth/claude_cli/client_data
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `claude_cli/client_data` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/api/oauth/claude_cli/client_data
+# Authorization: Bearer {{accessToken}}
+# Content-Type: application/json
+# User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
 # { "client_data": { ... } }
@@ -334,18 +482,27 @@ User-Agent: claude-code/{{cliVersion}}
 # Pattern: rg "api/oauth/usage" cli.js
 
 # @name getUsage
+# Requires user:inference AND user:profile. Timeout 5000 ms.
 GET {{baseUrl}}/api/oauth/usage
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 Content-Type: application/json
 User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
 # {
-#   "five_hour": {
-#     "utilization": 0.5,
-#     "resets_at": "2025-01-01T00:00:00Z"
+#   "five_hour":        { "utilization": 45, "resets_at": "2025-01-01T00:00:00Z" },
+#   "seven_day":        { "utilization": 23, "resets_at": "..." },
+#   "seven_day_sonnet": { "utilization": 12, "resets_at": "..." },
+#   "seven_day_opus":   { "utilization":  5, "resets_at": "..." },
+#   "extra_usage": {
+#     "is_enabled":    true,
+#     "used_credits":  1234,   // minor units (cents)
+#     "monthly_limit": 5000,   // minor units (cents)
+#     "utilization":   24
 #   }
 # }
+# utilization is a percentage (0-100), not a 0-1 ratio.
 
 ### ----------------------------------------------------------------------------
 ### 4.2 Get First Token Date
@@ -353,8 +510,11 @@ User-Agent: claude-code/{{cliVersion}}
 # Pattern: rg "first_token_date" cli.js
 
 # @name getFirstTokenDate
+# Timeout 10000 ms. Called once after a subscription login, only when not
+# already cached; skipped on the console/API-key login branch.
 GET {{baseUrl}}/api/organization/claude_code_first_token_date
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
@@ -377,9 +537,9 @@ User-Agent: claude-code/{{cliVersion}}
 # @name createAdminRequest
 POST {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests
 Authorization: Bearer {{accessToken}}
-x-organization-uuid: {{orgUuid}}
 Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
+anthropic-version: {{version}}
+x-organization-uuid: {{orgUuid}}
 
 {
     "request_type": "limit_increase",
@@ -397,8 +557,9 @@ User-Agent: claude-code/{{cliVersion}}
 # @name listMyAdminRequests
 GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/me?request_type=limit_increase&statuses=pending&statuses=dismissed
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
 x-organization-uuid: {{orgUuid}}
-User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
 # [ ... ]
@@ -411,11 +572,18 @@ User-Agent: claude-code/{{cliVersion}}
 # @name checkAdminRequestEligibility
 GET {{baseUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/eligibility?request_type=limit_increase
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
 x-organization-uuid: {{orgUuid}}
-User-Agent: claude-code/{{cliVersion}}
 
 ### Response:
-# { ... }
+# { "is_allowed": boolean }
+# Compared with a strict === false, so missing/null fails OPEN.
+#
+# All three admin_requests calls use the session header builder:
+# anthropic-version + x-organization-uuid, and NO anthropic-beta and NO
+# User-Agent. They are OAuth-only (an API key is rejected upstream), have
+# no timeout, no retry, and inspect no status code.
 
 
 ### ============================================================================
@@ -458,8 +626,13 @@ x-organization-uuid: {{orgUuid}}
 # v2.1.76: connectivity checks use both BASE_API_URL/api/hello AND origin/v1/oauth/hello
 
 # @name healthCheck
+# CORRECTED v2.1.76: no Cache-Control is sent. The only header is the
+# claude-cli User-Agent form. No auth. Success is strictly HTTP 200.
+# Both probes below run CONCURRENTLY at startup; either failing aborts
+# the preflight. The /v1/oauth/hello host is derived from TOKEN_URL, so
+# it follows CLAUDE_CODE_CUSTOM_OAUTH_URL when that is set.
 GET {{baseUrl}}/api/hello
-Cache-Control: no-cache
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 ### ----------------------------------------------------------------------------
 ### 6.2 OAuth Health Check
@@ -472,19 +645,28 @@ GET {{platformUrl}}/v1/oauth/hello
 User-Agent: claude-cli/{{cliVersion}} (external, cli)
 
 ### ----------------------------------------------------------------------------
-### 6.3 Preflight Health Check (HEAD)
+### 6.3 Network Reachability Probe (HEAD) - CORRECTED
 ### ----------------------------------------------------------------------------
 # Pattern: rg '\.head\(' cli.js
+#
+# PHANTOM REMOVED: earlier revisions documented `HEAD {{baseUrl}}/api/hello`.
+# The only .head() call in the bundle targets Cloudflare's resolver, not an
+# Anthropic host. It is a generic "am I online" check with a 1s timeout,
+# used to decide whether the CLI has any network at all.
 
-# @name healthCheckHead
-HEAD {{baseUrl}}/api/hello
+# @name networkReachabilityProbe
+HEAD http://1.1.1.1
 
 ### ----------------------------------------------------------------------------
 ### 6.3 Parameterized Hello (NEW in v2.1.139)
 ### ----------------------------------------------------------------------------
 
-# @name healthCheckNamed
-GET {{baseUrl}}/api/hello/:name
+# NOT RUNNABLE. `:name` is a literal route-parameter placeholder in the
+# binary's constant pool, not a value the CLI interpolates. No call site is
+# readable for it (absent from every cli.js-era build through v2.1.76), so
+# method/headers/body are not claimed. Recorded as a literal only - same
+# class as the /api/oauth/organizations/:orgUUID/* templates.
+#   GET {{baseUrl}}/api/hello/:name
 
 ### ----------------------------------------------------------------------------
 ### 6.4 User Lookup (NEW in v2.1.139)
@@ -1624,19 +1806,25 @@ Content-Type: application/json
 ### ----------------------------------------------------------------------------
 
 # @name getTeamMemory
-GET {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
-Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `team_memory` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
+# Authorization: Bearer {{accessToken}}
+# User-Agent: claude-code/{{cliVersion}}
 
 ### ----------------------------------------------------------------------------
 ### 32.2 Post Team Memory
 ### ----------------------------------------------------------------------------
 
 # @name postTeamMemory
-POST {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `team_memory` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# POST {{baseUrl}}/api/claude_code/team_memory?repo={{repoName}}
+# Authorization: Bearer {{accessToken}}
+# Content-Type: application/json
+# User-Agent: claude-code/{{cliVersion}}
 
 {
     "memory": {}
@@ -1873,18 +2061,24 @@ anthropic-beta: {{managedAgentsBeta}}
 ### ----------------------------------------------------------------------------
 
 # @name egressGateway
-GET {{baseUrl}}/v1/code/egress/gateway
-Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `/v1/code/egress/gateway` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/v1/code/egress/gateway
+# Authorization: Bearer {{accessToken}}
+# User-Agent: claude-code/{{cliVersion}}
 
 ### ----------------------------------------------------------------------------
 ### 38.2 Upstream Proxy Config (v2.1.139-v2.1.170 only)
 ### ----------------------------------------------------------------------------
 
 # @name upstreamProxy
-GET {{baseUrl}}/v1/code/upstreamproxy
-Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `/v1/code/upstreamproxy` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/v1/code/upstreamproxy
+# Authorization: Bearer {{accessToken}}
+# User-Agent: claude-code/{{cliVersion}}
 
 
 ### ============================================================================
@@ -2024,9 +2218,13 @@ User-Agent: claude-code/{{cliVersion}}
 # Verify: rg '"/v1/code/'
 
 # @name v1Code
-GET {{baseUrl}}/v1/code/
-Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the bare `/v1/code/` root is no longer present in the
+# binary; every surviving path under it is a full route (see SECTION 42).
+# Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/v1/code/
+# Authorization: Bearer {{accessToken}}
+# User-Agent: claude-code/{{cliVersion}}
 
 ### ----------------------------------------------------------------------------
 ### 39.14 Agent Proxy
@@ -2105,9 +2303,12 @@ User-Agent: claude-code/{{cliVersion}}
 # an 86400000ms (24h) TTL per the call context.
 
 # @name teamUsageDiscovery
-GET {{baseUrl}}/api/claude_code/discovery/team_usage
-Authorization: Bearer {{accessToken}}
-User-Agent: claude-code/{{cliVersion}}
+# REMOVED IN v2.1.234 -- the path literal `discovery/team_usage` is no longer
+# present in the binary. Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Kept commented out as history.
+# GET {{baseUrl}}/api/claude_code/discovery/team_usage
+# Authorization: Bearer {{accessToken}}
+# User-Agent: claude-code/{{cliVersion}}
 
 ### ----------------------------------------------------------------------------
 ### 40.2 Frame Deploy: Init
@@ -2655,3 +2856,1506 @@ User-Agent: claude-code/{{cliVersion}}
 #
 # Find all dynamic API paths:
 #   rg '\$\{o9\(\)\.BASE_API_URL\}' cli.js -n
+
+
+
+
+### ============================================================================
+### SECTION 42: NEW IN v2.1.234
+### ============================================================================
+#
+# Generated from extractions/v2.1.234/raw/routes.tsv, which reads the method,
+# path, beta flag, auth mode and timeout straight from the call site in the
+# v2.1.234 binary. Re-verify any entry with:
+#   scripts/extract-calls.py <binary> out/ && less out/<family>.txt
+#
+# Auth mode -> header set is in the file header. A route with no auth mode is
+# an SDK resource: the client supplies auth, the resource pins the beta flag.
+
+### ----------------------------------------------------------------------------
+### Frames (publish / read / comment)
+### ----------------------------------------------------------------------------
+# The Artifact publishing surface. Two axios instances with different base URLs
+# are in play; a `relayProbe` option lets a request fall through to a frame relay,
+# which is why an upload can come back 429 with `retry-after` and be retried once
+# against the same path.
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/api/frame/comments/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/api/frame/comments/{{id}}/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/api/frame/comments/{{id}}/{{id}}/resolve
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=5000ms
+POST {{baseUrl}}/api/frame/comments/{{id}}/{{id}}/summon-status
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/api/frame/comments/{{id}}/{{id}}/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/api/frame/db/agent
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=30000ms
+POST {{baseUrl}}/api/frame/deploy/prepare
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/api/frame/frames?limit=200
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/api/frame/frames?limit={{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/api/frame/read/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="claude-ai-oauth"  timeout=15000ms
+POST {{baseUrl}}/api/frame/subscribe/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="claude-ai-oauth"  timeout=15000ms
+POST {{baseUrl}}/api/frame/unsubscribe/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=60000ms
+POST {{baseUrl}}/api/frame/upload
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="claude-ai-oauth"  timeout=15000ms
+DELETE {{baseUrl}}/api/frame/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/api/frame/{{id}}?via=model_read
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Self-hosted runner pool
+### ----------------------------------------------------------------------------
+# Runner registration, spawn-hint polling and session release for the
+# SELF_HOSTED_RUNNER_* deployment mode added in v2.1.234. Long-poll endpoints use
+# a 30s timeout; the rest 15s.
+
+# source=axios
+POST {{baseUrl}}/v1/code/runners/self-hosted/deregister
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/runners/register
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=30000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/runners/{{id}}/poll
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/sessions/{{id}}/release
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/sessions/{{id}}/report-failure
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/spawn-hints/nack
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=30000ms
+POST {{baseUrl}}/v1/code/runners/self-hosted/spawn-hints/poll
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Worker / session bridge
+### ----------------------------------------------------------------------------
+# Worker registration, heartbeat, diagnostics and file sync for a remote
+# session. The `/worker/*` paths are the same protocol against the worker's own
+# base URL, authenticating with `session-jwt`.
+
+# source=axios  auth="teleport-org"  timeout=15000ms
+GET {{baseUrl}}/v1/code/sessions/{{id}}/events?limit={{id}}&sort_order=desc
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/v1/code/sessions/{{id}}/file?{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+GET {{baseUrl}}/v1/code/sessions/{{id}}/remote
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+PUT {{baseUrl}}/v1/code/sessions/{{id}}/synced_file
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+PUT {{baseUrl}}/v1/code/sessions/{{id}}/worker
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=30000ms
+POST {{baseUrl}}/v1/code/sessions/{{id}}/worker/diagnostics
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/sessions/{{id}}/worker/events
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/v1/code/sessions/{{id}}/worker/heartbeat
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=30000ms
+POST {{baseUrl}}/v1/code/sessions/{{id}}/worker/register
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/v1/code/sessions/{{id}}/worker/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Environment bridge
+### ----------------------------------------------------------------------------
+# Two coexisting shapes: the Stainless SDK resource (`?beta=true`, pinned to
+# managed-agents-2026-04-01) and a plain axios path with no beta flag used by the
+# bridge process itself.
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/environments/bridge
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+DELETE {{baseUrl}}/v1/environments/bridge/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=axios
+POST {{baseUrl}}/v1/environments/{{id}}/bridge/reconnect
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+GET {{baseUrl}}/v1/environments/{{id}}/work/poll
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments/{{id}}/work/poll?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments/{{id}}/work/stats?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=axios
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/ack
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/ack?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=axios
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/heartbeat
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/heartbeat?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=axios
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/stop
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}/stop?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments/{{id}}/work/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}/work/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments/{{id}}/work?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+DELETE {{baseUrl}}/v1/environments/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/environments?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/environments?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### MCP tunnels
+### ----------------------------------------------------------------------------
+# Tunnel and certificate lifecycle. Every route pins mcp-tunnels-2026-06-22.
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels/{{id}}/certificates/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+GET {{baseUrl}}/v1/tunnels/{{id}}/certificates/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+GET {{baseUrl}}/v1/tunnels/{{id}}/certificates?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels/{{id}}/certificates?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels/{{id}}/reveal_token?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels/{{id}}/rotate_token?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+GET {{baseUrl}}/v1/tunnels/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+GET {{baseUrl}}/v1/tunnels?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=mcp-tunnels-2026-06-22
+POST {{baseUrl}}/v1/tunnels?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: mcp-tunnels-2026-06-22
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Dreams
+### ----------------------------------------------------------------------------
+# Background 'dreaming' runs. Every route pins dreaming-2026-04-21.
+
+# source=sdk  beta=dreaming-2026-04-21
+POST {{baseUrl}}/v1/dreams/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: dreaming-2026-04-21
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=dreaming-2026-04-21
+POST {{baseUrl}}/v1/dreams/{{id}}/cancel?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: dreaming-2026-04-21
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=dreaming-2026-04-21
+GET {{baseUrl}}/v1/dreams/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: dreaming-2026-04-21
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=dreaming-2026-04-21
+GET {{baseUrl}}/v1/dreams?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: dreaming-2026-04-21
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=dreaming-2026-04-21
+POST {{baseUrl}}/v1/dreams?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: dreaming-2026-04-21
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Deployments and deployment runs
+### ----------------------------------------------------------------------------
+# Managed-agent deployments and their runs. Pins managed-agents-2026-04-01.
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/deployment_runs/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/deployment_runs?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments/{{id}}/pause?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments/{{id}}/run?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments/{{id}}/unpause?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/deployments/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/deployments?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/deployments?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Design (Claude Design integration)
+### ----------------------------------------------------------------------------
+# Consent and grant management plus an MCP handshake. `/v1/design/mcp` is
+# `auth: "none"` with a 60s timeout -- it carries its own grant token. The
+# consent GET is a pre-flight; on failure the client falls back to a 403-seeded
+# cache rather than blocking.
+
+# source=axios
+DELETE {{baseUrl}}/v1/design/consent
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+GET {{baseUrl}}/v1/design/consent
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/v1/design/consent
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+GET {{baseUrl}}/v1/design/grants
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/v1/design/grants
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="none"  timeout=60000ms
+POST {{baseUrl}}/v1/design/mcp
+Accept: application/json
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Code triggers
+### ----------------------------------------------------------------------------
+# Scheduled and webhook triggers. `auth: "teleport-org"`; the run call allows
+# 20s. Observed live with anthropic-beta: ccr-triggers-2026-01-30.
+
+# source=axios  auth="teleport-org"  timeout=20000ms
+GET {{baseUrl}}/v1/code/triggers/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=20000ms
+POST {{baseUrl}}/v1/code/triggers/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=20000ms
+POST {{baseUrl}}/v1/code/triggers/{{id}}/run
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Local / org memory
+### ----------------------------------------------------------------------------
+# Org memory mount discovery and credential exchange.
+
+# source=axios
+POST {{baseUrl}}/v1/code/local/memory/credential
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=5000ms
+GET {{baseUrl}}/v1/code/local/memory/mounts
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Memory stores
+### ----------------------------------------------------------------------------
+# Agent memory stores, memories and versions. Every route pins agent-memory-2026-07-22.
+
+# source=sdk  beta=agent-memory-2026-07-22
+POST {{baseUrl}}/v1/memory_stores/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+DELETE {{baseUrl}}/v1/memory_stores/{{id}}/memories/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+GET {{baseUrl}}/v1/memory_stores/{{id}}/memories/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+POST {{baseUrl}}/v1/memory_stores/{{id}}/memories/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+POST {{baseUrl}}/v1/memory_stores/{{id}}/memory_versions/{{id}}/redact?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+GET {{baseUrl}}/v1/memory_stores/{{id}}/memory_versions/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+GET {{baseUrl}}/v1/memory_stores/{{id}}/memory_versions?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+DELETE {{baseUrl}}/v1/memory_stores/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+GET {{baseUrl}}/v1/memory_stores/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+POST {{baseUrl}}/v1/memory_stores/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+GET {{baseUrl}}/v1/memory_stores?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=agent-memory-2026-07-22
+POST {{baseUrl}}/v1/memory_stores?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: agent-memory-2026-07-22
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Vaults and credentials
+### ----------------------------------------------------------------------------
+# Credential vaults, including an MCP OAuth validation call. Pins
+# managed-agents-2026-04-01.
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults/{{id}}/credentials/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults/{{id}}/credentials/{{id}}/mcp_oauth_validate?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+DELETE {{baseUrl}}/v1/vaults/{{id}}/credentials/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/vaults/{{id}}/credentials/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults/{{id}}/credentials/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+DELETE {{baseUrl}}/v1/vaults/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/vaults/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/vaults?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/vaults?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### User profiles
+### ----------------------------------------------------------------------------
+# User profile resources. Pins user-profiles-2026-03-24.
+
+# source=sdk  beta=user-profiles-2026-03-24
+POST {{baseUrl}}/v1/user_profiles/{{id}}/enrollment_url?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: user-profiles-2026-03-24
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=user-profiles-2026-03-24
+GET {{baseUrl}}/v1/user_profiles/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: user-profiles-2026-03-24
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=user-profiles-2026-03-24
+POST {{baseUrl}}/v1/user_profiles/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: user-profiles-2026-03-24
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Managed sessions: resources and threads
+### ----------------------------------------------------------------------------
+# Session resources and threads. Pins managed-agents-2026-04-01.
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/sessions/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/events/stream?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+DELETE {{baseUrl}}/v1/sessions/{{id}}/resources/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/resources/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/sessions/{{id}}/resources/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/resources?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/sessions/{{id}}/resources?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/sessions/{{id}}/threads/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/threads/{{id}}/events?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/threads/{{id}}/stream?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/threads/{{id}}?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+# source=sdk  beta=managed-agents-2026-04-01
+GET {{baseUrl}}/v1/sessions/{{id}}/threads?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Agents (new routes)
+### ----------------------------------------------------------------------------
+# Archive and version listing added alongside the existing agent CRUD.
+
+# source=sdk  beta=managed-agents-2026-04-01
+POST {{baseUrl}}/v1/agents/{{id}}/archive?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: managed-agents-2026-04-01
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### Skills (new routes)
+### ----------------------------------------------------------------------------
+# Version content and per-version delete/read.
+
+# source=sdk  beta=skills-2025-10-02
+GET {{baseUrl}}/v1/skills/{{id}}/versions/{{id}}/content?beta=true
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-beta: skills-2025-10-02
+User-Agent: claude-code/{{cliVersion}}
+
+
+### ----------------------------------------------------------------------------
+### MCP registry and connector directory
+### ----------------------------------------------------------------------------
+# Public server directory; `auth: "none"`, 5s timeout.
+
+# source=axios  auth="none"  timeout=5000ms
+GET {{baseUrl}}/api/directory/servers?{{id}}
+Accept: application/json
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Org onboarding, projects and devices
+### ----------------------------------------------------------------------------
+# Onboarding steps, project docs/files and cowork remote devices.
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/organizations/:orgUUID/claude_code/onboarding
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/api/organizations/:orgUUID/claude_code/onboarding
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+DELETE {{baseUrl}}/api/organizations/:orgUUID/claude_code/onboarding/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+PUT {{baseUrl}}/api/organizations/:orgUUID/claude_code/onboarding/{{id}}
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+POST {{baseUrl}}/api/organizations/:orgUUID/cowork/remote_devices
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/organizations/:orgUUID/marketplace/plugin-assets/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Auth and device trust
+### ----------------------------------------------------------------------------
+# Trusted-device registration.
+
+# source=axios
+POST {{baseUrl}}/api/auth/trusted_devices
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Other v2.1.234 routes
+### ----------------------------------------------------------------------------
+# Method, beta flag, auth mode and timeout verified; no prose written yet.
+
+# source=axios  auth="teleport-org"
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/admin_requests
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/admin_requests/eligibility?request_type={{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/admin_requests/me?{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=5000ms
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/billing/tax_rate
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/claude_code/pro_trial
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=30000ms
+PUT {{baseUrl}}/api/oauth/organizations/:orgUUID/contracts/auto_reload_settings
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=30000ms
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/contracts/prepaid/credits
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=60000ms
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/overage_credit_grant
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/overage_credit_grant?campaign={{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+PUT {{baseUrl}}/api/oauth/organizations/:orgUUID/overage_spend_limit
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=5000ms
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/payment_method
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=5000ms
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/prepaid/bundles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/prepaid/commits/{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=5000ms
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/prepaid/credits
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=5000ms
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/referral/eligibility?campaign={{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/referral/redemptions?campaign={{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"  timeout=30000ms
+POST {{baseUrl}}/api/oauth/organizations/:orgUUID/setup_overage_billing
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/skills/{{id}}/download{{id}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="teleport-org"
+GET {{baseUrl}}/api/oauth/organizations/:orgUUID/sync/github/auth
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  timeout=15000ms
+POST {{baseUrl}}/v1/code/auth/refresh
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="session-jwt"
+GET {{baseUrl}}/worker/files
+Authorization: Bearer {{sessionToken}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios
+POST {{baseUrl}}/worker/register
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="session-jwt"
+GET {{baseUrl}}/worker/skill-manifest
+Authorization: Bearer {{sessionToken}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# source=axios  auth="session-jwt"
+PUT {{baseUrl}}/worker/synced_file
+Authorization: Bearer {{sessionToken}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+
+### ----------------------------------------------------------------------------
+### Path literals verified, method not recovered
+### ----------------------------------------------------------------------------
+# These path strings are present in the v2.1.234 binary but the call site
+# builds them through a helper that scripts/extract-routes.py does not follow,
+# so the method is unknown. Recorded with PATH-ONLY rather than guessed: the
+# validator counts a PATH-ONLY line as documented, and it makes no claim about
+# method, headers or body.
+#
+# PATH-ONLY {{baseUrl}}/api/desktop
+# PATH-ONLY {{baseUrl}}/api/directory
+# PATH-ONLY {{baseUrl}}/api/event_logging
+# PATH-ONLY {{baseUrl}}/api/frame
+# PATH-ONLY {{baseUrl}}/api/frame/blob/.*/.*/agent-delete
+# PATH-ONLY {{baseUrl}}/api/frame/blob/.*/agent-list
+# PATH-ONLY {{baseUrl}}/api/frame/blob/.*/agent-upload
+# PATH-ONLY {{baseUrl}}/api/frame/contract/.*
+# PATH-ONLY {{baseUrl}}/api/frame/contract/.*/.*.d.ts
+# PATH-ONLY {{baseUrl}}/api/frame/contract/latest
+# PATH-ONLY {{baseUrl}}/api/frame/contract/.*/prompt
+# PATH-ONLY {{baseUrl}}/api/hello/:name
+# PATH-ONLY {{baseUrl}}/api/oauth/cri
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/.*/code/repos/.*/.*
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/mcp/connectors/list
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/mcp/connectors/search
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/mcp/connectors/suggest
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/plugin_ratings
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/plugin_ratings/appearances
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/plugin_ratings/appearances/outcome
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/plugins/.*/download.*
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/plugins/search
+# PATH-ONLY {{baseUrl}}/api/oauth/organizations/:orgUUID/skills/search
+# PATH-ONLY {{baseUrl}}/api/oauth/validate
+# PATH-ONLY {{baseUrl}}/api/organizations/:orgUUID/projects/.*.*
+# PATH-ONLY {{baseUrl}}/v1/code
+# PATH-ONLY {{baseUrl}}/v1/code/agent-proxy/artifact
+# PATH-ONLY {{baseUrl}}/v1/code/agent-proxy/frame
+# PATH-ONLY {{baseUrl}}/v1/code/memory
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/pools
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/pools/.*
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/pools/.*/secrets
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/pools/.*/sessions.*
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/runners
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/sessions/.*/requeue
+# PATH-ONLY {{baseUrl}}/v1/code/runners/self-hosted/sessions/.*/token
+# PATH-ONLY {{baseUrl}}/v1/code/scm-connectors/.*/.*/tunnel
+# PATH-ONLY {{baseUrl}}/v1/code/sessions
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*/archive
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*/client/presence
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*/events/stream
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*/mark_read
+# PATH-ONLY {{baseUrl}}/v1/code/sessions/.*/teleport-events
+# PATH-ONLY {{baseUrl}}/v1/code/webhook-triggers
+# PATH-ONLY {{baseUrl}}/v1/design
+# PATH-ONLY {{baseUrl}}/v1/environment_providers/cloud/create
+
+### ============================================================================
+### SECTION 43: OBSERVED TRAFFIC (v2.1.234, live session)
+### ============================================================================
+#
+# WORKFLOW.md's rule stands: endpoints are never *inferred* from runtime logs.
+# This section does the opposite -- it takes endpoints already verified in the
+# binary and records what a real v2.1.234 session actually sent, so the header
+# sets above can be checked against the wire rather than trusted.
+#
+# Captured from a local MITM trace of one interactive session. No identifiers,
+# tokens, request-ids or organization UUIDs from that capture are reproduced.
+#
+# Two User-Agents are in play, and they map exactly to the two client shapes:
+#   claude-cli/2.1.234 (external, cli)   axios call sites
+#   claude-code/2.1.234                  Stainless SDK client
+#
+# | Method | Path                              | Auth headers seen                         |
+# |--------|-----------------------------------|-------------------------------------------|
+# | GET    | /api/oauth/profile                | authorization, anthropic-beta: oauth-*    |
+# | GET    | /api/oauth/usage                  | authorization, anthropic-beta: oauth-*    |
+# | GET    | /api/oauth/account/settings       | authorization, anthropic-beta: oauth-*    |
+# | GET    | /api/claude_code_grove            | authorization, anthropic-beta: oauth-*    |
+# | GET    | /api/claude_code_penguin_mode     | authorization, anthropic-beta: oauth-*    |
+# | GET    | /api/claude_cli/bootstrap         | authorization, anthropic-beta: oauth-*    |
+# | POST   | /api/event_logging/v2/batch       | + x-service-name                          |
+# | POST   | /api/eval/{clientKey}             | authorization, anthropic-beta: oauth-*    |
+# | GET    | /mcp-registry/v0/servers          | none (no authorization header)            |
+# | GET    | /v1/mcp_servers?limit=1000        | + anthropic-mcp-client-capabilities,      |
+# |        |                                   |   mcp-protocol-version                    |
+# | GET    | /v1/code/triggers                 | teleport-org set (see below)              |
+# | GET    | /v1/ultrareview/quota             | teleport-org set (see below)              |
+# | POST   | /v1/messages?beta=true            | full SDK set (see below)                  |
+#
+# CONFIRMS the auth-mode table in the file header:
+#
+#   /v1/code/triggers and /v1/ultrareview/quota both went out with exactly
+#   authorization + content-type + anthropic-version + anthropic-client-platform
+#   + x-organization-uuid -- the "teleport-org" set, matching
+#   `auth: "teleport-org"` at both call sites. `/v1/code/triggers` additionally
+#   carried anthropic-beta: ccr-triggers-2026-01-30.
+#
+#   The /api/oauth/* calls went out with authorization + anthropic-beta:
+#   oauth-2025-04-20 and no organization header -- the default OAuth set.
+#
+# /api/claude_cli/bootstrap carries the selected model in the query string:
+#
+### GET /api/claude_cli/bootstrap
+# source=axios  timeout=5000ms  observed live
+GET {{baseUrl}}/api/claude_cli/bootstrap?entrypoint=cli&model=claude-opus-5
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+Content-Type: application/json
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### Event logging batch (highest-volume endpoint in a session)
+# source=axios  observed live: 132 calls in one session, all 200
+POST {{baseUrl}}/api/event_logging/v2/batch
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+Content-Type: application/json
+x-service-name: claude_code
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### MCP registry listing (unauthenticated, cursor-paginated)
+# source=axios  auth="none"  timeout=5000ms  observed live
+GET {{baseUrl}}/mcp-registry/v0/servers?version=latest&limit=100&visibility=commercial,gsuite,enterprise,health
+Accept: application/json
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+# Pagination: the response carries a cursor which is passed back as
+# &cursor=<server-name>:<version>.
+
+### Ultrareview quota
+# source=axios  auth="teleport-org"  timeout=3000ms  observed live
+# CLAUDE_CODE_ULTRAREVIEW_QUOTA_FIXTURE, when set, is parsed as JSON and
+# returned instead -- no request is made.
+GET {{baseUrl}}/v1/ultrareview/quota
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{version}}
+anthropic-client-platform: {{clientPlatform}}
+x-organization-uuid: {{orgUuid}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### Third-party telemetry sink observed alongside the API traffic
+#   POST https://http-intake.logs.us5.datadoghq.com/api/v2/logs
+#   header: dd-api-key
+# 83 calls in the same session, all 202. The us5 subdomain is narrower than the
+# generic datadoghq.com host recorded in SECTION 22.
+
