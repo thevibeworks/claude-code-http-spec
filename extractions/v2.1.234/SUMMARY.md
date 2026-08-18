@@ -191,6 +191,12 @@ and are written up in Section 42 with method, beta flag, auth mode and timeout.
 137 sit in a named family with prose; 24 are grouped under "Other v2.1.234
 routes" with the same verified fields but no prose yet.
 
+Section 42 is **generated**, not hand-written: `scripts/gen-spec-section.py`
+builds it from `raw/routes.tsv` and is idempotent, so those ~1,700 lines have
+provenance and do not need line-by-line review. The request blocks are
+generated; the family grouping and prose are authored, and live in the
+`FAMILIES` table inside that script rather than in the .http file.
+
 A further 47 path literals exist in the constant pool whose call site builds the
 path through a helper `extract-routes.py` does not follow. Those are declared
 with `# PATH-ONLY` lines: the path is verified, the method is not, and the spec

@@ -88,6 +88,7 @@ and recorded negatives (there is no revocation endpoint).
 |--------|------|-----|
 | API paths | `extractions/v<ver>/raw/paths.txt` | quoted `"/api/..."` / `"/v1/..."` literals |
 | Routes (method + auth) | `extractions/v<ver>/raw/routes.tsv` | `_client.<method>(...)` and axios call sites |
+| Generated spec section | `specs/claude-code-api-complete.http` | `scripts/gen-spec-section.py`, idempotent, from `routes.tsv` |
 | Beta flags | `extractions/v<ver>/raw/beta_flags.txt` | tokens ending in a dated `YYYY-MM-DD` suffix |
 | Call contexts | `extractions/v<ver>/calls/*.txt` | bounded windows around each endpoint literal |
 | Headers / scopes / URLs | `extractions/v<ver>/raw/*.txt` | literal header names, `user:`/`org:` scopes, hardcoded URLs |

@@ -259,6 +259,25 @@ Or use script:
 
 ## Step 6: Update .http Files
 
+The bulk of a version bump is mechanical: one request block per new route, with
+the header set implied by its auth mode. That part is generated, so it is
+reproducible and nobody has to review 1,700 lines by hand:
+
+```bash
+scripts/gen-spec-section.py <version> /tmp/literals.txt
+```
+
+It rewrites the "NEW IN v<version>" section in place and is idempotent -- run it
+twice, get the same bytes. Generated: the request blocks. Authored: the family
+grouping and prose, which live in the `FAMILIES` table inside the script. Edit
+prose there, not in the .http file, or the next run drops it.
+
+Curated endpoints -- the ones that earn a request body, a response shape, or a
+paragraph of behaviour -- are written by hand in the sections above it, as
+before.
+
+### Manual edits
+
 For each **added** endpoint in `added_endpoints.txt`:
 
 1. Verify with `rg` pattern (Step 4)
