@@ -1,0 +1,49 @@
+## paths: 103 total, 22 added, 2 removed (v2.1.222 -> v2.1.251)
+
+### Added
+- "/api/desktop/
+- "/api/directory/
+- "/api/event_logging/
+- "/api/frame/
+- "/api/frame/db/agent
+- "/api/frame/sync
+- "/api/frame/types
+- "/api/oauth/organizations/:orgUUID/plugin_ratings
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances/outcome
+- "/api/oauth/usage?at_wall=1&skip_spend=1
+- "/api/organizations/:orgUUID/cowork/remote_devices
+- "/v1/code/mcp/hearthbot
+- "/v1/code/scm-connectors/{provider}/{id}/tunnel
+- "/v1/code/webhook-triggers
+- "/v1/deployment_runs?beta=true
+- "/v1/deployments?beta=true
+- "/v1/dreams?beta=true
+- "/v1/filestore/fs/createFile
+- "/v1/pages/mcp
+- "/v1/tunnels?beta=true
+- "/v1/ultrareview/quota
+
+### Removed
+- "/api/frame/deploy/complete
+- "/api/frame/deploy/init
+
+## beta_flags: 45 total, 4 added, 9 removed (v2.1.222 -> v2.1.251)
+
+### Added
+- agent-memory-2026-07-22
+- dreaming-2026-04-21
+- mcp-tunnels-2026-06-22
+- thinking-display-updates-2026-08-18
+
+### Removed
+- code-execution-2025-08-25
+- computer-use-2025-11-24
+- fine-grained-tool-streaming-2025-05-14
+- k-2025-02-19
+- mcp-client-2025-11-20
+- mid-conversation-tool-changes-2026-07-01
+- server-side-fallback-2026-06-09
+- structured-outputs-2025-11-13
+- token-efficient-tools-2025-02-19
+
