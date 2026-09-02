@@ -4,8 +4,8 @@
 > `@anthropic-ai/claude-code` release talks to.
 
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/documented-v2.1.197-success)](extractions/v2.1.197/SUMMARY.md)
-[![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg-blue)](scripts/)
+[![version](https://img.shields.io/badge/documented-v2.1.234-success)](extractions/v2.1.234/SUMMARY.md)
+[![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg%20%2B%20python3-blue)](scripts/)
 
 This repo documents which API paths, beta flags, headers, OAuth scopes, and
 model identifiers a given Claude Code release references, by reading the
@@ -19,26 +19,76 @@ credentials. The output is plain text you can diff across versions.
 
 ## Currently Documented
 
-**v2.1.197** — see [extractions/v2.1.197/SUMMARY.md](extractions/v2.1.197/SUMMARY.md).
-69 API paths, 45 beta flags. 12 paths and 3 beta flags added since v2.1.170.
+**v2.1.234** — see [extractions/v2.1.234/SUMMARY.md](extractions/v2.1.234/SUMMARY.md).
+101 API path literals (+33 vs v2.1.197), 53 beta flags (+9), and **242
+call-site routes** with method, beta flag, auth mode and timeout.
+`scripts/validate-spec.sh` reports 0 undocumented and 0 phantom endpoints for
+both specs.
+
+New families in this release: self-hosted runner pools, MCP tunnels, dreams,
+deployments, Design consent/grants, ultrareview quota, and a much larger frame
+(Artifact) surface.
 
 The binary also embeds a complete, verbatim self-hosted gateway protocol
-specification (`CLAUDE_CODE_USE_GATEWAY`) — not inferred, the literal ~9.6KB
-Markdown doc the CLI ships internally. Recovered whole to
-[extractions/v2.1.197/GATEWAY-PROTOCOL.md](extractions/v2.1.197/GATEWAY-PROTOCOL.md),
+specification (`CLAUDE_CODE_USE_GATEWAY`) — not inferred, the literal Markdown
+doc the CLI ships internally. It grew from 9,598 bytes in v2.1.197 to 13,246 in
+v2.1.234, adding the rate-limit / overage 429 header contract, TLS leaf
+certificate pinning, client guarantees, and a section on proxying to Bedrock,
+Vertex and Foundry. Recovered whole to
+[extractions/v2.1.234/GATEWAY-PROTOCOL.md](extractions/v2.1.234/GATEWAY-PROTOCOL.md),
 with a runnable request set at
 [specs/claude-code-gateway.http](specs/claude-code-gateway.http).
 
+### Correction: methods and headers ARE recoverable from the binary
+
 Since v2.1.117 the release ships as a Bun-compiled binary rather than a
-readable `cli.js`. String literals still live in the binary's constant pool,
-so `strings` + `rg` remains the extraction method for paths, beta flags, model
-IDs, and env-var names.
+readable `cli.js`, and this README used to say:
+
+> Header sets, request bodies, timeouts and retry behaviour are **not**
+> recoverable from a binary.
+
+That was wrong. The binary embeds the whole minified JavaScript bundle as
+printable text. It reads as one enormous line, so `rg -A/-B` context returns
+nothing useful and it looks unrecoverable — but cut a fixed *byte* window and
+the call site is right there:
+
+```js
+fs.get("/v1/ultrareview/quota", {auth: "teleport-org", timeout: 3000})
+```
+
+From v2.1.234 on, methods, header sets, auth modes, timeouts and beta flags are
+read from the release being documented rather than carried forward from
+v2.1.76. `scripts/extract-routes.py` does it mechanically for every call site;
+`scripts/extract-calls.py` cuts the window when you want to read a body by
+hand. The same method works retroactively on older binaries.
+
+**Auth modes.** The most useful thing this recovered: axios call sites name
+their auth mode, and the mode decides the entire header set.
+
+| `auth:` | Headers |
+|---------|---------|
+| `teleport-org` | `Authorization`, `Content-Type`, `anthropic-version`, `anthropic-client-platform`, `x-organization-uuid` — and substitutes the literal `:orgUUID` in the path |
+| `session-jwt` | `Authorization: Bearer <session access token>` only |
+| `claude-ai-oauth` | `Authorization`, `anthropic-beta: oauth-2025-04-20` |
+| `none` | no auth headers |
+| `async` / unset | resolved OAuth headers, or `x-api-key` under API-key auth |
+
+That also explains why paths in the constant pool contain `:orgUUID` verbatim —
+the auth layer substitutes it, not the call site.
+
+The OAuth surface is documented to full depth in
+[specs/claude-oauth-api.http](specs/claude-oauth-api.http): per-call header
+builders, timeouts, status handling, scope gating, the refresh-lock protocol,
+and recorded negatives (there is no revocation endpoint).
+`specs/claude-code-api-complete.http` is the breadth index.
 
 ## What It Extracts
 
 | Output | File | How |
 |--------|------|-----|
 | API paths | `extractions/v<ver>/raw/paths.txt` | quoted `"/api/..."` / `"/v1/..."` literals |
+| Routes (method + auth) | `extractions/v<ver>/raw/routes.tsv` | `_client.<method>(...)` and axios call sites |
+| Generated spec section | `specs/claude-code-api-complete.http` | `scripts/gen-spec-section.py`, idempotent, from `routes.tsv` |
 | Beta flags | `extractions/v<ver>/raw/beta_flags.txt` | tokens ending in a dated `YYYY-MM-DD` suffix |
 | Call contexts | `extractions/v<ver>/calls/*.txt` | bounded windows around each endpoint literal |
 | Headers / scopes / URLs | `extractions/v<ver>/raw/*.txt` | literal header names, `user:`/`org:` scopes, hardcoded URLs |
@@ -52,10 +102,15 @@ What a literal can and cannot prove:
   published version. A documented path/flag/scope is backed by a verifiable
   `rg` pattern against the release. This is the bar for everything in
   `raw/` and `specs/`.
-- **Medium confidence (context-inferred).** Method, headers, and request body
-  are read from the bounded text window around the literal (`calls/*.txt`).
-  Minifier variable names in those windows are noise, not facts — they change
-  every build and are never treated as documentation.
+- **High confidence (call site read).** Method, auth mode, timeout and beta
+  flag come from the call site itself, in the release being documented
+  (`raw/routes.tsv`). Minifier variable names in those windows are noise, not
+  facts — they change every build and are never treated as documentation, which
+  is why the extractors detect identifiers rather than hardcoding them.
+- **Declared unknown.** Where a path literal exists but its call site builds
+  the path through a helper the extractor does not follow, the spec carries a
+  `# PATH-ONLY` line: the path is verified, the method is not, and the spec
+  says so rather than guessing. 47 such paths in v2.1.234.
 - **Not claimed.** Anything seen only at runtime, anything inferred from logs,
   and anything that cannot be reproduced with a literal pattern. If it is not
   in a release string, it is not documented.
