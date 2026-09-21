@@ -1,0 +1,33 @@
+## paths: 107 total, 7 added, 3 removed (v2.1.251 -> v2.1.278)
+
+### Added
+- "/api/claude_code/policy_limits
+- "/api/frame/frames/external
+- "/api/oauth/organizations/:orgUUID/marketplaces
+- "/api/oauth/organizations/:orgUUID/plugins/
+- "/api/oauth/usage?cedar_ember=1&skip_spend=1
+- "/v1/claude/test/
+- "/v1/code/github/post-review-comment
+
+### Removed
+- "/api/directory/
+- "/v1/code/sessions
+- "/v1/sessions
+
+## beta_flags: 55 total, 10 added, 0 removed (v2.1.251 -> v2.1.278)
+
+### Added
+- alpha-2026-08-05
+- dangerous-tool-use-2026-09-03
+- foo-2025-01-01
+- message-threads-2026-08-12
+- mid-conversation-output-config-2026-07-01
+- mid-conversation-system-clear-at-2026-08-21
+- mid-conversation-tool-changes-2026-07-01
+- thinking-binding-controls-2026-08-01
+- thinking-resumption-2026-07-17
+- timing-2026-09-09
+
+### Removed
+None.
+
