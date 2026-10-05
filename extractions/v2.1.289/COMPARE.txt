@@ -1,0 +1,57 @@
+## paths: 125 total, 26 added, 4 removed (v2.1.251 -> v2.1.289)
+
+### Added
+- "/api/claude_code/policy_limits
+- "/api/directory/plugins
+- "/api/frame/frames/external
+- "/api/oauth/organizations/:orgUUID/marketplaces
+- "/api/oauth/organizations/:orgUUID/plugins/
+- "/api/oauth/usage?cedar_ember=1&skip_spend=1
+- "/api/v4/
+- "/v1/claude/test/
+- "/v1/code/github/post-review-comment
+- "/v1/code/sessions/
+- "/v1/files
+- "/v1/filestore/fs/listDirectory
+- "/v1/me
+- "/v1/messages/cache_touch
+- "/v1/organizations/api_keys?beta=true
+- "/v1/organizations/compliance_settings?beta=true
+- "/v1/organizations/external_keys?beta=true
+- "/v1/organizations/federation_issuers?beta=true
+- "/v1/organizations/federation_rules?beta=true
+- "/v1/organizations/invites?beta=true
+- "/v1/organizations/me?beta=true
+- "/v1/organizations/rate_limits?beta=true
+- "/v1/organizations/service_accounts?beta=true
+- "/v1/organizations/users?beta=true
+- "/v1/organizations/workspaces?beta=true
+- "/v1/skills
+
+### Removed
+- "/api/directory/
+- "/v1/code/sessions
+- "/v1/filestore/fs/createFile
+- "/v1/sessions
+
+## beta_flags: 54 total, 12 added, 3 removed (v2.1.251 -> v2.1.289)
+
+### Added
+- alpha-2026-08-05
+- cache-keepalive-2026-09-03
+- dangerous-tool-use-2026-09-03
+- foo-2025-01-01
+- inline-tools-2026-09-15
+- message-threads-2026-08-12
+- mid-conversation-system-clear-at-2026-08-21
+- mid-conversation-tool-changes-2026-07-01
+- thinking-binding-controls-2026-08-01
+- thinking-resumption-2026-07-17
+- timing-2026-09-09
+- user-profiles-2026-08-18
+
+### Removed
+- compact-2026-01-12
+- skills-2025-10-02
+- user-profiles-2026-03-24
+
