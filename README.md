@@ -4,7 +4,7 @@
 > `@anthropic-ai/claude-code` release talks to.
 
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/documented-v2.1.197-success)](extractions/v2.1.197/SUMMARY.md)
+[![version](https://img.shields.io/badge/documented-v2.1.296-success)](extractions/v2.1.296/SUMMARY.md)
 [![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg-blue)](scripts/)
 
 This repo documents which API paths, beta flags, headers, OAuth scopes, and
@@ -19,8 +19,15 @@ credentials. The output is plain text you can diff across versions.
 
 ## Currently Documented
 
-**v2.1.197** — see [extractions/v2.1.197/SUMMARY.md](extractions/v2.1.197/SUMMARY.md).
-69 API paths, 45 beta flags. 12 paths and 3 beta flags added since v2.1.170.
+**v2.1.296** — see [extractions/v2.1.296/SUMMARY.md](extractions/v2.1.296/SUMMARY.md)
+and [COMPARE.txt](extractions/v2.1.296/COMPARE.txt).
+130 API path literals and 54 beta-flag pattern matches; 31 paths added and 4
+removed, 12 beta flags added and 3 removed since v2.1.251. These are the raw
+automated extraction: its SUMMARY notes are still `TODO(review)`, and the lists
+have not been reviewed by hand.
+
+The curated layer (`calls/*.txt`, `specs/*.http`, the gateway protocol doc) was
+last brought up to date at **v2.1.197**.
 
 The binary also embeds a complete, verbatim self-hosted gateway protocol
 specification (`CLAUDE_CODE_USE_GATEWAY`) — not inferred, the literal ~9.6KB
