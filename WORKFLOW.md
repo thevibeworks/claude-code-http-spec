@@ -3,6 +3,29 @@
 Sequential runbook for extracting HTTP endpoints from Claude Code CLI.
 Agent executes top-to-bottom. Gates require pass before proceeding.
 
+## Reading a compiled release (v2.1.117+)
+
+Releases ship as a Bun-compiled binary, not a readable `cli.js`. The whole
+minified JavaScript bundle is still in there as printable text -- it just reads
+as one enormous line, so `rg -A/-B` context returns nothing useful and it *looks*
+unrecoverable. It is not. Two moves make the binary as readable as the old
+bundle:
+
+```bash
+# 1. one literal per line, for the rg-based path patterns and the validator
+scripts/binary-literals.sh <binary> /tmp/literals.txt
+
+# 2. method + path + beta flag + auth mode + timeout, per call site
+scripts/extract-routes.py <binary> --all extractions/vX.Y.Z/raw/routes.tsv
+
+# 3. a printable byte window around each endpoint, for reading bodies/headers
+scripts/extract-calls.py <binary> extractions/vX.Y.Z/calls/
+```
+
+Header sets, request bodies and timeouts ARE recoverable from a binary. Earlier
+revisions of this repo said otherwise and carried them forward from v2.1.76;
+that was wrong. Read them from the release you are documenting.
+
 ## HTTP Precision Requirements
 
 For each endpoint, document ALL of:
@@ -103,6 +126,19 @@ rg 'grove_notice_viewed' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-grove-noti
 rg 'create_api_key' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-create-api-key.txt
 rg 'claude_cli/roles' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-roles.txt
 rg 'client_data' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-client-data.txt
+rg 'api/claude_cli_profile' cli.js -B 10 -A 20 > ../$OUT/calls/api-cli-profile.txt
+rg 'admin_requests' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-admin-requests.txt
+rg 'api/oauth/file_upload' cli.js -B 10 -A 30 > ../$OUT/calls/api-oauth-file-upload.txt
+rg 'api/oauth/files' cli.js -B 10 -A 30 > ../$OUT/calls/api-oauth-file-download.txt
+rg '/v1/oauth/hello' cli.js -B 10 -A 20 > ../$OUT/calls/api-oauth-hello.txt
+
+# OAuth plumbing that determines headers for ALL of the above.
+# These are the highest-value windows: three distinct header builders exist
+# and mixing them up is the most common spec error.
+rg 'BASE_API_URL: "' cli.js -B 20 -A 30 > ../$OUT/calls/oauth-config.txt
+rg 'CLAUDE_CODE_CUSTOM_OAUTH_URL' cli.js -B 5 -A 25 > ../$OUT/calls/oauth-custom-url-allowlist.txt
+rg '"anthropic-beta": ' cli.js -B 12 -A 4 > ../$OUT/calls/header-builders.txt
+rg 'claude-cli/\$\{|claude-code/\$\{' cli.js -B 12 -A 2 > ../$OUT/calls/user-agent-builders.txt
 rg 'api/claude_code_grove' cli.js -B 10 -A 20 > ../$OUT/calls/api-grove-settings.txt
 rg 'first_token_date' cli.js -B 10 -A 20 > ../$OUT/calls/api-first-token-date.txt
 rg 'sonnet_1m_access' cli.js -B 10 -A 20 > ../$OUT/calls/api-sonnet-1m-access.txt
@@ -223,6 +259,25 @@ Or use script:
 
 ## Step 6: Update .http Files
 
+The bulk of a version bump is mechanical: one request block per new route, with
+the header set implied by its auth mode. That part is generated, so it is
+reproducible and nobody has to review 1,700 lines by hand:
+
+```bash
+scripts/gen-spec-section.py <version> /tmp/literals.txt
+```
+
+It rewrites the "NEW IN v<version>" section in place and is idempotent -- run it
+twice, get the same bytes. Generated: the request blocks. Authored: the family
+grouping and prose, which live in the `FAMILIES` table inside the script. Edit
+prose there, not in the .http file, or the next run drops it.
+
+Curated endpoints -- the ones that earn a request body, a response shape, or a
+paragraph of behaviour -- are written by hand in the sections above it, as
+before.
+
+### Manual edits
+
 For each **added** endpoint in `added_endpoints.txt`:
 
 1. Verify with `rg` pattern (Step 4)
@@ -259,10 +314,33 @@ Update version in file headers.
 ./scripts/validate-spec.sh --subset package/cli.js specs/claude-oauth-api.http
 ```
 
+Pass `--routes` so the call-site table counts as code, alongside the literal
+scan. Without it, any path assembled from a template
+(`/v1/environments/${id}/work/${w}/ack` -- never a whole literal) reads as a
+phantom:
+
+```bash
+scripts/binary-literals.sh <binary> /tmp/literals.txt
+scripts/validate-spec.sh --routes extractions/vX.Y.Z/raw/routes.tsv \
+  /tmp/literals.txt specs/claude-code-api-complete.http
+scripts/validate-spec.sh --subset --routes extractions/vX.Y.Z/raw/routes.tsv \
+  /tmp/literals.txt specs/claude-oauth-api.http
+```
+
 **GATE**: Script must exit 0.
 If fails, STOP and report:
 - Undocumented endpoints (in code, not in spec)
 - Phantom endpoints (in spec, not in code)
+
+When a path literal exists but its call site builds the path through a helper
+the route extractor does not follow, do NOT guess a method. Declare it:
+
+```
+# PATH-ONLY {{baseUrl}}/api/frame/contract/latest
+```
+
+The validator counts that as documented. It claims the path exists and nothing
+else -- no method, no headers, no body.
 
 ## Step 8: Prepare Commit (HUMAN REVIEW)
 
@@ -313,6 +391,45 @@ rm -f current_spec_paths.txt new_extracted_paths.txt added_endpoints.txt removed
 | Timeouts | `rg 'timeout:\s*[0-9]+' cli.js` |
 | Grant types | `rg 'grant_type.*"[^"]*"' cli.js -o` |
 | Scopes | `rg '"user:[^"]*"\|"org:[^"]*"' cli.js -o` |
+
+## Known Extraction Blind Spots
+
+The path-literal patterns above key on `"/api/...` or `BASE_API_URL}/api/...`.
+Endpoints whose host comes from a *helper call* are invisible to both:
+
+```js
+`${ubY()}/api/oauth/file_upload`          // host helper, not BASE_API_URL
+`${qPz()}/api/oauth/files/${uuid}/content`
+```
+
+`scripts/validate-spec.sh` carries explicit rules for these two. When a new
+endpoint is built the same way, add a rule there or it will be reported as a
+phantom forever. Sweep for the shape with:
+
+```bash
+rg -o '\}/api/[a-z_/]+' cli.js | sort -u
+```
+
+Header sets used to be guesswork. They are not any more: axios call sites name
+their auth mode, and the mode decides the entire header set.
+
+| `auth:` | Emits |
+|---------|-------|
+| `teleport-org` | `Authorization` + `Content-Type` + `anthropic-version` + `anthropic-client-platform` + `x-organization-uuid`; also substitutes `:orgUUID` in the path |
+| `session-jwt` | `Authorization: Bearer <session access token>`, nothing else |
+| `claude-ai-oauth` | `Authorization` + `anthropic-beta: oauth-2025-04-20` |
+| `none` | no auth headers |
+| `async` / unset | resolved OAuth headers, or `x-api-key` under API-key auth |
+
+`scripts/extract-routes.py` records the mode per route. Two pre-flight refusals
+apply to every axios call: essential-traffic-only mode, and a non-first-party
+provider (`data-residency`).
+
+Stainless SDK resources take auth from the client, not per call, and pin their
+own `anthropic-beta` flag per resource.
+
+Still: never copy a header block from a neighbouring endpoint. Read the call
+site, or read the `auth` column.
 
 ## HTTP Precision Patterns
 

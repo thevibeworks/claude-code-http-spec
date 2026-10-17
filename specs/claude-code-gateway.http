@@ -5,14 +5,21 @@
 # Claude Code gateway -- a self-hosted proxy the CLI can be pointed at instead
 # of talking to api.anthropic.com directly. The full protocol document is
 # embedded verbatim as a string literal in the release binary and is
-# reproduced at extractions/v2.1.197/GATEWAY-PROTOCOL.md -- every request
+# reproduced at extractions/v2.1.234/GATEWAY-PROTOCOL.md -- every request
 # below traces back to that literal, not to inference about behavior.
 #
+# Updated for v2.1.234, where the embedded document grew from 9,598 to 13,246
+# bytes. New sections: the rate-limit / overage 429 header contract, TLS leaf
+# certificate pinning, client guarantees, and a full section on proxying to
+# Bedrock, Vertex and Foundry. The request set below is unchanged -- the new
+# material is contract detail, not new endpoints.
+#
 # Search patterns for binary validation:
-#   strings binary_2.1.197/claude | rg '# Claude Code gateway protocol' -A 5
-#   strings binary_2.1.197/claude | rg 'CLAUDE_CODE_USE_GATEWAY|CLAUDE_GATEWAY_ALLOW_LOOPBACK'
-#   strings binary_2.1.197/claude | rg 'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY'
-#   strings binary_2.1.197/claude | rg '"/v1/metrics":"metrics","/v1/logs":"logs","/v1/traces":"traces"'
+#   scripts/binary-literals.sh binary_2.1.234/claude /tmp/literals.txt
+#   rg '# Claude Code gateway protocol' /tmp/literals.txt
+#   rg 'CLAUDE_CODE_USE_GATEWAY|CLAUDE_GATEWAY_ALLOW_LOOPBACK' /tmp/literals.txt
+#   rg 'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY' /tmp/literals.txt
+#   rg '"/v1/metrics":"metrics","/v1/logs":"logs","/v1/traces":"traces"' /tmp/literals.txt
 #
 # A developer points the CLI at a gateway via `/login` with the gateway's
 # base URL. Every path below is relative to that base URL; the client does
@@ -23,11 +30,20 @@
 ### VARIABLES
 ### ============================================================================
 
+# NOTE ON VALIDATION
+#
+# scripts/validate-spec.sh reports these paths as "phantom" and that is
+# correct-by-design: this file specifies the SERVER side of the contract. The
+# CLI resolves /oauth/* from the gateway's own discovery document and never
+# hardcodes them, so they do not exist as client-side path literals. Validate
+# this file against extractions/v<ver>/GATEWAY-PROTOCOL.md -- the verbatim
+# protocol document the binary embeds -- not against the client's literals.
+#
 @gatewayBase = https://gw.corp.example.com
 @deviceCode = YOUR_DEVICE_CODE_HERE
 @accessToken = YOUR_ACCESS_TOKEN_HERE
 @refreshToken = YOUR_REFRESH_TOKEN_HERE
-@cliVersion = 2.1.197
+@cliVersion = 2.1.234
 
 ### ============================================================================
 ### 1. DISCOVERY (required, unauthenticated)

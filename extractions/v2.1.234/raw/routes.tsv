@@ -1,0 +1,243 @@
+method	path	beta	auth	timeout_ms	source
+POST	/api/auth/trusted_devices				axios
+GET	/api/claude_cli/bootstrap			5000	axios
+POST	/api/claude_cli_feedback			30000	axios
+GET	/api/claude_code/notification/preferences				axios
+PATCH	/api/claude_code/notification/preferences				axios
+GET	/api/claude_code/organizations/metrics_enabled		async	5000	axios
+GET	/api/claude_code/skills		async	5000	axios
+GET	/api/claude_code_grove				axios
+POST	/api/claude_code_shared_session_transcripts			30000	axios
+GET	/api/directory/servers?{param}		none	5000	axios
+GET	/api/frame/comments/{param}			15000	axios
+POST	/api/frame/comments/{param}/{param}				axios
+POST	/api/frame/comments/{param}/{param}/resolve				axios
+POST	/api/frame/comments/{param}/{param}/summon-status			5000	axios
+POST	/api/frame/comments/{param}/{param}/{param}				axios
+POST	/api/frame/db/agent				axios
+POST	/api/frame/deploy/complete		claude-ai-oauth	15000	axios
+POST	/api/frame/deploy/direct			60000	axios
+POST	/api/frame/deploy/init		claude-ai-oauth	15000	axios
+POST	/api/frame/deploy/prepare			30000	axios
+GET	/api/frame/frames?limit=200			15000	axios
+GET	/api/frame/frames?limit={param}			15000	axios
+GET	/api/frame/read/{param}			15000	axios
+POST	/api/frame/subscribe/{param}		claude-ai-oauth	15000	axios
+POST	/api/frame/track			5000	axios
+POST	/api/frame/unsubscribe/{param}		claude-ai-oauth	15000	axios
+POST	/api/frame/upload			60000	axios
+DELETE	/api/frame/{param}		claude-ai-oauth	15000	axios
+GET	/api/frame/{param}?via=model_read			15000	axios
+GET	/api/hello				axios
+POST	/api/oauth/account/grove_notice_viewed				axios
+GET	/api/oauth/account/settings				axios
+PATCH	/api/oauth/account/settings				axios
+POST	/api/oauth/organizations/:orgUUID/admin_requests		teleport-org		axios
+GET	/api/oauth/organizations/:orgUUID/admin_requests/eligibility?request_type={param}		teleport-org		axios
+GET	/api/oauth/organizations/:orgUUID/admin_requests/me?{param}		teleport-org		axios
+POST	/api/oauth/organizations/:orgUUID/billing/tax_rate		teleport-org	5000	axios
+POST	/api/oauth/organizations/:orgUUID/claude_code/pro_trial		teleport-org		axios
+PUT	/api/oauth/organizations/:orgUUID/contracts/auto_reload_settings		teleport-org	30000	axios
+POST	/api/oauth/organizations/:orgUUID/contracts/prepaid/credits		teleport-org	30000	axios
+POST	/api/oauth/organizations/:orgUUID/overage_credit_grant		teleport-org	60000	axios
+GET	/api/oauth/organizations/:orgUUID/overage_credit_grant?campaign={param}		teleport-org		axios
+PUT	/api/oauth/organizations/:orgUUID/overage_spend_limit		teleport-org		axios
+GET	/api/oauth/organizations/:orgUUID/payment_method		teleport-org	5000	axios
+GET	/api/oauth/organizations/:orgUUID/prepaid/bundles		teleport-org	5000	axios
+GET	/api/oauth/organizations/:orgUUID/prepaid/commits/{param}		teleport-org		axios
+GET	/api/oauth/organizations/:orgUUID/prepaid/credits		teleport-org	5000	axios
+GET	/api/oauth/organizations/:orgUUID/referral/eligibility?campaign={param}		teleport-org	5000	axios
+GET	/api/oauth/organizations/:orgUUID/referral/redemptions?campaign={param}		teleport-org		axios
+POST	/api/oauth/organizations/:orgUUID/setup_overage_billing		teleport-org	30000	axios
+GET	/api/oauth/organizations/:orgUUID/skills/{param}/download{param}		teleport-org		axios
+GET	/api/oauth/organizations/:orgUUID/sync/github/auth		teleport-org		axios
+GET	/api/oauth/usage			5000	axios
+GET	/api/organization/claude_code_first_token_date		async		axios
+GET	/api/organizations/:orgUUID/claude_code/onboarding		teleport-org		axios
+POST	/api/organizations/:orgUUID/claude_code/onboarding				axios
+DELETE	/api/organizations/:orgUUID/claude_code/onboarding/{param}		teleport-org		axios
+PUT	/api/organizations/:orgUUID/claude_code/onboarding/{param}				axios
+POST	/api/organizations/:orgUUID/cowork/remote_devices		teleport-org		axios
+GET	/api/organizations/:orgUUID/marketplace/plugin-assets/{param}		teleport-org		axios
+GET	/api/web/domain_info?domain={param}				axios
+GET	/events			15000	axios
+GET	/mcp-registry/v0/servers?{param}		none	5000	axios
+POST	/revoke			5000	axios
+POST	/v1/agents/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/agents/{param}/versions?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/agents/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/agents/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/agents?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/agents?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/code/auth/refresh			15000	axios
+POST	/v1/code/github/import-token		teleport-org	15000	axios
+POST	/v1/code/local/memory/credential				axios
+GET	/v1/code/local/memory/mounts			5000	axios
+POST	/v1/code/runners/self-hosted/deregister				axios
+POST	/v1/code/runners/self-hosted/runners/register			15000	axios
+POST	/v1/code/runners/self-hosted/runners/{param}/poll			30000	axios
+POST	/v1/code/runners/self-hosted/sessions/{param}/release			15000	axios
+POST	/v1/code/runners/self-hosted/sessions/{param}/report-failure			15000	axios
+POST	/v1/code/runners/self-hosted/spawn-hints/nack			15000	axios
+POST	/v1/code/runners/self-hosted/spawn-hints/poll			30000	axios
+GET	/v1/code/sessions/{param}/events?limit={param}&sort_order=desc		teleport-org	15000	axios
+GET	/v1/code/sessions/{param}/file?{param}		teleport-org		axios
+GET	/v1/code/sessions/{param}/remote			15000	axios
+PUT	/v1/code/sessions/{param}/synced_file		teleport-org		axios
+PUT	/v1/code/sessions/{param}/worker			15000	axios
+POST	/v1/code/sessions/{param}/worker/diagnostics			30000	axios
+POST	/v1/code/sessions/{param}/worker/events			15000	axios
+POST	/v1/code/sessions/{param}/worker/heartbeat				axios
+POST	/v1/code/sessions/{param}/worker/register			30000	axios
+POST	/v1/code/sessions/{param}/worker/{param}				axios
+GET	/v1/code/triggers	ccr-triggers-2026-01-30	teleport-org		axios
+POST	/v1/code/triggers		teleport-org	20000	axios
+GET	/v1/code/triggers/{param}		teleport-org	20000	axios
+POST	/v1/code/triggers/{param}		teleport-org	20000	axios
+POST	/v1/code/triggers/{param}/run		teleport-org	20000	axios
+POST	/v1/complete				sdk
+GET	/v1/deployment_runs/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/deployment_runs?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments/{param}/pause?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments/{param}/run?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments/{param}/unpause?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/deployments/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/deployments?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/deployments?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/design/consent				axios
+GET	/v1/design/consent				axios
+POST	/v1/design/consent				axios
+GET	/v1/design/grants				axios
+POST	/v1/design/grants				axios
+POST	/v1/design/mcp		none	60000	axios
+POST	/v1/dreams/{param}/archive?beta=true	dreaming-2026-04-21			sdk
+POST	/v1/dreams/{param}/cancel?beta=true	dreaming-2026-04-21			sdk
+GET	/v1/dreams/{param}?beta=true	dreaming-2026-04-21			sdk
+GET	/v1/dreams?beta=true	dreaming-2026-04-21			sdk
+POST	/v1/dreams?beta=true	dreaming-2026-04-21			sdk
+POST	/v1/environments/bridge			15000	axios
+DELETE	/v1/environments/bridge/{param}				axios
+POST	/v1/environments/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}/bridge/reconnect				axios
+GET	/v1/environments/{param}/work/poll				axios
+GET	/v1/environments/{param}/work/poll?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/environments/{param}/work/stats?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}/work/{param}/ack				axios
+POST	/v1/environments/{param}/work/{param}/ack?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}/work/{param}/heartbeat				axios
+POST	/v1/environments/{param}/work/{param}/heartbeat?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}/work/{param}/stop				axios
+POST	/v1/environments/{param}/work/{param}/stop?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/environments/{param}/work/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}/work/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/environments/{param}/work?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/environments/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/environments/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/environments?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/environments?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/files/{param}/content?beta=true	files-api-2025-04-14			sdk
+DELETE	/v1/files/{param}?beta=true	files-api-2025-04-14			sdk
+GET	/v1/files/{param}?beta=true	files-api-2025-04-14			sdk
+GET	/v1/files?beta=true	files-api-2025-04-14			sdk
+POST	/v1/files?beta=true	files-api-2025-04-14			sdk
+POST	/v1/filestore/fs/readFile		none		axios
+POST	/v1/memory_stores/{param}/archive?beta=true	agent-memory-2026-07-22			sdk
+DELETE	/v1/memory_stores/{param}/memories/{param}?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores/{param}/memories/{param}?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/memory_stores/{param}/memories/{param}?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores/{param}/memories?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/memory_stores/{param}/memories?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/memory_stores/{param}/memory_versions/{param}/redact?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores/{param}/memory_versions/{param}?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores/{param}/memory_versions?beta=true	agent-memory-2026-07-22			sdk
+DELETE	/v1/memory_stores/{param}?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores/{param}?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/memory_stores/{param}?beta=true	agent-memory-2026-07-22			sdk
+GET	/v1/memory_stores?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/memory_stores?beta=true	agent-memory-2026-07-22			sdk
+POST	/v1/messages				sdk
+GET	/v1/messages/batches				sdk
+POST	/v1/messages/batches				sdk
+DELETE	/v1/messages/batches/{param}				sdk
+GET	/v1/messages/batches/{param}				sdk
+POST	/v1/messages/batches/{param}/cancel				sdk
+POST	/v1/messages/batches/{param}/cancel?beta=true	message-batches-2024-09-24			sdk
+DELETE	/v1/messages/batches/{param}?beta=true	message-batches-2024-09-24			sdk
+GET	/v1/messages/batches/{param}?beta=true	message-batches-2024-09-24			sdk
+GET	/v1/messages/batches?beta=true	message-batches-2024-09-24			sdk
+POST	/v1/messages/batches?beta=true	message-batches-2024-09-24			sdk
+POST	/v1/messages/count_tokens				sdk
+POST	/v1/messages/count_tokens?beta=true	token-counting-2024-11-01			sdk
+POST	/v1/messages?beta=true	structured-outputs-2025-12-15			sdk
+GET	/v1/models				sdk
+GET	/v1/models/{param}				sdk
+GET	/v1/models/{param}?beta=true	user-profiles-2026-03-24			sdk
+GET	/v1/models?beta=true	user-profiles-2026-03-24			sdk
+POST	/v1/sessions/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/events/stream?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/events?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions/{param}/events?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/sessions/{param}/resources/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/resources/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions/{param}/resources/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/resources?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions/{param}/resources?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions/{param}/threads/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/threads/{param}/events?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/threads/{param}/stream?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/threads/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}/threads?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/sessions/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/sessions?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/sessions?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/skills/{param}/versions/{param}/content?beta=true	skills-2025-10-02			sdk
+DELETE	/v1/skills/{param}/versions/{param}?beta=true	skills-2025-10-02			sdk
+GET	/v1/skills/{param}/versions/{param}?beta=true	skills-2025-10-02			sdk
+GET	/v1/skills/{param}/versions?beta=true	skills-2025-10-02			sdk
+POST	/v1/skills/{param}/versions?beta=true	skills-2025-10-02			sdk
+DELETE	/v1/skills/{param}?beta=true	skills-2025-10-02			sdk
+GET	/v1/skills/{param}?beta=true	skills-2025-10-02			sdk
+GET	/v1/skills?beta=true	skills-2025-10-02			sdk
+POST	/v1/skills?beta=true	skills-2025-10-02			sdk
+POST	/v1/tunnels/{param}/archive?beta=true	mcp-tunnels-2026-06-22			sdk
+POST	/v1/tunnels/{param}/certificates/{param}/archive?beta=true	mcp-tunnels-2026-06-22			sdk
+GET	/v1/tunnels/{param}/certificates/{param}?beta=true	mcp-tunnels-2026-06-22			sdk
+GET	/v1/tunnels/{param}/certificates?beta=true	mcp-tunnels-2026-06-22			sdk
+POST	/v1/tunnels/{param}/certificates?beta=true	mcp-tunnels-2026-06-22			sdk
+POST	/v1/tunnels/{param}/reveal_token?beta=true	mcp-tunnels-2026-06-22			sdk
+POST	/v1/tunnels/{param}/rotate_token?beta=true	mcp-tunnels-2026-06-22			sdk
+GET	/v1/tunnels/{param}?beta=true	mcp-tunnels-2026-06-22			sdk
+GET	/v1/tunnels?beta=true	mcp-tunnels-2026-06-22			sdk
+POST	/v1/tunnels?beta=true	mcp-tunnels-2026-06-22			sdk
+GET	/v1/ultrareview/preflight		teleport-org	5000	axios
+GET	/v1/ultrareview/quota		teleport-org	3000	axios
+POST	/v1/user_profiles/{param}/enrollment_url?beta=true	user-profiles-2026-03-24			sdk
+GET	/v1/user_profiles/{param}?beta=true	user-profiles-2026-03-24			sdk
+POST	/v1/user_profiles/{param}?beta=true	user-profiles-2026-03-24			sdk
+GET	/v1/user_profiles?beta=true	user-profiles-2026-03-24			sdk
+POST	/v1/user_profiles?beta=true	user-profiles-2026-03-24			sdk
+POST	/v1/vaults/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults/{param}/credentials/{param}/archive?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults/{param}/credentials/{param}/mcp_oauth_validate?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/vaults/{param}/credentials/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/vaults/{param}/credentials/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults/{param}/credentials/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/vaults/{param}/credentials?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults/{param}/credentials?beta=true	managed-agents-2026-04-01			sdk
+DELETE	/v1/vaults/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/vaults/{param}?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults/{param}?beta=true	managed-agents-2026-04-01			sdk
+GET	/v1/vaults?beta=true	managed-agents-2026-04-01			sdk
+POST	/v1/vaults?beta=true	managed-agents-2026-04-01			sdk
+GET	/worker/files		session-jwt		axios
+POST	/worker/register				axios
+GET	/worker/skill-manifest		session-jwt		axios
+PUT	/worker/synced_file		session-jwt		axios
+GET	/worker/synced_file?path=${encodeURIComponent(		session-jwt		axios
+POST	/{param}/{param}		none	60000	axios
+GET	/{param}{param}		session-jwt		axios

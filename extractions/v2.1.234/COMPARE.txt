@@ -1,0 +1,56 @@
+## paths: 101 total, 33 added, 1 removed (v2.1.197 -> v2.1.234)
+
+### Added
+- "/api/desktop/
+- "/api/directory/
+- "/api/event_logging/
+- "/api/frame/
+- "/api/frame/contract/latest
+- "/api/frame/db/agent
+- "/api/frame/deploy/prepare
+- "/api/frame/frames?limit=200
+- "/api/frame/upload
+- "/api/oauth/organizations/:orgUUID/mcp/connectors/list
+- "/api/oauth/organizations/:orgUUID/mcp/connectors/search
+- "/api/oauth/organizations/:orgUUID/mcp/connectors/suggest
+- "/api/oauth/organizations/:orgUUID/plugin_ratings
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances
+- "/api/oauth/organizations/:orgUUID/plugin_ratings/appearances/outcome
+- "/api/oauth/organizations/:orgUUID/plugins/search
+- "/api/oauth/organizations/:orgUUID/skills/search
+- "/api/organizations/:orgUUID/cowork/remote_devices
+- "/v1/code/agent-proxy/artifact
+- "/v1/code/agent-proxy/frame
+- "/v1/code/local/memory/credential
+- "/v1/code/local/memory/mounts
+- "/v1/code/memory/
+- "/v1/code/scm-connectors/{provider}/{id}/tunnel
+- "/v1/code/webhook-triggers
+- "/v1/deployment_runs?beta=true
+- "/v1/deployments?beta=true
+- "/v1/design/consent
+- "/v1/design/grants
+- "/v1/design/mcp
+- "/v1/dreams?beta=true
+- "/v1/tunnels?beta=true
+- "/v1/ultrareview/quota
+
+### Removed
+- "/api/claude_code/discovery/team_usage
+
+## beta_flags: 53 total, 9 added, 1 removed (v2.1.197 -> v2.1.234)
+
+### Added
+- agent-memory-2026-07-22
+- auto-mode-classifier-2026-07-16
+- dreaming-2026-04-21
+- mcp-tunnels-2026-06-22
+- mid-conversation-tool-changes-2026-07-01
+- per-turn-control-2026-07-01
+- pre-2026-07-28
+- prompt-caching-evict-2026-05-12
+- server-side-fallback-2026-07-01
+
+### Removed
+- summarize-connector-text-2026-03-13
+

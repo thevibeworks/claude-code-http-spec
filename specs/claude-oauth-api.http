@@ -1,11 +1,31 @@
 # Claude Code OAuth API Reference
 # Compatible with: VS Code REST Client, JetBrains HTTP Client
 #
-# Search patterns for cli.js validation:
-#   Constants:  rg "BASE_API_URL|TOKEN_URL|CLIENT_ID" cli.js
-#   Scopes:     rg "user:inference|user:profile|user:sessions" cli.js
-#   Headers:    rg "anthropic-beta|anthropic-version|X-Stainless" cli.js
-#   Endpoints:  rg "/oauth/|/v1/oauth/token|/api/hello" cli.js
+# ============================================================================
+# SOURCE OF TRUTH
+# ============================================================================
+# Wire detail (methods, headers, bodies, timeouts, status handling) is read
+# from the last release that shipped a readable bundle:
+#
+#   @anthropic-ai/claude-code@2.1.76  ->  package/cli.js (prettier-formatted)
+#
+# Since v2.1.117 the release ships as a Bun-compiled binary. Path literals
+# still live in the constant pool, so continuity of each PATH below is
+# re-checked against extractions/v2.1.197/raw/paths.txt. Continuity of
+# HEADERS and BODIES past v2.1.76 is NOT claimed -- see CONFIDENCE below.
+#
+# ============================================================================
+# CONFIDENCE MARKERS (per README.md "Confidence Model")
+# ============================================================================
+#   [literal]  String exists verbatim in the release. Verify with the
+#              `# Verify:` line under each section.
+#   [context]  Method / headers / body read from the code window around the
+#              literal. True for v2.1.76; re-verify against newer builds.
+#   [absent]   Deliberately recorded negative -- checked for, not found.
+#
+# Verify any single line:
+#   rg '/api/oauth/profile' package/cli.js
+#   strings binary_2.1.197/claude | rg '/api/oauth/profile'
 
 ### ============================================================================
 ### VARIABLES
@@ -15,57 +35,239 @@
 @platformUrl = https://platform.claude.com
 @claudeAiUrl = https://claude.ai
 @clientId = 9d1c250a-e61b-44d9-88ed-5944d1962f5e
-@cliVersion = 2.1.170
+@cliVersion = 2.1.76
+@oauthBeta = oauth-2025-04-20
+@apiVersion = 2023-06-01
 
-# PKCE: base64url(crypto.randomBytes(32)) - no padding, URL-safe
-@codeVerifier = {{$randomInt 1000000000 9999999999}}abc
-@codeChallenge = {{$randomInt 1000000000 9999999999}}xyz
-@state = {{$randomInt 1000000000 9999999999}}state
+# PKCE (see section 3 for exact generation)
+@codeVerifier = REPLACE_WITH_BASE64URL_32_RANDOM_BYTES
+@codeChallenge = REPLACE_WITH_BASE64URL_SHA256_OF_VERIFIER
+@state = REPLACE_WITH_BASE64URL_32_RANDOM_BYTES
 
 # From callback after authorization
 @authCode = YOUR_AUTH_CODE_HERE
 @accessToken = YOUR_ACCESS_TOKEN_HERE
 @refreshToken = YOUR_REFRESH_TOKEN_HERE
+@apiKey = YOUR_API_KEY_HERE
 
-# Optional
 @port = 8765
-@orgUUID =
+@orgUuid = YOUR_ORG_UUID
+@accountUuid = YOUR_ACCOUNT_UUID
+@fileUuid = YOUR_FILE_UUID
 
 ### ============================================================================
-### SCOPES
+### 0. AUTH MODEL: WHERE THE TOKEN COMES FROM
 ### ============================================================================
-# Search: rg '"user:inference"|"user:profile"|"user:sessions"|"org:create_api_key"' cli.js
+# Verify: rg 'CLAUDE_CODE_OAUTH_TOKEN|CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR' cli.js
 #
-# Inference only (setup-token mode):
-#   user:inference
+# Token source precedence, highest first:              [context]
 #
-# Session scopes (used in token refresh):
+#   1. CLAUDE_CODE_OAUTH_TOKEN                 env var, raw access token
+#   2. CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR env var, numeric fd to read
+#                                              token from (avoids argv/env leak)
+#   3. Managed/primary API key path
+#   4. Credentials store -> `claudeAiOauth` record
+#
+# Tokens supplied via (1) or (2) are synthesized locally with
+# scopes = ["user:inference"] only. They therefore do NOT satisfy the
+# `user:profile` gate, which is why `claude setup-token` output cannot be
+# used for org verification (see section 22).
+#
+# The persisted credential record is:                  [context]
+#   claudeAiOauth: {
+#     accessToken, refreshToken, expiresAt (epoch ms),
+#     scopes: string[], subscriptionType, rateLimitTier
+#   }
+#
+# Headless login without a browser:                    [context]
+#   CLAUDE_CODE_OAUTH_REFRESH_TOKEN   refresh token to bootstrap from
+#   CLAUDE_CODE_OAUTH_SCOPES          REQUIRED alongside it; space-separated
+#                                     scopes the refresh token was issued with
+# CLI errors out if the refresh token is set without the scopes var.
+#
+# Pre-seeding account identity (skips a profile fetch): [context]
+#   CLAUDE_CODE_ACCOUNT_UUID
+#   CLAUDE_CODE_USER_EMAIL
+#   CLAUDE_CODE_ORGANIZATION_UUID
+# All three must be set together. A successful profile fetch overrides them.
+#
+# Global traffic kill switch:                          [context]
+#   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+# Suppresses: client_data, account/settings, claude_code_grove, referral
+# eligibility prefetch, error reporting. Does NOT suppress: profile, token
+# exchange/refresh, roles, usage.
+
+### ============================================================================
+### 1. ENDPOINT CONFIGURATION
+### ============================================================================
+# Verify: rg 'BASE_API_URL|CONSOLE_AUTHORIZE_URL|TOKEN_URL|API_KEY_URL' cli.js
+#
+# The CLI resolves one config record at startup. Build env is hardcoded to
+# "prod"; the "local" record exists but is unreachable in published builds.
+#
+# PROD:                                                [literal]
+#   BASE_API_URL           https://api.anthropic.com
+#   CONSOLE_AUTHORIZE_URL  https://platform.claude.com/oauth/authorize
+#   CLAUDE_AI_AUTHORIZE_URL https://claude.ai/oauth/authorize
+#   TOKEN_URL              https://platform.claude.com/v1/oauth/token
+#   API_KEY_URL            https://api.anthropic.com/api/oauth/claude_cli/create_api_key
+#   ROLES_URL              https://api.anthropic.com/api/oauth/claude_cli/roles
+#   CONSOLE_SUCCESS_URL    https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code
+#   CLAUDEAI_SUCCESS_URL   https://platform.claude.com/oauth/code/success?app=claude-code
+#   MANUAL_REDIRECT_URL    https://platform.claude.com/oauth/code/callback
+#   CLIENT_ID              9d1c250a-e61b-44d9-88ed-5944d1962f5e
+#   OAUTH_FILE_SUFFIX      ""
+#   MCP_PROXY_URL          https://mcp-proxy.anthropic.com
+#   MCP_PROXY_PATH         /v1/mcp/{server_id}
+#
+# LOCAL (dead branch, recorded for completeness):      [literal]
+#   BASE_API_URL           http://localhost:3000
+#   CLAUDE_AI_AUTHORIZE_URL http://localhost:4000/oauth/authorize
+#   CLIENT_ID              22422756-60c9-4084-8eb7-27705fd5cf9a
+#   OAUTH_FILE_SUFFIX      "-local-oauth"
+#   MCP_PROXY_PATH         /v1/toolbox/shttp/mcp/{server_id}
+#
+# OVERRIDES:                                           [context]
+#   CLAUDE_CODE_OAUTH_CLIENT_ID   replaces CLIENT_ID, unvalidated
+#   CLAUDE_CODE_CUSTOM_OAUTH_URL  replaces BASE_API_URL and rebuilds every
+#                                 derived URL; trailing slash stripped;
+#                                 sets OAUTH_FILE_SUFFIX to "-custom-oauth"
+#
+# CLAUDE_CODE_CUSTOM_OAUTH_URL is ALLOWLISTED. Any other value throws
+# "CLAUDE_CODE_CUSTOM_OAUTH_URL is not an approved endpoint."
+# Allowlist (exact match after trailing-slash strip):  [literal]
+#   https://beacon.claude-ai.staging.ant.dev
+#   https://claude.fedstart.com
+#   https://claude-staging.fedstart.com
+#
+# When the custom URL is set, derived URLs differ from prod in shape:
+#   TOKEN_URL     -> {custom}/v1/oauth/token
+#   AUTHORIZE     -> {custom}/oauth/authorize   (both console and claude.ai)
+#   SUCCESS_URL   -> {custom}/oauth/code/success?app=claude-code
+#                    (no buy_credits detour, unlike prod console)
+#
+# ANTHROPIC_BASE_URL is a SEPARATE override and does NOT affect OAuth config.
+# It is consulted by the inference client and by the file-upload host only
+# (section 19) -- an asymmetry worth knowing when proxying.
+
+### ============================================================================
+### 2. SCOPES
+### ============================================================================
+# Verify: rg '"user:inference"|"user:profile"|"user:sessions:claude_code"' cli.js
+# Verify: rg '"user:mcp_servers"|"user:file_upload"|"org:create_api_key"' cli.js
+#
+# Three named sets exist:                              [literal]
+#
+# CONSOLE set (org:create_api_key + profile):
+#   org:create_api_key
+#   user:profile
+#
+# SESSION set (sent on token refresh when no explicit scopes given):
 #   user:profile
 #   user:inference
 #   user:sessions:claude_code
+#   user:mcp_servers
+#   user:file_upload
 #
-# Full scopes (login mode):
+# ALL set (union of the two, sent on a full interactive login):
 #   org:create_api_key
 #   user:profile
 #   user:inference
 #   user:sessions:claude_code
+#   user:mcp_servers
+#   user:file_upload
+#
+# INFERENCE-ONLY set (`claude setup-token`):
+#   user:inference
+#
+# Scope semantics used by the client:                  [context]
+#   user:inference  -> presence marks the token as a Claude.ai subscription
+#                      token. Gates: /api/oauth/usage, first_token_date,
+#                      grove, referral, extra-usage. Absence routes login
+#                      to the create-api-key branch instead.
+#   user:profile    -> gates /api/oauth/usage and client_data client-side.
+#   user:mcp_servers, user:file_upload
+#                   -> requested and refreshed, but NEVER checked
+#                      client-side. Enforcement is server-side only.
+#
+# NOTE: user:mcp_servers and user:file_upload are absent from pre-v2.1.x
+# spec revisions of this file. They are present in v2.1.76.
 
 ### ============================================================================
-### 1. AUTHORIZATION URL (Browser Redirect)
+### 3. PKCE GENERATION
 ### ============================================================================
-# Search: rg "oauth/authorize|code_challenge|response_type" cli.js
+# Verify: rg 'randomBytes\(32\)|createHash\("sha256"\)' cli.js
 #
-# User opens this URL in browser to authorize.
-# Two hosts available:
-#   - claude.ai/oauth/authorize (loginWithClaudeAi=true, uses Claude.ai session)
-#   - platform.claude.com/oauth/authorize (loginWithClaudeAi=false)
+# base64url = base64, then +/ -> -_ , then strip all '='.  [context]
 #
-# Two redirect modes:
-#   - Manual: https://platform.claude.com/oauth/code/callback (copy/paste code)
-#   - Automatic: http://localhost:{port}/callback (local server catches it)
+#   code_verifier  = base64url(randomBytes(32))          -> 43 chars
+#   code_challenge = base64url(sha256(code_verifier))    -> 43 chars
+#   state          = base64url(randomBytes(32))          -> 43 chars
+#
+# The challenge hashes the ALREADY-ENCODED verifier string (not raw bytes).
+#
+# Python:
+#   import secrets, hashlib, base64
+#   b64 = lambda b: base64.urlsafe_b64encode(b).decode().rstrip('=')
+#   verifier  = b64(secrets.token_bytes(32))
+#   challenge = b64(hashlib.sha256(verifier.encode()).digest())
+#   state     = b64(secrets.token_bytes(32))
 
-# @name auth_claude_ai_manual_inference_only
-# setup-token mode: inference only, manual callback, claude.ai
+### ============================================================================
+### 4. AUTHORIZATION URL (browser redirect, not an API call)
+### ============================================================================
+# Verify: rg 'oauth/authorize' cli.js
+# Verify: rg 'code_challenge_method|login_hint|login_method' cli.js
+#
+# Query params, in the order the CLI appends them:      [context]
+#   code                  always the literal string "true"
+#   client_id             CLIENT_ID
+#   response_type         always "code"
+#   redirect_uri          MANUAL_REDIRECT_URL, or http://localhost:{port}/callback
+#   scope                 space-joined; INFERENCE-ONLY set or ALL set
+#   code_challenge        base64url(sha256(verifier))
+#   code_challenge_method always "S256"
+#   state                 base64url(32 random bytes)
+#   orgUUID               optional; only when caller supplies an org
+#   login_hint            optional; email, from `claude auth login --email`
+#   login_method          optional; only observed literal is "sso",
+#                         set by `claude auth login --sso`
+#
+# Host selection: claude.ai when loginWithClaudeAi, else platform.claude.com.
+# BOTH a manual-redirect and a localhost-redirect URL are built each run:
+# the manual one is printed for copy/paste, the localhost one is opened in
+# the browser. Whichever completes first wins.
+
+# @name authorize_claudeai_full_scopes
+# Interactive `claude auth login` -- automatic localhost callback
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=http://localhost:{{port}}/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+
+###
+
+# @name authorize_claudeai_manual_full_scopes
+# Same login, manual copy/paste callback
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=https://platform.claude.com/oauth/code/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+
+###
+
+# @name authorize_setup_token_inference_only
+# `claude setup-token` -- inference scope only, claude.ai host, 1-year token
 GET {{claudeAiUrl}}/oauth/authorize
     ?code=true
     &client_id={{clientId}}
@@ -78,61 +280,117 @@ GET {{claudeAiUrl}}/oauth/authorize
 
 ###
 
-# @name auth_claude_ai_manual_full_scopes
-# login mode: full scopes, manual callback, claude.ai
-GET {{claudeAiUrl}}/oauth/authorize
-    ?code=true
-    &client_id={{clientId}}
-    &response_type=code
-    &redirect_uri=https://platform.claude.com/oauth/code/callback
-    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
-    &code_challenge={{codeChallenge}}
-    &code_challenge_method=S256
-    &state={{state}}
-
-###
-
-# @name auth_claude_ai_automatic
-# login mode: full scopes, automatic callback via local server
-GET {{claudeAiUrl}}/oauth/authorize
-    ?code=true
-    &client_id={{clientId}}
-    &response_type=code
-    &redirect_uri=http://localhost:{{port}}/callback
-    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
-    &code_challenge={{codeChallenge}}
-    &code_challenge_method=S256
-    &state={{state}}
-
-###
-
-# @name auth_platform_with_org
-# Platform authorize with organization UUID (for org-specific auth)
+# @name authorize_platform_console
+# Console/platform host (loginWithClaudeAi = false)
 GET {{platformUrl}}/oauth/authorize
     ?code=true
     &client_id={{clientId}}
     &response_type=code
     &redirect_uri=https://platform.claude.com/oauth/code/callback
-    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload
     &code_challenge={{codeChallenge}}
     &code_challenge_method=S256
     &state={{state}}
-    &orgUUID={{orgUUID}}
+    &orgUUID={{orgUuid}}
+
+###
+
+# @name authorize_sso_with_login_hint
+# `claude auth login --email user@example.com --sso`
+GET {{claudeAiUrl}}/oauth/authorize
+    ?code=true
+    &client_id={{clientId}}
+    &response_type=code
+    &redirect_uri=http://localhost:{{port}}/callback
+    &scope=org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload
+    &code_challenge={{codeChallenge}}
+    &code_challenge_method=S256
+    &state={{state}}
+    &login_hint=user@example.com
+    &login_method=sso
 
 ### ============================================================================
-### 2. TOKEN EXCHANGE (Authorization Code -> Access Token)
+### 5. CALLBACK HANDLING
 ### ============================================================================
-# Search: rg "grant_type.*authorization_code|code_verifier|TOKEN_URL" cli.js
+# Verify: rg 'Invalid state parameter|Authorization code not found' cli.js
 #
-# Exchange authorization code for access token.
-# Called after user authorizes and callback receives the code.
+# AUTOMATIC MODE -- local HTTP server                  [context]
+#   Binds to "localhost" on an OS-assigned ephemeral port (listen(0)).
+#   Only the path /callback is served; anything else -> 404.
+#   Reads ?code and ?state from the query string.
+#     missing code       -> 400 "Authorization code not found"
+#     state mismatch     -> 400 "Invalid state parameter"
+#     ok                 -> response held open, then 302 to a success URL
+#   Success redirect target depends on the granted scopes:
+#     scopes include user:inference -> CLAUDEAI_SUCCESS_URL
+#     otherwise                     -> CONSOLE_SUCCESS_URL
+#   Error redirect always targets CLAUDEAI_SUCCESS_URL.
 #
-# expires_in: Optional. Only sent when expiresIn option provided.
-#   - setup-token mode typically requests 31536000 (1 year)
-#   - login mode omits this (server decides, issues refresh token)
+# MANUAL MODE -- copy/paste                            [context]
+#   The page at MANUAL_REDIRECT_URL shows a single string the user pastes
+#   back into the CLI. Format is:
+#
+#       <authorization_code>#<state>
+#
+#   split on the FIRST "#". Either half empty -> "Invalid code. Please make
+#   sure the full code was copied".
 
-# @name token_exchange_with_expiry
-# setup-token mode: request 1-year token
+### ============================================================================
+### 6. TOKEN EXCHANGE (authorization_code)
+### ============================================================================
+# Verify: rg 'grant_type.*authorization_code' cli.js
+# Verify: rg '/v1/oauth/token' cli.js
+#
+# Method   POST                                        [context]
+# Auth     none (public client + PKCE)
+# Headers  Content-Type: application/json  <- the ONLY header set
+# Timeout  15000 ms
+# Body     JSON (NOT form-encoded)
+#
+# Status handling:                                     [context]
+#   200  -> success
+#   401  -> "Authentication failed: Invalid authorization code"
+#   else -> "Token exchange failed ({status}): {statusText}"
+#
+# `redirect_uri` MUST match the authorize request exactly.
+# `expires_in` is sent only in setup-token mode (31536000 = 1 year).
+# `state` is echoed back in the body -- unusual for RFC 6749, but the CLI
+# sends it on every exchange.
+
+# @name token_exchange_automatic
+# Interactive login via localhost callback
+POST {{platformUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "http://localhost:{{port}}/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}"
+}
+
+###
+
+# @name token_exchange_manual
+# Interactive login via copy/paste callback
+POST {{platformUrl}}/v1/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type": "authorization_code",
+    "code": "{{authCode}}",
+    "redirect_uri": "https://platform.claude.com/oauth/code/callback",
+    "client_id": "{{clientId}}",
+    "code_verifier": "{{codeVerifier}}",
+    "state": "{{state}}"
+}
+
+###
+
+# @name token_exchange_setup_token
+# `claude setup-token` -- explicit 1-year expiry
 POST {{platformUrl}}/v1/oauth/token
 Content-Type: application/json
 
@@ -146,47 +404,59 @@ Content-Type: application/json
     "expires_in": 31536000
 }
 
-###
-
-# @name token_exchange_default_expiry
-# login mode: server-default expiry (gets refresh token)
-POST {{platformUrl}}/v1/oauth/token
-Content-Type: application/json
-
-{
-    "grant_type": "authorization_code",
-    "code": "{{authCode}}",
-    "redirect_uri": "https://platform.claude.com/oauth/code/callback",
-    "client_id": "{{clientId}}",
-    "code_verifier": "{{codeVerifier}}",
-    "state": "{{state}}"
-}
-
-###
-
-# @name token_exchange_automatic_callback
-# Automatic callback mode (localhost redirect)
-POST {{platformUrl}}/v1/oauth/token
-Content-Type: application/json
-
-{
-    "grant_type": "authorization_code",
-    "code": "{{authCode}}",
-    "redirect_uri": "http://localhost:{{port}}/callback",
-    "client_id": "{{clientId}}",
-    "code_verifier": "{{codeVerifier}}",
-    "state": "{{state}}"
-}
+### Response (fields the client actually reads):        [context]
+# {
+#   "access_token":  "string",
+#   "refresh_token": "string | null",
+#   "expires_in":    3600,
+#   "scope":         "space separated scopes",
+#   "account": {
+#     "uuid":          "string",
+#     "email_address": "string"
+#   },
+#   "organization": {
+#     "uuid": "string"
+#   }
+# }
+#
+# NOTE the naming split: the TOKEN response uses account.email_address;
+# the PROFILE response (section 8) uses account.email. They are different
+# field names on different endpoints.
+# `account` and `organization` are optional -- when absent the client falls
+# back to the profile endpoint for identity.
 
 ### ============================================================================
-### 3. TOKEN REFRESH
+### 7. TOKEN REFRESH (refresh_token)
 ### ============================================================================
-# Search: rg "grant_type.*refresh_token" cli.js
+# Verify: rg 'grant_type.*refresh_token' cli.js
 #
-# Refresh access token using refresh token.
-# Returns new access_token, optionally new refresh_token, expires_in.
+# Method   POST                                        [context]
+# Headers  Content-Type: application/json  <- the ONLY header set
+# Timeout  15000 ms
+# Status   non-200 -> "Token refresh failed: {statusText}"
 #
-# IMPORTANT: CLI sends scope parameter with session scopes
+# SCOPE PARAMETER -- the client always sends `scope`:  [context]
+#   If the stored token carries user:inference, the client sends the full
+#   SESSION set (5 scopes) regardless of what was originally granted.
+#   Otherwise it echoes the token's own recorded scopes.
+#
+# REFRESH TRIGGER                                      [context]
+#   Considered expired when  Date.now() + 300000 >= expiresAt
+#   i.e. a 5-minute skew window before actual expiry.
+#
+# CONCURRENCY -- cross-process file lock                [context]
+#   Refresh is serialized by a lock file in the config dir.
+#   On ELOCKED: retry up to 5 times, sleeping 1000 + random(0..1000) ms.
+#   After the lock is acquired the credential file is re-read; if another
+#   process already refreshed, this one no-ops ("race resolved").
+#   In-process, concurrent refreshes for the same token are deduped by a
+#   promise map.
+#
+# 401 RECOVERY                                          [context]
+#   On a 401 from an API call, the client re-reads the credential store
+#   first. If the stored access token differs from the one that failed,
+#   another process refreshed it -- retry with the new one, no network call.
+#   Only if it matches does an actual refresh fire.
 
 # @name token_refresh
 POST {{platformUrl}}/v1/oauth/token
@@ -196,245 +466,702 @@ Content-Type: application/json
     "grant_type": "refresh_token",
     "refresh_token": "{{refreshToken}}",
     "client_id": "{{clientId}}",
-    "scope": "user:profile user:inference user:sessions:claude_code"
+    "scope": "user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload"
 }
 
-### ============================================================================
-### 4. PROFILE API
-### ============================================================================
-# Search: rg "/api/oauth/profile" cli.js
+### Response:                                           [context]
+# {
+#   "access_token":  "string",
+#   "refresh_token": "string",   // may be absent -> old one is reused
+#   "expires_in":    3600,
+#   "scope":         "space separated scopes",
+#   "account":       { "uuid": "...", "email_address": "..." },  // optional
+#   "organization":  { "uuid": "..." }                           // optional
+# }
 #
-# Fetch user profile and organization info.
-# Used to determine subscription type and rate limits.
+# After a successful refresh the client conditionally re-fetches the profile
+# (section 8) -- only if billingType / accountCreatedAt / subscriptionCreatedAt
+# / subscriptionType / rateLimitTier are not all already cached.
+
+### ============================================================================
+### 8. PROFILE
+### ============================================================================
+# Verify: rg '/api/oauth/profile' cli.js
+#
+# Method   GET                                         [context]
+# Headers  Authorization: Bearer <token>
+#          Content-Type: application/json
+#          (no anthropic-beta, no anthropic-version, no User-Agent)
+# Timeout  10000 ms
+# Errors   swallowed -- any failure returns undefined, no status inspected
 
 # @name get_profile
 GET {{baseApiUrl}}/api/oauth/profile
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
+### Response (every field the client reads):            [context]
+# {
+#   "account": {
+#     "uuid":         "string",
+#     "email":        "string",
+#     "display_name": "string | null",
+#     "created_at":   "ISO-8601 string"
+#   },
+#   "organization": {
+#     "uuid":                    "string",
+#     "organization_type":       "claude_max | claude_pro | claude_enterprise | claude_team",
+#     "rate_limit_tier":         "string | null",
+#     "has_extra_usage_enabled": "boolean | null",
+#     "billing_type":            "string | null",
+#     "subscription_created_at": "ISO-8601 string | null"
+#   }
+# }
+#
+# organization_type -> subscriptionType mapping:        [context]
+#   claude_max        -> "max"
+#   claude_pro        -> "pro"
+#   claude_enterprise -> "enterprise"
+#   claude_team       -> "team"
+#   anything else     -> null
+#
+# billing_type literals seen in the bundle:             [literal]
+#   stripe_subscription
+#   stripe_subscription_contracted
+#   apple_subscription
+#   google_play_subscription
+#
+# The profile does NOT return an organization name.     [absent]
+# organization_name comes from the roles endpoint (section 9).
+
 ### ============================================================================
-### 5. ADDITIONAL OAUTH ENDPOINTS
+### 9. USER ROLES
 ### ============================================================================
-# Search: rg "API_KEY_URL|ROLES_URL|/claude_cli/" cli.js
-
-# @name create_api_key
-# Create API key via OAuth (requires org:create_api_key scope)
-POST {{baseApiUrl}}/api/oauth/claude_cli/create_api_key
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-    "name": "claude-code-api-key"
-}
-
-###
+# Verify: rg 'ROLES_URL|claude_cli/roles' cli.js
+#
+# Method   GET                                         [context]
+# Headers  Authorization: Bearer <token>   <- the ONLY header
+# Timeout  none (axios default: no timeout)
+# Status   non-200 -> "Failed to fetch user roles: {statusText}"
+# Called   once, immediately after login, before the API-key branch
 
 # @name get_roles
-# Get available roles (requires authentication)
 GET {{baseApiUrl}}/api/oauth/claude_cli/roles
 Authorization: Bearer {{accessToken}}
-Content-Type: application/json
 
-### ============================================================================
-### 6. HEALTH CHECK (No Auth Required)
-### ============================================================================
-# Search: rg "/api/hello" cli.js
+### Response:                                           [context]
+# {
+#   "organization_role": "string",
+#   "workspace_role":    "string",
+#   "organization_name": "string"
+# }
 #
-# Simple connectivity check - used by CLI to verify API reachability.
-# No authentication required.
-
-# @name health_check
-GET {{baseApiUrl}}/api/hello
-Cache-Control: no-cache
+# organization_role values the client branches on:      [literal]
+#   admin, billing, owner, primary_owner
+# (a role outside this set is treated as unprivileged)
 
 ### ============================================================================
-### 7. USAGE API
+### 10. CREATE API KEY
 ### ============================================================================
-# Search: rg "/api/oauth/usage" cli.js
+# Verify: rg 'API_KEY_URL|create_api_key' cli.js
 #
-# Get current usage/quota information for the authenticated user.
-# Requires: user:profile scope (via OAuth) or x-api-key
+# Method   POST                                        [context]
+# Headers  Authorization: Bearer <token>   <- the ONLY header
+# Body     null -- axios is called with an explicit null body.
+#          NO Content-Type is set and NO JSON is sent.
+# Timeout  none
+# Scope    requires org:create_api_key
+#
+# CORRECTION vs earlier revisions of this file: this endpoint does NOT
+# accept a {"name": "..."} body. The client sends nothing.
+#
+# Called only on the CONSOLE branch of login (token WITHOUT user:inference).
+# If the response has no raw_key the login fails with
+# "Unable to create API key. The server accepted the request but did not
+#  return a key."
 
-# @name get_usage_oauth
+# @name create_api_key
+POST {{baseApiUrl}}/api/oauth/claude_cli/create_api_key
+Authorization: Bearer {{accessToken}}
+
+### Response:                                           [context]
+# { "raw_key": "sk-ant-..." }
+
+### ============================================================================
+### 11. CLIENT DATA (remote feature flags)
+### ============================================================================
+# Verify: rg 'claude_cli/client_data' cli.js
+#
+# Method   GET                                         [context]
+# Headers  Content-Type: application/json
+#          User-Agent: claude-code/<version>
+#          Authorization: Bearer <token>
+#          anthropic-beta: oauth-2025-04-20
+# Timeout  5000 ms
+# Retry    2 attempts. On a 401 from attempt 1, refresh the token and retry
+#          once. Any other error propagates.
+# Gates    requires OAuth subscriber (user:inference) AND user:profile.
+#          Skipped entirely when CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC set.
+
+# REMOVED IN v2.1.234 -- the path literal is no longer present in the binary.
+# Verify: scripts/extract-binary.sh 2.1.234 then grep
+# extractions/v2.1.234/raw/paths.txt. Everything above was true through
+# v2.1.197 and is kept commented out as history.
+# @name get_client_data
+# GET {{baseApiUrl}}/api/oauth/claude_cli/client_data
+# Authorization: Bearer {{accessToken}}
+# anthropic-beta: {{oauthBeta}}
+# Content-Type: application/json
+# User-Agent: claude-code/{{cliVersion}}
+
+### Response:                                           [context]
+# {
+#   "client_data": {          // may be null
+#     "<flag_name>": "<string value>"
+#   }
+# }
+#
+# A flat string->string map. Only `.client_data` is read; the result is
+# cached to disk and compared before rewriting. Values are compared as
+# strings, e.g. a flag is on when its value === "true".
+# Observed key literal: coral_reef_sonnet                [literal]
+
+### ============================================================================
+### 12. USAGE / QUOTA
+### ============================================================================
+# Verify: rg '/api/oauth/usage' cli.js
+#
+# Method   GET                                         [context]
+# Headers  Content-Type: application/json
+#          User-Agent: claude-code/<version>
+#          Authorization: Bearer <token>
+#          anthropic-beta: oauth-2025-04-20
+# Timeout  5000 ms
+# Gates    requires user:inference AND user:profile.
+#          Returns {} without a request if either is missing.
+#          Returns null without a request if the token is within the
+#          5-minute expiry skew window.
+# Trigger  the /usage command and the settings usage panel
+#
+# CORRECTION: earlier revisions of this file documented an `x-api-key`
+# variant of this call. The shared header builder can emit x-api-key, but
+# this call site is gated on OAuth-subscriber status, so the API-key branch
+# is unreachable here.                                  [absent]
+
+# @name get_usage
 GET {{baseApiUrl}}/api/oauth/usage
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 Content-Type: application/json
 User-Agent: claude-code/{{cliVersion}}
 
-###
-
-# @name get_usage_apikey
-GET {{baseApiUrl}}/api/oauth/usage
-x-api-key: {{apiKey}}
-Content-Type: application/json
-User-Agent: claude-code/{{cliVersion}}
-
-### ============================================================================
-### 8. ACCOUNT SETTINGS
-### ============================================================================
-# Search: rg "/api/oauth/account/settings" cli.js
+### Response:                                           [context]
+# {
+#   "five_hour":         { "utilization": 45, "resets_at": "ISO-8601" },
+#   "seven_day":         { "utilization": 23, "resets_at": "ISO-8601" },
+#   "seven_day_sonnet":  { "utilization": 12, "resets_at": "ISO-8601" },
+#   "seven_day_opus":    { "utilization":  5, "resets_at": "ISO-8601" },
+#   "extra_usage": {
+#     "is_enabled":    true,
+#     "used_credits":  1234,     // MINOR UNITS (cents); UI divides by 100
+#     "monthly_limit": 5000,     // MINOR UNITS (cents)
+#     "utilization":   24
+#   }
+# }
 #
-# Get account settings for the authenticated user.
-# Requires: user:profile scope
+# Each limit block: utilization is a number or null (null -> block hidden);
+# resets_at may be absent. Only five_hour, seven_day and seven_day_sonnet
+# are rendered by /usage; seven_day_opus appears in rate-limit messaging.
+# extra_usage is only rendered for pro/max subscriptions.
+#
+# Related rate-limit enum used elsewhere in the client  [literal]
+# (from response-header parsing, NOT this endpoint's body):
+#   five_hour, seven_day, seven_day_opus, seven_day_sonnet, overage
+
+### ============================================================================
+### 13. ACCOUNT SETTINGS
+### ============================================================================
+# Verify: rg '/api/oauth/account/settings' cli.js
+#
+# Shared by both verbs:                                 [context]
+#   Headers  Authorization: Bearer <token>
+#            anthropic-beta: oauth-2025-04-20
+#            User-Agent: claude-code/<version>
+#   Timeout  none
+#   401      handled by a wrapper: refresh the token once, replay the call
+#   Skipped  when CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set (GET only)
+#   Cache    the GET is memoized in-process; both writes clear that cache
 
 # @name get_account_settings
 GET {{baseApiUrl}}/api/oauth/account/settings
 Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
 User-Agent: claude-code/{{cliVersion}}
 
+### Response:                                           [context]
+# {
+#   "grove_enabled":          true | false | null,
+#   "grove_notice_viewed_at": "ISO-8601 string | null"
+# }
+# grove_enabled === null means "user has not chosen yet" -- that is the
+# condition that triggers the consumer-terms dialog.
+
+###
+
+# @name update_account_settings
+# Records the user's consumer-terms / data-sharing choice.
+PATCH {{baseApiUrl}}/api/oauth/account/settings
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-code/{{cliVersion}}
+Content-Type: application/json
+
+{
+    "grove_enabled": true
+}
+
+### Body:  exactly one field, boolean.                  [context]
+### Response: not read by the client.
+
+###
+
+# @name mark_grove_notice_viewed
+# Body is an empty JSON object -- sent, not omitted.
+POST {{baseApiUrl}}/api/oauth/account/grove_notice_viewed
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-code/{{cliVersion}}
+Content-Type: application/json
+
+{}
+
+### Response: not read by the client.                   [context]
+
 ### ============================================================================
-### RESPONSE SCHEMAS
+### 14. GROVE NOTICE CONFIG (adjacent, non-/oauth path)
 ### ============================================================================
+# Verify: rg 'api/claude_code_grove' cli.js
 #
-# Token Exchange Response (success):
+# Method   GET                                         [context]
+# Headers  Authorization: Bearer <token>
+#          anthropic-beta: oauth-2025-04-20
+#          User-Agent: claude-cli/<version> (external, <entrypoint>)
+#            ^ NOTE: this one call uses the claude-cli UA form, not the
+#              claude-code form used by its siblings in section 13.
+# Timeout  3000 ms
+# Cache    24h, keyed by account uuid, stale-while-revalidate
+
+# @name get_grove_config
+GET {{baseApiUrl}}/api/claude_code_grove
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### Response:                                           [context]
 # {
-#     "access_token": "string",
-#     "refresh_token": "string | null",
-#     "expires_in": 31536000,
-#     "scope": "user:inference",
-#     "token_type": "Bearer",
-#     "account": {
-#         "uuid": "string",
-#         "email_address": "string"
-#     },
-#     "organization": {
-#         "uuid": "string"
-#     }
-# }
-#
-# Profile Response:
-# Search: rg "organization_type|rate_limit_tier|has_extra_usage" cli.js
-# {
-#     "account": {
-#         "uuid": "string",
-#         "email": "string",
-#         "display_name": "string | null"
-#     },
-#     "organization": {
-#         "uuid": "string",
-#         "organization_type": "claude_max | claude_pro | claude_enterprise | claude_team",
-#         "rate_limit_tier": "string | null",
-#         "has_extra_usage_enabled": true | false | null
-#     }
-# }
-#
-# Token Refresh Response:
-# {
-#     "access_token": "string",
-#     "refresh_token": "string (may be same or new)",
-#     "expires_in": 3600,
-#     "scope": "user:profile user:inference user:sessions:claude_code"
-# }
-#
-# Usage Response:
-# {
-#     "five_hour": {
-#         "utilization": 45,
-#         "resets_at": "2025-01-15T14:30:00Z"
-#     },
-#     "seven_day": {
-#         "utilization": 23,
-#         "resets_at": "2025-01-20T00:00:00Z"
-#     },
-#     "seven_day_sonnet": {
-#         "utilization": 12
-#     },
-#     "seven_day_opus": {
-#         "utilization": 5
-#     }
+#   "grove_enabled":             boolean,
+#   "domain_excluded":           boolean,   // client default false
+#   "notice_is_grace_period":    boolean,   // client default true
+#   "notice_reminder_frequency": number | null   // days between reminders
 # }
 
 ### ============================================================================
-### PKCE GENERATION
+### 15. FIRST TOKEN DATE
 ### ============================================================================
-# Search: rg "randomBytes|createHash.*sha256|base64.*replace" cli.js
+# Verify: rg 'claude_code_first_token_date' cli.js
 #
-# Code Verifier:
-#   1. Generate 32 random bytes: crypto.randomBytes(32)
-#   2. Base64url encode: replace('+','-').replace('/','_').replace('=','')
-#   Result: 43-character URL-safe string
-#
-# Code Challenge:
-#   1. SHA-256 hash the verifier: crypto.createHash('sha256').update(verifier).digest()
-#   2. Base64url encode the hash: same transforms as verifier
-#   Result: 43-character URL-safe string
-#
-# State:
-#   Same as verifier: base64url(crypto.randomBytes(32))
-#
-# Python equivalent:
-#   import secrets, hashlib, base64
-#   verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip('=')
-#   challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
-#   state = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip('=')
+# Method   GET                                         [context]
+# Headers  Authorization: Bearer <token>
+#          anthropic-beta: oauth-2025-04-20
+#          User-Agent: claude-code/<version>
+# Timeout  10000 ms
+# Called   once after a subscription login, only when not already cached.
+#          Skipped on the console/API-key login branch.
+
+# @name get_first_token_date
+GET {{baseApiUrl}}/api/organization/claude_code_first_token_date
+Authorization: Bearer {{accessToken}}
+anthropic-beta: {{oauthBeta}}
+User-Agent: claude-code/{{cliVersion}}
+
+### Response:                                           [context]
+# { "first_token_date": "ISO-8601 string | null" }
+# An unparseable date is reported as an error and not cached.
 
 ### ============================================================================
-### STAINLESS HEADERS
+### 16. CLI PROFILE (API-key auth variant)
 ### ============================================================================
-# Search: rg "X-Stainless|stainless" cli.js
+# Verify: rg 'api/claude_cli_profile' cli.js
 #
-# The Anthropic SDK (built with Stainless) adds platform-specific headers:
-#
-# X-Stainless-Lang: js
-# X-Stainless-Package-Version: <sdk_version>  # search: rg 'var Op.*"[0-9]' cli.js
-# X-Stainless-OS: MacOS | Linux | Windows | FreeBSD | OpenBSD | Unknown
-# X-Stainless-Arch: x64 | arm64 | arm | x32 | other:<arch> | unknown
-# X-Stainless-Runtime: node | deno | edge | browser:<name> | unknown
-# X-Stainless-Runtime-Version: <node_version>
-# X-Stainless-Retry-Count: 0 (incremented on retries)
-# X-Stainless-Timeout: 600 (timeout in seconds)
-# X-Stainless-Helper-Method: stream (when using streaming)
-#
-# OS mapping:
-#   darwin -> MacOS, win32 -> Windows, linux -> Linux
-#   freebsd -> FreeBSD, openbsd -> OpenBSD
-#
-# Arch mapping:
-#   x86_64, x64 -> x64
-#   aarch64, arm64 -> arm64
+# Method   GET                                         [context]
+# Auth     x-api-key -- NOT a bearer token. This is the API-key counterpart
+#          to section 8; it requires a stored account uuid AND an API key.
+# Headers  x-api-key: <key>
+#          anthropic-beta: oauth-2025-04-20
+# Query    account_uuid=<uuid>   (sent via axios `params`)
+# Timeout  10000 ms
+# Errors   swallowed
+
+# @name get_cli_profile
+GET {{baseApiUrl}}/api/claude_cli_profile?account_uuid={{accountUuid}}
+x-api-key: {{apiKey}}
+anthropic-beta: {{oauthBeta}}
 
 ### ============================================================================
-### USER-AGENT FORMATS
+### 17. ORGANIZATION: EXTRA-USAGE ADMIN REQUESTS
 ### ============================================================================
-# Search: rg "claude-cli/|claude-code/|\(external" cli.js
+# Verify: rg 'admin_requests' cli.js
 #
-# External CLI:
-#   claude-cli/<version> (external, cli)
-#   claude-cli/<version> (external, cli, agent-sdk/<sdk_version>)
+# Shared by all three:                                  [context]
+#   Headers  Authorization: Bearer <token>
+#            Content-Type: application/json
+#            anthropic-version: 2023-06-01
+#            x-organization-uuid: <org uuid>
+#   NOTE the different header builder: these send anthropic-version and
+#   x-organization-uuid, and do NOT send anthropic-beta.
+#   The path org uuid and the x-organization-uuid header are always the
+#   same value; the caller never passes an org explicitly.
+#   Timeout  none. Retry none. No status code is inspected.
+#   Auth     OAuth only -- an API key is explicitly rejected upstream with
+#            "Claude Code web sessions require authentication with a
+#             Claude.ai account."
 #
-# Internal use:
+# Gating before any of these fire:                      [context]
+#   - DISABLE_EXTRA_USAGE_COMMAND unset
+#   - billing_type is one of the four subscription literals (section 8)
+#   - subscriptionType is "team" or "enterprise"
+#   - user is NOT admin/billing/owner/primary_owner and NOT pro/max
+#   Privileged users are sent to a browser URL instead.
+#
+# Call order: eligibility -> me -> create. Each is independently
+# try/caught, so a failed eligibility or lookup does NOT block the POST.
+# Trigger: /extra-usage, or the rate-limit options menu.
+
+# @name check_admin_request_eligibility
+GET {{baseApiUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/eligibility?request_type=limit_increase
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{apiVersion}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:                                           [context]
+# { "is_allowed": boolean }
+# Compared with a strict `=== false`. Missing/null is treated as allowed
+# -- this check fails OPEN.
+
+###
+
+# @name list_my_admin_requests
+# `statuses` repeats once per value. Values are interpolated into the URL
+# WITHOUT encoding.
+GET {{baseApiUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests/me?request_type=limit_increase&statuses=pending&statuses=dismissed
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{apiVersion}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:                                           [context]
+# [ ... ]   top-level array; only .length is read, element shape unknown.
+# Non-empty -> "You have already submitted a request for extra usage."
+
+###
+
+# @name create_admin_request
+POST {{baseApiUrl}}/api/oauth/organizations/{{orgUuid}}/admin_requests
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{apiVersion}}
+x-organization-uuid: {{orgUuid}}
+
+{
+    "request_type": "limit_increase",
+    "details": null
+}
+
+### Body:                                               [context]
+# request_type -- only literal in the bundle is "limit_increase"
+# details      -- always sent, always null; non-null shape unknown
+### Response: not read by the client.
+
+### ============================================================================
+### 18. ORGANIZATION: REFERRAL / GUEST PASSES
+### ============================================================================
+# Verify: rg 'referral/eligibility|referral/redemptions' cli.js
+#
+# Same header builder as section 17 (anthropic-version +
+# x-organization-uuid, no anthropic-beta).             [context]
+# Gate: OAuth account with an org uuid AND subscriptionType === "max".
+# There is no POST/redeem endpoint -- sharing is a link copied to the
+# clipboard, redemption happens outside the CLI.        [absent]
+
+# @name get_referral_eligibility
+# Timeout 5000 ms. Result cached 24h per org, stale-while-revalidate,
+# in-flight requests deduped. Prefetched at startup unless
+# CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC is set.
+GET {{baseApiUrl}}/api/oauth/organizations/{{orgUuid}}/referral/eligibility?campaign=claude_code_guest_pass
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{apiVersion}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:                                           [context]
+# {
+#   "eligible":         boolean,
+#   "remaining_passes": number | null,
+#   "referrer_reward":  { "currency": "USD", "amount_minor_units": 500 } | null,
+#   "referral_code_details": {
+#     "referral_link": "https://...",
+#     "campaign":      "claude_code_guest_pass"
+#   }
+# }
+# Currency symbols the client knows: USD EUR GBP BRL CAD AUD NZD SGD;
+# anything else renders as "<CODE> ". amount_minor_units is divided by 100.
+
+###
+
+# @name get_referral_redemptions
+# Timeout 10000 ms (double the eligibility call). Not cached -- refetched
+# on every /passes invocation. The `campaign` value is echoed from the
+# eligibility response's referral_code_details.campaign, defaulting to
+# claude_code_guest_pass.
+GET {{baseApiUrl}}/api/oauth/organizations/{{orgUuid}}/referral/redemptions?campaign=claude_code_guest_pass
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+anthropic-version: {{apiVersion}}
+x-organization-uuid: {{orgUuid}}
+
+### Response:                                           [context]
+# {
+#   "redemptions": [ ... ],   // element shape unknown -- only truthiness
+#                             // of redemptions[i] is tested per slot
+#   "limit":       3          // client default 3 when falsy; UI renders
+#                             // at most 3 regardless
+# }
+
+### ============================================================================
+### 19. OAUTH FILE TRANSFER
+### ============================================================================
+# Verify: rg 'api/oauth/file_upload' cli.js
+# Verify: rg 'api/oauth/files' cli.js
+#
+# These two are built from helper hosts, not from the OAuth config's
+# BASE_API_URL template, so a naive `BASE_API_URL}/api/` grep misses them.
+#
+# Host resolution differs between the two:              [context]
+#   upload   ANTHROPIC_BASE_URL || BASE_API_URL
+#   download BASE_API_URL only -- ANTHROPIC_BASE_URL is IGNORED
+# Proxying via ANTHROPIC_BASE_URL therefore splits these two calls across
+# two hosts.
+#
+# Neither sends anthropic-beta nor anthropic-version. Both swallow all
+# HTTP errors (validateStatus always true) and log only to debug output.
+# The user:file_upload scope is requested but never checked client-side.
+
+# @name upload_file
+# Method POST. Timeout 30000 ms. Success is strictly HTTP 201.
+# Max size 31457280 bytes (30 MiB), checked BEFORE reading the file;
+# oversized files are silently skipped.
+# The multipart body is hand-assembled (not FormData) with exactly one
+# part named "file". The boundary is `----FormBoundary<randomUUID()>`.
+# Per-part Content-Type comes from an extension map with a fallback:
+#   .png=image/png  .jpg/.jpeg=image/jpeg  .gif=image/gif  .webp=image/webp
+#   anything else = application/octet-stream   (a fallback, not an allowlist)
+# Trigger: the SendUserMessage/Brief tool's `attachments`, gated on an
+# active REPL bridge session or CLAUDE_CODE_BRIEF_UPLOAD.
+POST {{baseApiUrl}}/api/oauth/file_upload
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----FormBoundary00000000-0000-0000-0000-000000000000
+
+# The client also sets Content-Length explicitly to the assembled buffer's
+# byte length. HTTP clients compute this themselves, so it is omitted here.
+------FormBoundary00000000-0000-0000-0000-000000000000
+Content-Disposition: form-data; name="file"; filename="screenshot.png"
+Content-Type: image/png
+
+< ./screenshot.png
+------FormBoundary00000000-0000-0000-0000-000000000000--
+
+### Response:                                           [context]
+# { "file_uuid": "string" }
+# Validated against a schema with exactly that one field; any other
+# field the server returns is discarded.
+
+###
+
+# @name download_file
+# Method GET. Timeout 30000 ms. Success is strictly HTTP 200.
+# Response is read as an arraybuffer -- no JSON, and no response header
+# is inspected (Content-Type and Content-Disposition are both ignored).
+# No size limit, no streaming, no retry, no cancellation.
+# The file_uuid is URL-encoded into the path.
+# Written to <config dir>/uploads/<sessionId>/<first-8-of-uuid>-<name>,
+# where <name> is the inbound file_name with [^a-zA-Z0-9._-] replaced by
+# "_" (falling back to "attachment").
+# Trigger: an inbound Remote Control (REPL bridge) message carrying
+# file_attachments: [{ file_uuid, file_name }].
+GET {{baseApiUrl}}/api/oauth/files/{{fileUuid}}/content
+Authorization: Bearer {{accessToken}}
+
+### Response: raw bytes.                                [context]
+#
+# DO NOT CONFUSE with the public Files API at /v1/files/{id}/content,
+# which is a different client: it sends anthropic-version: 2023-06-01 and
+# anthropic-beta: files-api-2025-04-14, uses a 60s timeout and retries 3x.
+
+### ============================================================================
+### 20. CONNECTIVITY PREFLIGHT
+### ============================================================================
+# Verify: rg '/api/hello' cli.js
+# Verify: rg '/v1/oauth/hello' cli.js
+#
+# TWO endpoints are probed CONCURRENTLY at startup, and the first failure
+# of either aborts the preflight.                       [context]
+#   1. {BASE_API_URL}/api/hello
+#   2. {origin of TOKEN_URL}/v1/oauth/hello
+# The second host is derived from TOKEN_URL, so it follows
+# CLAUDE_CODE_CUSTOM_OAUTH_URL when that is set.
+#
+# Method   GET, no auth
+# Headers  User-Agent: claude-cli/<version> (external, <entrypoint>)
+#          <- the ONLY header. There is no Cache-Control.
+# Timeout  none
+# Success  strictly HTTP 200; anything else is
+#          "Failed to connect to {hostname}: Status {status}"
+# TLS errors are detected separately and surface an SSL hint.
+#
+# CORRECTION vs earlier revisions of this file: /api/hello does not send
+# Cache-Control: no-cache, and it is not the only preflight target.
+
+# @name preflight_api_hello
+GET {{baseApiUrl}}/api/hello
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+###
+
+# @name preflight_oauth_hello
+GET {{platformUrl}}/v1/oauth/hello
+User-Agent: claude-cli/{{cliVersion}} (external, cli)
+
+### ============================================================================
+### 21. HEADER REFERENCE
+### ============================================================================
+#
+# THREE distinct header builders are used across the OAuth surface.
+# Which one applies is stated per endpoint above.       [context]
+#
+# BUILDER A -- "auth headers" (most /api/oauth/* calls)
+#   OAuth mode:    Authorization: Bearer <token>
+#                  anthropic-beta:  oauth-2025-04-20
+#   API-key mode:  x-api-key: <key>
+#                  (no anthropic-beta)
+#   Callers add User-Agent and Content-Type themselves; the builder does not.
+#
+# BUILDER B -- "session headers" (organizations/* calls, sections 17-18)
+#   Authorization:       Bearer <token>
+#   Content-Type:        application/json
+#   anthropic-version:   2023-06-01
+#   + x-organization-uuid: <org uuid> added at each call site
+#   Never sends anthropic-beta.
+#
+# BUILDER C -- none. Token exchange, refresh, profile, roles, create_api_key
+#   and the file endpoints set their headers inline. Notably:
+#     token exchange/refresh -> Content-Type only
+#     profile                -> Authorization + Content-Type
+#     roles, create_api_key  -> Authorization only
+#
+# USER-AGENT FORMS -- three exist, and they are not interchangeable:
 #   claude-code/<version>
+#       plain form; used by client_data, usage, account/settings,
+#       grove_notice_viewed, first_token_date
+#   claude-code/<version> (<entrypoint>, agent-sdk/<v>, client-app/<v>)
+#       parenthesized form; used by the inference client
+#   claude-cli/<version> (external, <entrypoint>[, agent-sdk/<v>][, client-app/<v>][, workload/<w>])
+#       used by claude_code_grove and by the connectivity preflight
+#   <entrypoint> is CLAUDE_CODE_ENTRYPOINT; <workload> is set for cron runs.
+#
+# Where no User-Agent is set at the call site (profile, roles,
+# create_api_key, admin_requests, referral, file endpoints), the HTTP
+# client's own default applies -- axios/1.8.4 in v2.1.76.  [context]
 
 ### ============================================================================
-### ANTHROPIC-BETA HEADER VALUES
+### 22. LOGIN FLOW SEQUENCE
 ### ============================================================================
-# Search: rg "anthropic-beta|oauth-202|thinking-202|context-|structured-|web-search|tool-examples" cli.js
+# Verify: rg 'tengu_oauth_flow_start|tengu_oauth_success' cli.js
 #
-# OAuth:
-#   oauth-2025-04-20
+# `claude auth login` / `/login`:                       [context]
+#   1. build BOTH authorize URLs (manual + localhost)
+#   2. start the local callback server on an ephemeral port
+#   3. print the manual URL, open the localhost URL in a browser
+#   4. race: whichever callback delivers a code first wins
+#   5. POST /v1/oauth/token  (grant_type=authorization_code)
+#   6. GET  /api/oauth/profile    -> store account + org identity
+#   7. persist tokens to the credential store
+#   8. GET  /api/oauth/claude_cli/roles  -> store org/workspace roles
+#   9. BRANCH on the granted scopes:
+#        has user:inference -> GET /api/organization/claude_code_first_token_date
+#        otherwise          -> POST /api/oauth/claude_cli/create_api_key
+#  10. if policy sets forceLoginOrgUUID, re-fetch the profile and compare
+#      organization.uuid; mismatch fails the login
 #
-# Inference betas:
-#   interleaved-thinking-2025-05-14
-#   context-1m-2025-08-07
-#   context-management-2025-06-27
-#   structured-outputs-2025-09-17
-#   web-search-2025-03-05
-#   tool-examples-2025-10-29
+# `claude setup-token`:                                 [context]
+#   same as above through step 5, but scope=user:inference and
+#   expires_in=31536000. Steps 6-10 are skipped entirely -- the access
+#   token is printed for the user to export as CLAUDE_CODE_OAUTH_TOKEN.
+#   Such a token has no user:profile scope and cannot pass step 10.
 #
-# Files API:
-#   files-api-2025-04-14
-#
-# Batches:
-#   message-batches-2024-09-24
-#
-# Token counting:
-#   token-counting-2024-11-01
+# CLI surface:                                          [literal]
+#   claude auth login [--email <email>] [--sso]
+#   claude auth status [--json|--text]
+#   claude auth logout
+#   claude setup-token
 
 ### ============================================================================
-### SUCCESS/ERROR REDIRECT URLS
+### 23. RECORDED NEGATIVES
 ### ============================================================================
-# Search: rg "SUCCESS_URL|REDIRECT_URL|/oauth/code/" cli.js
 #
-# CONSOLE_SUCCESS_URL: https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3Dclaude-code
-# CLAUDEAI_SUCCESS_URL: https://platform.claude.com/oauth/code/success?app=claude-code
-# MANUAL_REDIRECT_URL: https://platform.claude.com/oauth/code/callback
+# No token revocation endpoint exists.                  [absent]
+#   `claude auth logout` clears local credential storage only. There is no
+#   /v1/oauth/revoke call and no RFC 7009 revocation request anywhere in
+#   the bundle.
+#
+# No OAuth discovery for the first-party flow.          [absent]
+#   /.well-known/oauth-authorization-server is present in the bundle, but
+#   it belongs to the MCP client's own OAuth support, not to Claude Code's
+#   login. The first-party endpoints are hardcoded (section 1).
+#
+# No device-code / client-credentials grant.            [absent]
+#   Only authorization_code and refresh_token are sent.
+#
+# No client_secret anywhere.                            [absent]
+#   Public client + PKCE.
+
+### ============================================================================
+### 24. LITERALS PRESENT IN LATER BUILDS, NOT YET SPEC'D
+### ============================================================================
+# Verify: rg 'orgUUID' extractions/v2.1.197/raw/paths.txt
+#
+# v2.1.139 and later binaries contain a family of quoted route TEMPLATES
+# under /api/oauth/organizations/ that use a `:orgUUID` placeholder rather
+# than an interpolated value. They are absent from every cli.js-era build
+# through v2.1.76, so no call site can be read for them:
+#
+#   /api/oauth/organizations/:orgUUID/billing/tax_rate
+#   /api/oauth/organizations/:orgUUID/claude_code/pro_trial
+#   /api/oauth/organizations/:orgUUID/contracts/auto_reload_settings
+#   /api/oauth/organizations/:orgUUID/contracts/prepaid/credits
+#   /api/oauth/organizations/:orgUUID/overage_credit_grant
+#   /api/oauth/organizations/:orgUUID/overage_spend_limit
+#   /api/oauth/organizations/:orgUUID/payment_method
+#   /api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=true
+#   /api/oauth/organizations/:orgUUID/prepaid/bundles
+#   /api/oauth/organizations/:orgUUID/setup_overage_billing
+#   /api/oauth/organizations/:orgUUID/skills/list-skills?include_wiggle_skills=true
+#   /api/oauth/organizations/:orgUUID/sync/github/auth
+#   /api/hello/:name
+#
+# Status: [literal] only. Method, headers and bodies are NOT claimed, and
+# it is NOT established that the CLI itself calls them -- the `:orgUUID`
+# route-parameter style differs from every confirmed CLI call site in this
+# file, which interpolates the uuid directly. Per the repo confidence
+# model these are recorded, not specified. Resolving them needs a readable
+# call site or a newer bundle.
