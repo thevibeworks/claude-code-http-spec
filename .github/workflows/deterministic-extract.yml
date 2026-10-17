@@ -46,11 +46,6 @@ jobs:
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
-      - name: Fetch release manifest (no binary committed)
-        run: |
-          set -eu
-          scripts/fetch-release.sh "$REQ_VERSION"
-
       - name: Resolve concrete version
         id: ver
         run: |
@@ -66,7 +61,41 @@ jobs:
                  | LC_ALL=C sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
           echo "previous=$PREV" >> "$GITHUB_OUTPUT"
 
+      # One extraction PR at a time. Each PR diffs against main's newest
+      # extraction, so a second PR opened before the first merges carries a
+      # stale comparison and they pile up (six did, 2026-09 to 2026-10).
+      # Resolve runs before fetch-release.sh because that script creates
+      # extractions/v<version>/, which would defeat the documented check.
+      - name: Skip if already documented or an extraction PR is open
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          V="${{ steps.ver.outputs.version }}"
+          if [ -d "extractions/v$V" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$V is already documented on main; nothing to do."
+            exit 0
+          fi
+          open=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 100 \
+                   --json number,headRefName \
+                   --jq '[.[] | select(.headRefName | startswith("extract/v")) | "#\(.number) \(.headRefName)"] | join(", ")')
+          if [ -n "$open" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Extraction PR already open ($open); merge or close it before v$V is documented."
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch release manifest (no binary committed)
+        if: steps.gate.outputs.skip == 'false'
+        run: |
+          set -eu
+          scripts/fetch-release.sh "$REQ_VERSION"
+
       - name: Pack platform binary into a temp dir (discarded after extract)
+        if: steps.gate.outputs.skip == 'false'
         id: bin
         run: |
           set -eu
@@ -78,32 +107,36 @@ jobs:
           echo "work=$WORK" >> "$GITHUB_OUTPUT"
 
       - name: Extract paths + beta flags
+        if: steps.gate.outputs.skip == 'false'
         run: |
           set -eu
           scripts/extract-binary.sh -b "${{ steps.bin.outputs.binary }}" "${{ steps.ver.outputs.version }}"
 
       - name: Discard binary and packed tarballs (never committed)
-        if: always()
+        if: always() && steps.bin.outputs.work != ''
         run: rm -rf "${{ steps.bin.outputs.work }}"
 
       - name: Compare against previous documented version
-        if: steps.ver.outputs.previous != ''
+        if: steps.gate.outputs.skip == 'false' && steps.ver.outputs.previous != ''
         run: |
           set -eu
           scripts/compare-release.sh "${{ steps.ver.outputs.previous }}" "${{ steps.ver.outputs.version }}" \
             | tee "extractions/v${{ steps.ver.outputs.version }}/COMPARE.txt"
 
       - name: Write SUMMARY scaffold
+        if: steps.gate.outputs.skip == 'false'
         run: |
           scripts/summary-scaffold.sh "${{ steps.ver.outputs.version }}" \
             "${{ steps.ver.outputs.previous }}"
 
       - name: Validate extraction gates
+        if: steps.gate.outputs.skip == 'false'
         run: |
           set -eu
           scripts/validate-extraction.sh "${{ steps.ver.outputs.version }}"
 
       - name: Open same-repo PR with artifacts
+        if: steps.gate.outputs.skip == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
