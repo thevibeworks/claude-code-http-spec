@@ -4,7 +4,7 @@
 > `@anthropic-ai/claude-code` release talks to.
 
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/documented-v2.1.296-success)](extractions/v2.1.296/SUMMARY.md)
+[![version](https://img.shields.io/badge/documented-v2.1.323-success)](extractions/v2.1.323/SUMMARY.md)
 [![deps](https://img.shields.io/badge/deps-strings%20%2B%20rg-blue)](scripts/)
 
 This repo documents which API paths, beta flags, headers, OAuth scopes, and
@@ -19,12 +19,13 @@ credentials. The output is plain text you can diff across versions.
 
 ## Currently Documented
 
-**v2.1.296** — see [extractions/v2.1.296/SUMMARY.md](extractions/v2.1.296/SUMMARY.md)
-and [COMPARE.txt](extractions/v2.1.296/COMPARE.txt).
-130 API path literals and 54 beta-flag pattern matches; 31 paths added and 4
-removed, 12 beta flags added and 3 removed since v2.1.251. These are the raw
-automated extraction: its SUMMARY notes are still `TODO(review)`, and the lists
-have not been reviewed by hand.
+**v2.1.323** — see [extractions/v2.1.323/SUMMARY.md](extractions/v2.1.323/SUMMARY.md)
+and [COMPARE.txt](extractions/v2.1.323/COMPARE.txt).
+150 API path literals and 58 beta-flag pattern matches; 15 paths added and 1
+removed, 4 beta flags added since v2.1.303, the previous extraction. These are
+the raw automated extraction: its SUMMARY notes are still `TODO(review)`. The
+counts were checked against the series (102 paths at v2.1.263, rising each
+release since); the individual entries have not been reviewed by hand.
 
 The curated layer (`calls/*.txt`, `specs/*.http`, the gateway protocol doc) was
 last brought up to date at **v2.1.197**.
