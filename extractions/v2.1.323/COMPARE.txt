@@ -1,0 +1,33 @@
+## paths: 150 total, 15 added, 1 removed (v2.1.303 -> v2.1.323)
+
+### Added
+- "/api/cowork/widgets_mcp
+- "/api/directory/server-urls
+- "/api/mcp/claude_ai
+- "/api/oauth/account/settings?opt_in_only_if_unset=grove_enabled
+- "/api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=true&include_component_details=true&include_hooks=true&include_plugin_json_names=true
+- "/api/organizations/:orgUUID/dust/generate_title_and_branch
+- "/v1/code
+- "/v1/code/channels
+- "/v1/code/mcp/cowork
+- "/v1/code/mcp/meta
+- "/v1/filestore/fs/readFileMetadata
+- "/v1/organizations/
+- "/v1/organizations/analytics/cost
+- "/v1/privacy-consents/checkup
+- "/v1/sessions
+
+### Removed
+- "/api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=false
+
+## beta_flags: 58 total, 4 added, 0 removed (v2.1.303 -> v2.1.323)
+
+### Added
+- claude-code-side-query-2026-09-29
+- program-use-case-ids-2026-09-17
+- request-tags-2026-08-21
+- tool-provenance-2026-10-26
+
+### Removed
+None.
+
