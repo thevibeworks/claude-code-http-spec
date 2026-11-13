@@ -1,0 +1,21 @@
+## paths: 136 total, 6 added, 0 removed (v2.1.296 -> v2.1.303)
+
+### Added
+- "/api/oauth/organizations/:orgUUID/plugins/list-plugins?enabled_only=true&compact=false
+- "/api/oauth/organizations/:orgUUID/quirky-lollipop/link-offer
+- "/v1/code/github/get-batch-branch-status
+- "/v1/code/local/
+- "/v1/code/mcp/
+- "/v1/code/triggers/
+
+### Removed
+None.
+
+## beta_flags: 54 total, 0 added, 0 removed (v2.1.296 -> v2.1.303)
+
+### Added
+None.
+
+### Removed
+None.
+
