@@ -1,0 +1,37 @@
+# Release manifest
+resolved_version: 2.1.325
+requested: latest
+recorded_at: 2026-11-16T14:58:37Z
+dist_tags: {
+  "stable": "2.1.311",
+  "latest": "2.1.325",
+  "next": "2.1.325"
+}
+
+[wrapper]
+package: @anthropic-ai/claude-code@2.1.325
+tarball: anthropic-ai-claude-code-2.1.325.tgz
+tarball_bytes: 31964
+sha512: 394c426f4b31ef7e33261f731933fda05d35819e380c21856b0ee1803e1bc9ea634511b2bc7ce050ec02edd9428152258d5e828845438eaf9a9d8dc652f28543
+unpacked_files:
+  147	./package/LICENSE.md
+  2037	./package/README.md
+  500	./package/bin/claude.exe
+  10656	./package/cli-wrapper.cjs
+  14387	./package/install.cjs
+  1476	./package/package.json
+  179549	./package/sdk-tools.d.ts
+
+[linux-x64]
+package: @anthropic-ai/claude-code-linux-x64@2.1.325
+tarball: anthropic-ai-claude-code-linux-x64-2.1.325.tgz
+tarball_bytes: 169350881
+sha512: 06a67332f3ffce02cb2f7e12fbb3b36c6f9cca8169ee0c161d4e64a15c2cc8c953033fb4cd90266d8f94933bed376457c69e8070c7a76d8223409c685df518df
+unpacked_files:
+  147	./package/LICENSE.md
+  150	./package/README.md
+  365842960	./package/claude
+  289	./package/package.json
+binary: package/claude
+binary_bytes: 365842960
+
